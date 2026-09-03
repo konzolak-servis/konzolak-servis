@@ -14,7 +14,8 @@ class StavyZakazekWidget extends StatsOverviewWidget
 {
     protected static bool $isLazy = false;
 
-    protected static ?int $sort = -1;
+    // číselné dlaždice až pod panelem „Co řešit" (-1)
+    protected static ?int $sort = 0;
 
     protected function getStats(): array
     {

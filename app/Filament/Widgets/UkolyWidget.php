@@ -20,7 +20,8 @@ class UkolyWidget extends Widget
 
     protected string $view = 'filament.widgets.ukoly-widget';
 
-    protected static ?int $sort = 0;
+    // hned pod widgetem Pošta (-2), nad číselnými dlaždicemi (0)
+    protected static ?int $sort = -1;
 
     protected int|string|array $columnSpan = 'full';
 
