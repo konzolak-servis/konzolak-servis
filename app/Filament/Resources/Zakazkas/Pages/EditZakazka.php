@@ -202,6 +202,15 @@ class EditZakazka extends EditRecord
                     ->modalDescription(fn () => 'Faktura se odešle na ' . $this->record->zakaznik?->email)
                     ->action(fn () => $this->odesliFakturuEmailem($this->record->faktura)),
 
+                Action::make('whatsapp')
+                    ->label('WhatsApp – oznámit vyzvednutí')
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->color('success')
+                    ->visible(fn () => $this->telefonMezinarodne() !== null)
+                    ->url(fn () => 'https://wa.me/' . $this->telefonMezinarodne()
+                        . '?text=' . rawurlencode($this->zpravaProZakaznika()))
+                    ->openUrlInNewTab(),
+
                 Action::make('reklamace')
                     ->label('Založit reklamaci')
                     ->icon('heroicon-o-arrow-uturn-left')
@@ -318,16 +327,40 @@ class EditZakazka extends EditRecord
         }
     }
 
+    /** Krátká zpráva pro zákazníka (SMS / WhatsApp) – „zakázka je hotová". */
+    private function zpravaProZakaznika(): string
+    {
+        $z = $this->record;
+
+        return 'Konzolák Zlín: Vaše zakázka ' . $z->cislo
+            . ' je hotová a připravená k vyzvednutí. '
+            . ($z->cena_celkem > 0 ? 'K úhradě ' . number_format($z->cena_celkem - $z->zaloha, 0, ' ', ' ') . ' Kč. ' : '')
+            . 'Tel. ' . (\App\Models\Firma::get()->telefon ?: '');
+    }
+
+    /** Telefon zákazníka v mezinárodním tvaru bez znaků (např. 420773001488) – pro wa.me. */
+    private function telefonMezinarodne(): ?string
+    {
+        $tel = preg_replace('/\D+/', '', (string) $this->record->zakaznik?->telefon);
+
+        if (! $tel) {
+            return null;
+        }
+
+        if (strlen($tel) === 9) {
+            $tel = '420' . $tel;              // české číslo bez předvolby
+        }
+
+        return $tel;
+    }
+
     /** Pošle zákazníkovi e-mail o vyzvednutí a zobrazí připravený text SMS. */
     private function oznamZakaznikovi(): void
     {
         $z = $this->record;
         $zk = $z->zakaznik;
 
-        $smsText = 'Konzolak Zlin: Vase zakazka ' . $z->cislo
-            . ' je hotova a pripravena k vyzvednuti. '
-            . ($z->cena_celkem > 0 ? 'Cena ' . number_format($z->cena_celkem - $z->zaloha, 0, '', ' ') . ' Kc. ' : '')
-            . 'Tel. ' . (\App\Models\Firma::get()->telefon ?: '');
+        $smsText = $this->zpravaProZakaznika();
 
         // E-mail
         if ($zk?->email) {
