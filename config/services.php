@@ -45,4 +45,12 @@ return [
         'from_name' => env('BREVO_FROM_NAME', env('APP_NAME', 'Konzolák Zlín')),
     ],
 
+    // Offsite záloha na Cloudflare R2 (přes rclone). Prázdný remote = jen lokální zálohy.
+    'zaloha' => [
+        'r2_remote' => env('ZALOHA_R2_REMOTE'),
+        'r2_config' => env('ZALOHA_R2_CONFIG'),
+        'r2_keep' => (int) env('ZALOHA_R2_KEEP', 60),
+        'rclone_path' => env('RCLONE_PATH', 'rclone'),
+    ],
+
 ];

@@ -91,17 +91,18 @@ class ZalohaData extends Command
 
     /**
      * Nahraje zip na Cloudflare R2 (přes rclone) a nechá tam jen posledních N.
-     * Aktivní pouze když je v .env nastaveno ZALOHA_R2_REMOTE (např. "r2:konzolak-zalohy").
+     * Aktivní pouze když je nastaveno services.zaloha.r2_remote (env ZALOHA_R2_REMOTE),
+     * např. "r2:konzolak-zalohy".
      */
     private function nahrajNaR2(string $zipPath): void
     {
-        $remote = (string) env('ZALOHA_R2_REMOTE');
+        $remote = (string) config('services.zaloha.r2_remote');
         if ($remote === '') {
             return;
         }
 
-        $rclone = (string) env('RCLONE_PATH', 'rclone');
-        $config = (string) env('ZALOHA_R2_CONFIG', '');
+        $rclone = (string) config('services.zaloha.rclone_path', 'rclone');
+        $config = (string) config('services.zaloha.r2_config', '');
         $spolecne = $config !== '' ? ['--config', $config] : [];
 
         $up = new Process([$rclone, 'copy', $zipPath, $remote, '--s3-no-check-bucket', ...$spolecne]);
@@ -116,7 +117,7 @@ class ZalohaData extends Command
         $this->info('Nahráno na R2: ' . $remote);
 
         // vzdálený úklid – nechat posledních N (default 60)
-        $keepR2 = max(1, (int) env('ZALOHA_R2_KEEP', 60));
+        $keepR2 = max(1, (int) config('services.zaloha.r2_keep', 60));
 
         $list = new Process([$rclone, 'lsf', $remote, '--include', 'zaloha_*.zip', ...$spolecne]);
         $list->setTimeout(120);
