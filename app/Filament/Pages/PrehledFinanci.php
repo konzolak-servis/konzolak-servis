@@ -12,6 +12,8 @@ use App\Models\PenezniDenik;
 use App\Models\SkladPolozka;
 use App\Models\Zakazka;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
@@ -44,6 +46,44 @@ class PrehledFinanci extends Page
         $this->den = now()->toDateString();
         $this->mesic = now()->format('Y-m');
         $this->rok = (int) now()->year;
+    }
+
+    /** Rok podle zvoleného období (pro exporty). */
+    public function aktualniRok(): int
+    {
+        return match ($this->obdobi) {
+            'rok' => $this->rok,
+            'den' => (int) substr($this->den, 0, 4),
+            default => (int) substr($this->mesic, 0, 4),
+        };
+    }
+
+    protected function getHeaderActions(): array
+    {
+        $rok = $this->aktualniRok();
+
+        return [
+            ActionGroup::make([
+                Action::make('export_denik')
+                    ->label("Peněžní deník {$rok} (CSV)")
+                    ->icon('heroicon-o-table-cells')
+                    ->url(fn () => route('export.denik', ['rok' => $this->aktualniRok()]))
+                    ->openUrlInNewTab(),
+                Action::make('export_dan')
+                    ->label("Podklad pro daně {$rok} (CSV)")
+                    ->icon('heroicon-o-document-text')
+                    ->url(fn () => route('export.dan', ['rok' => $this->aktualniRok()]))
+                    ->openUrlInNewTab(),
+                Action::make('export_naklady')
+                    ->label("Nákupy dílů {$rok} (CSV)")
+                    ->icon('heroicon-o-shopping-cart')
+                    ->url(fn () => route('export.naklady', ['rok' => $this->aktualniRok()]))
+                    ->openUrlInNewTab(),
+            ])
+                ->label('Export')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->button(),
+        ];
     }
 
     /** Klik na měsíc v rozpadu → přepne období na daný měsíc. */

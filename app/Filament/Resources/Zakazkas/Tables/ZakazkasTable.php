@@ -43,6 +43,21 @@ class ZakazkasTable
                     }),
                 TextColumn::make('datum_prijeti')->label('Přijato')->date('d.m.Y')->sortable(),
                 TextColumn::make('datum_vyrizeni')->label('Vyřízeno')->date('d.m.Y')->sortable()->toggleable(),
+                TextColumn::make('reklamaceK.cislo')
+                    ->label('Reklamace k')
+                    ->badge()->color('danger')->icon('heroicon-o-arrow-uturn-left')
+                    ->placeholder('—')
+                    ->url(fn ($record) => $record->reklamace_k_id
+                        ? \App\Filament\Resources\Zakazkas\ZakazkaResource::getUrl('edit', ['record' => $record->reklamace_k_id])
+                        : null)
+                    ->toggleable(),
+                TextColumn::make('zaruka_do')
+                    ->label('Záruka do')
+                    ->state(fn (Zakazka $record) => $record->zarukaDo())
+                    ->date('d.m.Y')
+                    ->placeholder('—')
+                    ->color(fn (Zakazka $record) => $record->vZaruce() ? 'success' : 'gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('dil_objednany')->label('Díl obj.')
                     ->boolean()
                     ->trueIcon('heroicon-o-truck')->falseIcon('heroicon-o-minus')
@@ -60,6 +75,23 @@ class ZakazkasTable
             ->filters([
                 SelectFilter::make('stav')->label('Stav')->options(Zakazka::STAVY),
                 TernaryFilter::make('dil_objednany')->label('Náhradní díl objednán'),
+                TernaryFilter::make('reklamace')
+                    ->label('Reklamace')
+                    ->placeholder('Vše')
+                    ->trueLabel('Jen reklamace')
+                    ->falseLabel('Bez reklamací')
+                    ->queries(
+                        true: fn ($query) => $query->whereNotNull('reklamace_k_id'),
+                        false: fn ($query) => $query->whereNull('reklamace_k_id'),
+                        blank: fn ($query) => $query,
+                    ),
+                Filter::make('v_zaruce')
+                    ->label('Jen v záruce')
+                    ->toggle()
+                    ->query(fn ($query) => $query
+                        ->whereIn('stav', Zakazka::STAVY_ZAPLACENO)
+                        ->whereNotNull('datum_vyrizeni')
+                        ->whereRaw('DATE_ADD(datum_vyrizeni, INTERVAL COALESCE(zaruka_mesice, 0) MONTH) >= CURDATE()')),
             ])
             ->defaultSort('datum_prijeti', 'desc')
             ->recordActions([

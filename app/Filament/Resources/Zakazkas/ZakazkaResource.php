@@ -6,6 +6,7 @@ use App\Filament\Resources\Zakazkas\Pages\CreateZakazka;
 use App\Filament\Resources\Zakazkas\Pages\EditZakazka;
 use App\Filament\Resources\Zakazkas\Pages\ListZakazkas;
 use App\Filament\Resources\Zakazkas\RelationManagers\PolozkyRelationManager;
+use App\Filament\Resources\Zakazkas\RelationManagers\ReklamaceRelationManager;
 use App\Filament\Resources\Zakazkas\Schemas\ZakazkaForm;
 use App\Filament\Resources\Zakazkas\Tables\ZakazkasTable;
 use App\Models\Zakazka;
@@ -48,6 +49,7 @@ class ZakazkaResource extends Resource
     {
         return [
             PolozkyRelationManager::class,
+            ReklamaceRelationManager::class,
         ];
     }
 

@@ -6,8 +6,10 @@ use App\Models\Zakazka;
 use Filament\Actions\CreateAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
+use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Query\Builder;
 
 class ZakazkyRelationManager extends RelationManager
 {
@@ -30,7 +32,25 @@ class ZakazkyRelationManager extends RelationManager
                 TextColumn::make('stav')->label('Stav')->badge()
                     ->formatStateUsing(fn ($state) => Zakazka::STAVY[$state] ?? $state),
                 TextColumn::make('datum_prijeti')->label('Přijato')->date('d.m.Y'),
-                TextColumn::make('cena_celkem')->label('Cena')->money('CZK'),
+                TextColumn::make('zaruka_do')
+                    ->label('Záruka do')
+                    ->state(fn (Zakazka $record) => $record->zarukaDo())
+                    ->date('d.m.Y')
+                    ->placeholder('—')
+                    ->color(fn (Zakazka $record) => $record->vZaruce() ? 'success' : 'gray')
+                    ->tooltip(fn (Zakazka $record) => $record->vZaruce() ? 'V záruce' : null)
+                    ->toggleable(),
+                TextColumn::make('cena_celkem')
+                    ->label('Cena')
+                    ->money('CZK')
+                    ->summarize([
+                        Summarizer::make('utraceno')
+                            ->label('Utraceno celkem')
+                            ->using(fn (Builder $query) => (float) (clone $query)
+                                ->whereIn('stav', Zakazka::STAVY_ZAPLACENO)
+                                ->sum('cena_celkem'))
+                            ->money('CZK'),
+                    ]),
             ])
             ->defaultSort('datum_prijeti', 'desc')
             ->headerActions([

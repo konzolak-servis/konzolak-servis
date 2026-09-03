@@ -8,6 +8,8 @@ use App\Models\Zakazka;
 use App\Models\ZakazkaPolozka;
 use App\Models\Zarizeni;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
@@ -33,6 +35,32 @@ class Prehledy extends Page
     public function mount(): void
     {
         $this->rok = (int) now()->year;
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            ActionGroup::make([
+                Action::make('export_denik')
+                    ->label('Peněžní deník (CSV)')
+                    ->icon('heroicon-o-table-cells')
+                    ->url(fn () => route('export.denik', ['rok' => $this->rok]))
+                    ->openUrlInNewTab(),
+                Action::make('export_dan')
+                    ->label('Podklad pro daně (CSV)')
+                    ->icon('heroicon-o-document-text')
+                    ->url(fn () => route('export.dan', ['rok' => $this->rok]))
+                    ->openUrlInNewTab(),
+                Action::make('export_naklady')
+                    ->label('Nákupy dílů (CSV)')
+                    ->icon('heroicon-o-shopping-cart')
+                    ->url(fn () => route('export.naklady', ['rok' => $this->rok]))
+                    ->openUrlInNewTab(),
+            ])
+                ->label('Export ' . $this->rok)
+                ->icon('heroicon-o-arrow-down-tray')
+                ->button(),
+        ];
     }
 
     public function getRokyProperty(): array
