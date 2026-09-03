@@ -412,7 +412,7 @@ class EditZakazka extends EditRecord
                 ->title('Poslat zákazníkovi přes WhatsApp')
                 ->body('Otevře WhatsApp s připravenou zprávou' . ($zk?->telefon ? ' (' . $zk->telefon . ')' : '') . '.')
                 ->info()
-                ->persistent()
+                ->duration(30000)
                 ->actions([
                     Action::make('whatsapp')
                         ->label('Otevřít WhatsApp')
