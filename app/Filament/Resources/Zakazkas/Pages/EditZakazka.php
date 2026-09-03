@@ -1,0 +1,354 @@
+<?php
+
+namespace App\Filament\Resources\Zakazkas\Pages;
+
+use App\Filament\Resources\Zakazkas\ZakazkaResource;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Notifications\Notification;
+use Filament\Resources\Pages\EditRecord;
+
+class EditZakazka extends EditRecord
+{
+    protected static string $resource = ZakazkaResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            // rychlá změna stavu – sbaleno do jednoho tlačítka
+            ActionGroup::make([
+                Action::make('stav_diagnostika')
+                    ->label('Diagnostikováno')
+                    ->icon('heroicon-o-magnifying-glass')
+                    ->color('info')
+                    ->visible(fn () => ! in_array($this->record->stav, ['diagnostika', 'hotovo', 'vydano'], true))
+                    ->action(fn () => $this->nastavStav('diagnostika')),
+
+                Action::make('stav_ceka_na_dil')
+                    ->label('Čeká na díl')
+                    ->icon('heroicon-o-truck')
+                    ->color('warning')
+                    ->visible(fn () => ! in_array($this->record->stav, ['ceka_na_dil', 'vydano'], true))
+                    ->action(fn () => $this->nastavStav('ceka_na_dil')),
+
+                Action::make('stav_hotovo')
+                    ->label('Opraveno + oznámit zákazníkovi')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn () => ! in_array($this->record->stav, ['hotovo', 'vydano'], true))
+                    ->action(function () {
+                        $this->nastavStav('hotovo');
+                        $this->oznamZakaznikovi();
+                    }),
+
+                Action::make('oznamit')
+                    ->label('Znovu oznámit vyzvednutí')
+                    ->icon('heroicon-o-bell-alert')
+                    ->color('info')
+                    ->visible(fn () => $this->record->jeHotovo())
+                    ->action(fn () => $this->oznamZakaznikovi()),
+            ])
+                ->label('Změnit stav')
+                ->icon('heroicon-o-arrow-path')
+                ->button()
+                ->color('gray')
+                ->visible(fn () => $this->record->stav !== 'vydano'),
+
+            Action::make('znovu_otevrit')
+                ->label('Znovu otevřít')
+                ->icon('heroicon-o-lock-open')
+                ->color('gray')
+                ->visible(fn () => $this->record->stav === 'vydano')
+                ->requiresConfirmation()
+                ->modalDescription('Vrátí zakázku ze stavu „Vydáno" zpět na „Hotovo" pro doúpravy.')
+                ->action(function () {
+                    $this->record->update(['stav' => 'hotovo']);
+                    $this->fillForm();
+                    Notification::make()->title('Zakázka znovu otevřena')->success()->send();
+                }),
+
+            // uzavřít zakázku → nastaví „vydáno", zeptá se na způsob platby a otevře protokol
+            Action::make('uzavrit')
+                ->label('Uzavřít zakázku')
+                ->icon('heroicon-o-lock-closed')
+                ->color('primary')
+                ->button()
+                ->visible(fn () => $this->record->stav !== 'vydano')
+                ->schema([
+                    \Filament\Forms\Components\Radio::make('zpusob_uhrady')
+                        ->label('Platba')
+                        ->options(\App\Models\Zakazka::ZPUSOBY_UHRADY)
+                        ->default($this->record->zpusob_uhrady ?? 'hotove')
+                        ->inline()
+                        ->required(),
+                ])
+                ->modalHeading('Uzavřít zakázku')
+                ->modalDescription('Nastaví „Vydáno", zapíše příjem do peněžního deníku a pošle zákazníkovi servisní protokol.')
+                ->modalSubmitActionLabel('Uzavřít zakázku')
+                ->action(function (array $data) {
+                    $this->record->update([
+                        'stav' => 'vydano',
+                        'zpusob_uhrady' => $data['zpusob_uhrady'],
+                        'datum_vyrizeni' => $this->record->datum_vyrizeni ?? now()->toDateString(),
+                    ]);
+
+                    // sesynchronizovat formulář s uloženým stavem, ať ho pozdější uložení
+                    // formuláře nepřepíše zpět na starou hodnotu
+                    $this->fillForm();
+
+                    $this->odesliProtokolEmailem();
+
+                    Notification::make()
+                        ->title('Zakázka ' . $this->record->cislo . ' uzavřena')
+                        ->body('Platba ' . (\App\Models\Zakazka::ZPUSOBY_UHRADY[$data['zpusob_uhrady']] ?? '')
+                            . ' · zapsáno do peněžního deníku. Protokol najdeš v „Další → Servisní protokol".')
+                        ->success()
+                        ->send();
+                }),
+
+            Action::make('vytvorit_fakturu')
+                ->label(fn () => $this->record->faktura
+                    ? 'Otevřít fakturu ' . $this->record->faktura->cislo
+                    : 'Vytvořit fakturu')
+                ->icon(fn () => $this->record->faktura ? 'heroicon-o-document-check' : 'heroicon-o-document-currency-dollar')
+                ->color(fn () => $this->record->faktura ? 'success' : 'gray')
+                ->action(function () {
+                    if ($this->record->faktura) {
+                        return redirect(\App\Filament\Resources\Fakturas\FakturaResource::getUrl('edit', ['record' => $this->record->faktura]));
+                    }
+
+                    $f = \App\Models\Faktura::create([
+                        'zakaznik_id' => $this->record->zakaznik_id,
+                        'zakazka_id' => $this->record->id,
+                        'forma_uhrady' => $this->record->zpusob_uhrady === 'hotove' ? 'hotově' : 'převodem',
+                        'datum_vystaveni' => now()->toDateString(),
+                    ]);
+
+                    $uctovane = $this->record->polozky()->where('uctovat', true)->get();
+                    $zarizeni = $this->record->zarizeni?->oznaceni ?? '';
+
+                    if ($uctovane->isEmpty()) {
+                        $f->polozky()->create([
+                            'zarizeni_text' => $zarizeni,
+                            'popis' => 'Oprava ' . $this->record->cislo,
+                            'mnozstvi' => 1,
+                            'cena' => (float) $this->record->cena_celkem,
+                        ]);
+                    } else {
+                        foreach ($uctovane as $i => $p) {
+                            $f->polozky()->create([
+                                'zarizeni_text' => $i === 0 ? $zarizeni : '',
+                                'popis' => $p->nazev,
+                                'mnozstvi' => $p->mnozstvi,
+                                'cena' => $p->cena_ks,
+                            ]);
+                        }
+                    }
+
+                    if ($this->record->zaloha > 0) {
+                        $f->polozky()->create([
+                            'popis' => 'Uhrazená záloha',
+                            'mnozstvi' => 1,
+                            'cena' => -1 * (float) $this->record->zaloha,
+                        ]);
+                    }
+
+                    $f->refresh();
+                    $this->odesliFakturuEmailem($f);
+
+                    return redirect(\App\Filament\Resources\Fakturas\FakturaResource::getUrl('edit', ['record' => $f]));
+                }),
+
+            ActionGroup::make([
+                Action::make('servisni_doklad')
+                    ->label('Servisní doklad (PDF)')
+                    ->icon('heroicon-o-document-text')
+                    ->url(fn () => route('tisk.zakazka.doklad', $this->record))
+                    ->openUrlInNewTab(),
+                Action::make('servisni_protokol')
+                    ->label('Servisní protokol (PDF)')
+                    ->icon('heroicon-o-document-check')
+                    ->url(fn () => route('tisk.zakazka.protokol', $this->record))
+                    ->openUrlInNewTab(),
+                Action::make('stitek')
+                    ->label('Štítek na zařízení (PDF)')
+                    ->icon('heroicon-o-tag')
+                    ->url(fn () => route('tisk.zakazka.stitek', $this->record))
+                    ->openUrlInNewTab(),
+
+                Action::make('mail_doklad')
+                    ->label('Poslat doklad e-mailem')
+                    ->icon('heroicon-o-envelope')
+                    ->color('info')
+                    ->visible(fn () => filled($this->record->zakaznik?->email))
+                    ->requiresConfirmation()
+                    ->modalDescription(fn () => 'Servisní doklad se odešle na ' . $this->record->zakaznik?->email)
+                    ->action(fn () => $this->odesliDokladEmailem()),
+                Action::make('mail_protokol')
+                    ->label('Poslat protokol e-mailem')
+                    ->icon('heroicon-o-envelope')
+                    ->color('info')
+                    ->visible(fn () => filled($this->record->zakaznik?->email))
+                    ->requiresConfirmation()
+                    ->modalDescription(fn () => 'Servisní protokol se odešle na ' . $this->record->zakaznik?->email)
+                    ->action(fn () => $this->odesliProtokolEmailem()),
+                Action::make('mail_faktura')
+                    ->label(fn () => 'Poslat fakturu ' . $this->record->faktura?->cislo . ' e-mailem')
+                    ->icon('heroicon-o-envelope')
+                    ->color('info')
+                    ->visible(fn () => $this->record->faktura && filled($this->record->zakaznik?->email))
+                    ->requiresConfirmation()
+                    ->modalDescription(fn () => 'Faktura se odešle na ' . $this->record->zakaznik?->email)
+                    ->action(fn () => $this->odesliFakturuEmailem($this->record->faktura)),
+
+                Action::make('reklamace')
+                    ->label('Založit reklamaci')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('danger')
+                    ->visible(fn () => $this->record->jeHotovo() || $this->record->stav === 'vydano')
+                    ->requiresConfirmation()
+                    ->modalDescription('Vytvoří novou zakázku navázanou na tuto jako reklamaci (bez ceny).')
+                    ->action(function () {
+                        $r = \App\Models\Zakazka::create([
+                            'reklamace_k_id' => $this->record->id,
+                            'zakaznik_id' => $this->record->zakaznik_id,
+                            'zarizeni_id' => $this->record->zarizeni_id,
+                            'stav' => 'prijato',
+                            'popis_zavady' => 'Reklamace zakázky ' . $this->record->cislo
+                                . "\nPůvodní práce: " . ($this->record->navrh_reseni_prace ?: '—'),
+                            'zaruka_mesice' => $this->record->zaruka_mesice,
+                        ]);
+
+                        return redirect(\App\Filament\Resources\Zakazkas\ZakazkaResource::getUrl('edit', ['record' => $r]));
+                    }),
+
+                DeleteAction::make(),
+            ])
+                ->label('Další')
+                ->icon('heroicon-o-ellipsis-horizontal')
+                ->button()
+                ->color('gray'),
+        ];
+    }
+
+    private function nastavStav(string $stav): void
+    {
+        $this->record->update(['stav' => $stav]);
+        $this->fillForm();
+
+        Notification::make()
+            ->title('Stav změněn na „' . (\App\Models\Zakazka::STAVY[$stav] ?? $stav) . '"')
+            ->success()
+            ->send();
+    }
+
+    /** Pošle zákazníkovi servisní doklad (potvrzení o převzetí) v PDF. */
+    private function odesliDokladEmailem(): void
+    {
+        $z = $this->record->fresh();
+        $email = $z->zakaznik?->email;
+
+        if (! $email) {
+            Notification::make()->title('Zákazník nemá e-mail – doklad pošli ručně')->warning()->send();
+
+            return;
+        }
+
+        try {
+            $pdf = (new \App\Http\Controllers\TiskController)->servisniDoklad($z)->getContent();
+            \Illuminate\Support\Facades\Mail::to($email)->send(new \App\Mail\DokladZakazky($z, $pdf));
+
+            Notification::make()->title('Servisní doklad odeslán na ' . $email)->success()->send();
+        } catch (\Throwable $e) {
+            Notification::make()->title('Doklad se nepodařilo odeslat e-mailem')
+                ->body('Pošli ho ručně. ' . $e->getMessage())->danger()->send();
+        }
+    }
+
+    /** Pošle vytvořenou fakturu zákazníkovi e-mailem (PDF příloha). */
+    private function odesliFakturuEmailem(\App\Models\Faktura $f): void
+    {
+        $email = $f->zakaznik?->email;
+
+        if (! $email) {
+            Notification::make()->title('Faktura ' . $f->cislo . ' vytvořena')
+                ->body('Zákazník nemá e-mail – fakturu pošli ručně.')->success()->send();
+
+            return;
+        }
+
+        try {
+            $pdf = (new \App\Http\Controllers\TiskController)->faktura($f)->getContent();
+            \Illuminate\Support\Facades\Mail::to($email)->send(new \App\Mail\FakturaZakaznikovi($f, $pdf));
+
+            Notification::make()->title('Faktura ' . $f->cislo . ' vytvořena a odeslána na ' . $email)
+                ->success()->send();
+        } catch (\Throwable $e) {
+            Notification::make()->title('Faktura ' . $f->cislo . ' vytvořena, ale e-mail selhal')
+                ->body('Pošli ji ručně. ' . $e->getMessage())->warning()->send();
+        }
+    }
+
+    /** Po uzavření zakázky pošle zákazníkovi servisní protokol v PDF (fakturu ne – ta jde zvlášť). */
+    private function odesliProtokolEmailem(): void
+    {
+        $z = $this->record->fresh();
+        $zk = $z->zakaznik;
+
+        if (! $zk?->email) {
+            Notification::make()->title('Zákazník nemá e-mail – protokol pošli ručně')->warning()->send();
+
+            return;
+        }
+
+        try {
+            $prilohy = [
+                'servisni-protokol-' . $z->cislo . '.pdf'
+                    => (new \App\Http\Controllers\TiskController)->servisniProtokol($z)->getContent(),
+            ];
+
+            \Illuminate\Support\Facades\Mail::to($zk->email)->send(new \App\Mail\ProtokolZakazky($z, $prilohy));
+
+            Notification::make()->title('Servisní protokol odeslán na ' . $zk->email)->success()->send();
+        } catch (\Throwable $e) {
+            Notification::make()->title('Protokol se nepodařilo odeslat e-mailem')
+                ->body('Zakázka je uzavřená, protokol pošli ručně. ' . $e->getMessage())
+                ->danger()->send();
+        }
+    }
+
+    /** Pošle zákazníkovi e-mail o vyzvednutí a zobrazí připravený text SMS. */
+    private function oznamZakaznikovi(): void
+    {
+        $z = $this->record;
+        $zk = $z->zakaznik;
+
+        $smsText = 'Konzolak Zlin: Vase zakazka ' . $z->cislo
+            . ' je hotova a pripravena k vyzvednuti. '
+            . ($z->cena_celkem > 0 ? 'Cena ' . number_format($z->cena_celkem - $z->zaloha, 0, '', ' ') . ' Kc. ' : '')
+            . 'Tel. ' . (\App\Models\Firma::get()->telefon ?: '');
+
+        // E-mail
+        if ($zk?->email) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($zk->email)->send(new \App\Mail\ZakazkaHotova($z));
+                Notification::make()->title('E-mail odeslán na ' . $zk->email)->success()->send();
+            } catch (\Throwable $e) {
+                Notification::make()->title('E-mail se nepodařilo odeslat')
+                    ->body('Zkontroluj nastavení pošty (MAIL_* v .env). ' . $e->getMessage())
+                    ->danger()->send();
+            }
+        } else {
+            Notification::make()->title('Zákazník nemá e-mail')->warning()->send();
+        }
+
+        // SMS text k odeslání ručně / přes bránu
+        Notification::make()
+            ->title('Text SMS pro zákazníka' . ($zk?->telefon ? ' (' . $zk->telefon . ')' : ''))
+            ->body($smsText)
+            ->info()
+            ->persistent()
+            ->send();
+    }
+}
