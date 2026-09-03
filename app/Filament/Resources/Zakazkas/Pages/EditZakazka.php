@@ -37,10 +37,12 @@ class EditZakazka extends EditRecord
     {
         return [
             // Uložit i nahoře, ať se nemusí rolovat dolů
-            $this->getSaveFormAction()
+            Action::make('ulozit_nahore')
                 ->label('Uložit')
                 ->icon('heroicon-o-check')
-                ->button(),
+                ->color('primary')
+                ->button()
+                ->action(fn () => $this->save()),
 
             // rychlá změna stavu – sbaleno do jednoho tlačítka
             ActionGroup::make([
