@@ -382,13 +382,13 @@ class EditZakazka extends EditRecord
         return $tel;
     }
 
-    /** Pošle zákazníkovi e-mail o vyzvednutí a zobrazí připravený text SMS. */
+    /** Pošle zákazníkovi e-mail o vyzvednutí a nabídne odeslání zprávy přes WhatsApp. */
     private function oznamZakaznikovi(): void
     {
         $z = $this->record;
         $zk = $z->zakaznik;
 
-        $smsText = $this->zpravaProZakaznika();
+        $zprava = $this->zpravaProZakaznika();
 
         // E-mail
         if ($zk?->email) {
@@ -404,12 +404,24 @@ class EditZakazka extends EditRecord
             Notification::make()->title('Zákazník nemá e-mail')->warning()->send();
         }
 
-        // SMS text k odeslání ručně / přes bránu
-        Notification::make()
-            ->title('Text SMS pro zákazníka' . ($zk?->telefon ? ' (' . $zk->telefon . ')' : ''))
-            ->body($smsText)
-            ->info()
-            ->persistent()
-            ->send();
+        // Nabídni odeslání přes WhatsApp – otevře wa.me s předvyplněnou zprávou
+        $wa = $this->telefonMezinarodne();
+
+        if ($wa) {
+            Notification::make()
+                ->title('Poslat zákazníkovi přes WhatsApp')
+                ->body('Otevře WhatsApp s připravenou zprávou' . ($zk?->telefon ? ' (' . $zk->telefon . ')' : '') . '.')
+                ->info()
+                ->persistent()
+                ->actions([
+                    Action::make('whatsapp')
+                        ->label('Otevřít WhatsApp')
+                        ->icon('heroicon-o-chat-bubble-left-right')
+                        ->color('success')
+                        ->url('https://wa.me/' . $wa . '?text=' . rawurlencode($zprava))
+                        ->openUrlInNewTab(),
+                ])
+                ->send();
+        }
     }
 }
