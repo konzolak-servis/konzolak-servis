@@ -13,9 +13,35 @@ class EditZakazka extends EditRecord
 {
     protected static string $resource = ZakazkaResource::class;
 
+    /** Stav zakázky před uložením formuláře – kvůli detekci přechodu na „Hotovo". */
+    private ?string $stavPredUlozenim = null;
+
+    protected function beforeSave(): void
+    {
+        $this->stavPredUlozenim = $this->record->getOriginal('stav');
+    }
+
+    protected function afterSave(): void
+    {
+        // Když se stav ve formuláři přepne na „Hotovo" (ne přes tlačítko
+        // „Opraveno + oznámit"), stejně pošli zákazníkovi oznámení o vyzvednutí.
+        if ($this->record->wasChanged('stav')
+            && $this->record->stav === 'hotovo'
+            && $this->stavPredUlozenim !== 'hotovo'
+            && $this->stavPredUlozenim !== 'vydano') {
+            $this->oznamZakaznikovi();
+        }
+    }
+
     protected function getHeaderActions(): array
     {
         return [
+            // Uložit i nahoře, ať se nemusí rolovat dolů
+            $this->getSaveFormAction()
+                ->label('Uložit')
+                ->icon('heroicon-o-check')
+                ->button(),
+
             // rychlá změna stavu – sbaleno do jednoho tlačítka
             ActionGroup::make([
                 Action::make('stav_diagnostika')
