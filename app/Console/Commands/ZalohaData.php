@@ -70,6 +70,9 @@ class ZalohaData extends Command
         $mb = round(filesize($zipPath) / 1048576, 2);
         $this->info("Záloha hotová: " . basename($zipPath) . " ({$mb} MB)");
 
+        // --- offsite kopie na Cloudflare R2 (jen pokud je nakonfigurováno) ---
+        $this->nahrajNaR2($zipPath);
+
         // --- úklid starých ---
         $keep = (int) $this->option('keep');
         $stare = collect(File::files($dir))
@@ -84,5 +87,57 @@ class ZalohaData extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Nahraje zip na Cloudflare R2 (přes rclone) a nechá tam jen posledních N.
+     * Aktivní pouze když je v .env nastaveno ZALOHA_R2_REMOTE (např. "r2:konzolak-zalohy").
+     */
+    private function nahrajNaR2(string $zipPath): void
+    {
+        $remote = (string) env('ZALOHA_R2_REMOTE');
+        if ($remote === '') {
+            return;
+        }
+
+        $rclone = (string) env('RCLONE_PATH', 'rclone');
+        $config = (string) env('ZALOHA_R2_CONFIG', '');
+        $spolecne = $config !== '' ? ['--config', $config] : [];
+
+        $up = new Process([$rclone, 'copy', $zipPath, $remote, '--s3-no-check-bucket', ...$spolecne]);
+        $up->setTimeout(600);
+        $up->run();
+
+        if (! $up->isSuccessful()) {
+            $this->error('R2 upload selhal: ' . trim($up->getErrorOutput()));
+
+            return;
+        }
+        $this->info('Nahráno na R2: ' . $remote);
+
+        // vzdálený úklid – nechat posledních N (default 60)
+        $keepR2 = max(1, (int) env('ZALOHA_R2_KEEP', 60));
+
+        $list = new Process([$rclone, 'lsf', $remote, '--include', 'zaloha_*.zip', ...$spolecne]);
+        $list->setTimeout(120);
+        $list->run();
+        if (! $list->isSuccessful()) {
+            return;
+        }
+
+        $prebytek = collect(preg_split('/\r?\n/', trim($list->getOutput())))
+            ->filter()
+            ->sortDesc()
+            ->values()
+            ->slice($keepR2);
+
+        foreach ($prebytek as $jmeno) {
+            $del = new Process([$rclone, 'deletefile', rtrim($remote, '/') . '/' . $jmeno, ...$spolecne]);
+            $del->setTimeout(120);
+            $del->run();
+        }
+        if ($prebytek->count()) {
+            $this->line("Smazáno starých záloh na R2: {$prebytek->count()}");
+        }
     }
 }
