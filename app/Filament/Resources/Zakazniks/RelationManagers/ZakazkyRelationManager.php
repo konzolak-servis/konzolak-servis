@@ -6,10 +6,8 @@ use App\Models\Zakazka;
 use Filament\Actions\CreateAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
-use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Query\Builder;
 
 class ZakazkyRelationManager extends RelationManager
 {
@@ -24,8 +22,14 @@ class ZakazkyRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
+        $utraceno = (float) Zakazka::query()
+            ->where('zakaznik_id', $this->getOwnerRecord()->getKey())
+            ->whereIn('stav', Zakazka::STAVY_ZAPLACENO)
+            ->sum('cena_celkem');
+
         return $table
             ->recordTitleAttribute('cislo')
+            ->description('Utraceno celkem: ' . number_format($utraceno, 0, ',', ' ') . ' Kč (dokončené zakázky)')
             ->columns([
                 TextColumn::make('cislo')->label('Číslo')->searchable(),
                 TextColumn::make('zarizeni.oznaceni')->label('Zařízení'),
@@ -34,23 +38,12 @@ class ZakazkyRelationManager extends RelationManager
                 TextColumn::make('datum_prijeti')->label('Přijato')->date('d.m.Y'),
                 TextColumn::make('zaruka_do')
                     ->label('Záruka do')
-                    ->state(fn (Zakazka $record) => $record->zarukaDo())
+                    ->state(fn ($record) => $record->zarukaDo())
                     ->date('d.m.Y')
                     ->placeholder('—')
-                    ->color(fn (Zakazka $record) => $record->vZaruce() ? 'success' : 'gray')
-                    ->tooltip(fn (Zakazka $record) => $record->vZaruce() ? 'V záruce' : null)
+                    ->color(fn ($record) => $record->vZaruce() ? 'success' : 'gray')
                     ->toggleable(),
-                TextColumn::make('cena_celkem')
-                    ->label('Cena')
-                    ->money('CZK')
-                    ->summarize([
-                        Summarizer::make('utraceno')
-                            ->label('Utraceno celkem')
-                            ->using(fn (Builder $query) => (float) (clone $query)
-                                ->whereIn('stav', Zakazka::STAVY_ZAPLACENO)
-                                ->sum('cena_celkem'))
-                            ->money('CZK'),
-                    ]),
+                TextColumn::make('cena_celkem')->label('Cena')->money('CZK'),
             ])
             ->defaultSort('datum_prijeti', 'desc')
             ->headerActions([
