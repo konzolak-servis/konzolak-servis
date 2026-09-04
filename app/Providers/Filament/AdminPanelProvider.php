@@ -178,25 +178,28 @@ class AdminPanelProvider extends PanelProvider
                         <p id="ks-passkey-msg" style="font-size:.8rem; color:#f87171; margin:.5rem 0 0; min-height:1rem;"></p>
                     </div>
                     <script>
-                        (function () {
+                        window.addEventListener('load', function () {
                             var wrap = document.getElementById('ks-passkey-wrap');
                             var btn = document.getElementById('ks-passkey-btn');
                             var msg = document.getElementById('ks-passkey-msg');
                             if (!wrap || !btn) return;
-                            function show() { if (window.KsPasskey && window.KsPasskey.supported) wrap.style.display = 'block'; }
-                            document.addEventListener('DOMContentLoaded', show); show();
+                            if (typeof PublicKeyCredential === 'undefined' || !window.isSecureContext) return;
+                            wrap.style.display = 'block';
                             btn.addEventListener('click', async function () {
+                                if (!window.KsPasskey) { msg.textContent = 'Načítám…'; return; }
                                 msg.textContent = ''; btn.disabled = true; btn.style.opacity = '.6';
                                 try {
                                     var ok = await window.KsPasskey.login();
                                     if (ok) { window.location.href = '/admin'; return; }
                                     msg.textContent = 'Přihlášení se nezdařilo.';
                                 } catch (e) {
-                                    msg.textContent = (e && e.name === 'NotAllowedError') ? 'Zrušeno nebo vypršel čas.' : 'Passkey se nepodařilo použít.';
+                                    msg.textContent = (e && e.name === 'NotAllowedError')
+                                        ? 'Zrušeno nebo vypršel čas.'
+                                        : ('Passkey se nepodařilo použít: ' + (e && e.message ? e.message : e));
                                 }
                                 btn.disabled = false; btn.style.opacity = '1';
                             });
-                        })();
+                        });
                     </script>
                 HTML)
             )

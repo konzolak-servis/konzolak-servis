@@ -38,19 +38,22 @@
     </div>
 
     <script>
-        (function () {
+        window.addEventListener('load', function () {
             var btn = document.getElementById('ks-passkey-add');
             var msg = document.getElementById('ks-passkey-add-msg');
             if (!btn) return;
 
-            if (!window.KsPasskey || !window.KsPasskey.supported) {
+            if (typeof PublicKeyCredential === 'undefined' || !window.isSecureContext) {
                 btn.disabled = true; btn.style.opacity = '.5';
-                msg.textContent = 'Tento prohlížeč passkeys nepodporuje.';
+                msg.textContent = 'Toto zařízení / prohlížeč passkeys nepodporuje (nebo není HTTPS).';
                 msg.className = 'ml-3 text-sm text-amber-600';
                 return;
             }
 
+            btn.disabled = false; btn.style.opacity = '1';
+
             btn.addEventListener('click', async function () {
+                if (!window.KsPasskey) { msg.textContent = 'Načítám… zkus znovu za chvíli.'; return; }
                 var alias = prompt('Název zařízení (např. Můj telefon):', 'Můj telefon');
                 if (alias === null) return;
                 btn.disabled = true; btn.style.opacity = '.6';
@@ -60,11 +63,13 @@
                     msg.textContent = 'Přidáno ✓'; msg.className = 'ml-3 text-sm text-green-600';
                     setTimeout(function () { window.location.reload(); }, 600);
                 } catch (e) {
-                    msg.textContent = (e && e.name === 'NotAllowedError') ? 'Zrušeno.' : 'Nepodařilo se přidat.';
+                    msg.textContent = (e && e.name === 'NotAllowedError')
+                        ? 'Zrušeno nebo vypršel čas.'
+                        : ('Nepodařilo se přidat: ' + (e && e.message ? e.message : e));
                     msg.className = 'ml-3 text-sm text-red-600';
                     btn.disabled = false; btn.style.opacity = '1';
                 }
             });
-        })();
+        });
     </script>
 </x-filament-panels::page>
