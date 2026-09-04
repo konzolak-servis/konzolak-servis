@@ -158,6 +158,24 @@ class AdminPanelProvider extends PanelProvider
                         .fi-input-wrp:has(input[inputmode="numeric"]),
                         .fi-input-wrp:has(input[type="number"]){ min-width:7rem; }
                     </style>
+                    <script>
+                        /* Livewire přihlášení neposílá klasický form submit, tak správci
+                           hesel ručně nabídneme uložení (funguje na Chrome/Android). */
+                        document.addEventListener('submit', function (e) {
+                            try {
+                                var f = e.target;
+                                if (!f || !f.querySelector) return;
+                                var u = f.querySelector('input[autocomplete="username"]');
+                                var p = f.querySelector('input[type="password"]');
+                                if (!u || !p || !u.value || !p.value) return;
+                                if (window.PasswordCredential && navigator.credentials) {
+                                    navigator.credentials.store(new PasswordCredential({
+                                        id: u.value, name: u.value, password: p.value,
+                                    })).catch(function () {});
+                                }
+                            } catch (err) {}
+                        }, true);
+                    </script>
                 HTML)
             )
             ->middleware([
