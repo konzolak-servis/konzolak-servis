@@ -26,8 +26,10 @@ class CenikPolozkasTable
             ->filters([
                 SelectFilter::make('kategorie')->label('Platforma / kategorie')->options(Platformy::HODNOTY),
             ])
-            ->defaultSort('kategorie')
+            ->defaultSort('poradi')
             ->reorderable('poradi')
+            ->paginated([25, 50, 100, 'all'])
+            ->defaultPaginationPageOption('all')
             ->recordActions([
                 EditAction::make(),
             ])

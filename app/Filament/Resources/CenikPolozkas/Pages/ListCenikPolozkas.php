@@ -4,11 +4,11 @@ namespace App\Filament\Resources\CenikPolozkas\Pages;
 
 use App\Filament\Resources\CenikPolozkas\CenikPolozkaResource;
 use App\Models\CenikPolozka;
+use App\Support\Platformy;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Str;
 
 class ListCenikPolozkas extends ListRecords
 {
@@ -21,27 +21,24 @@ class ListCenikPolozkas extends ListRecords
         ];
     }
 
-    /** Kategorie jako záložky (tlačítka) nad seznamem. */
+    /** Platformy jako záložky nad seznamem (v pořadí číselníku). */
     public function getTabs(): array
     {
-        $tabs = [
-            'vse' => Tab::make('Vše')->badge(CenikPolozka::count()),
-        ];
-
-        $kategorie = CenikPolozka::query()
-            ->whereNotNull('kategorie')
+        $pocty = CenikPolozka::query()
             ->selectRaw('kategorie, COUNT(*) as pocet')
             ->groupBy('kategorie')
-            ->orderBy('kategorie')
             ->pluck('pocet', 'kategorie');
 
-        foreach ($kategorie as $nazev => $pocet) {
-            $kat = (string) $nazev;
-            $tabs[Str::slug($kat) ?: $kat] = Tab::make(\App\Support\Platformy::label($kat))
-                ->badge($pocet)
-                ->modifyQueryUsing(function (Builder $query) use ($kat): Builder {
-                    return $query->where('kategorie', $kat);
-                });
+        $tabs = ['vse' => Tab::make('Vše')->badge(CenikPolozka::count())];
+
+        foreach (Platformy::HODNOTY as $klic => $popisek) {
+            if (! isset($pocty[$klic])) {
+                continue;
+            }
+
+            $tabs[$klic] = Tab::make($popisek)
+                ->badge($pocty[$klic])
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('kategorie', $klic));
         }
 
         return $tabs;
