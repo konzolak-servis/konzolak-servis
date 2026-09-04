@@ -3,6 +3,7 @@
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\PostaController;
 use App\Http\Controllers\TiskController;
+use App\Http\Controllers\VerejnyController;
 use App\Http\Controllers\ZalohaController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,9 @@ Route::post('api/posta/prijem', [PostaController::class, 'prijem']);
 // Veřejné QR platby pro e-maily (chráněné tokenem v URL).
 Route::get('qr/faktura/{faktura}/{token}', [TiskController::class, 'qrFaktura'])->name('qr.faktura');
 Route::get('qr/zakazka/{zakazka}/{token}', [TiskController::class, 'qrZakazka'])->name('qr.zakazka');
+
+// Veřejná stránka stavu zakázky (QR na servisním dokladu / štítku).
+Route::get('z/{zakazka}/{token}', [VerejnyController::class, 'stavZakazky'])->name('verejne.stav');
 
 Route::middleware(['web', 'auth'])->group(function () {
     Route::prefix('tisk')->name('tisk.')->group(function () {

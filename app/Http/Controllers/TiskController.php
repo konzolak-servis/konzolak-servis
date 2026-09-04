@@ -12,6 +12,15 @@ use Illuminate\Http\Response;
 
 class TiskController extends Controller
 {
+    /** Veřejná URL stavu zakázky (do QR na dokladu / štítku / protokolu). */
+    private function stavUrl(Zakazka $zakazka): string
+    {
+        return route('verejne.stav', [
+            'zakazka' => $zakazka->id,
+            'token' => \App\Support\QrPlatba::token('stav', $zakazka->id),
+        ]);
+    }
+
     public function servisniDoklad(Zakazka $zakazka): Response
     {
         $zakazka->load(['zakaznik', 'zarizeni', 'polozky']);
@@ -19,7 +28,7 @@ class TiskController extends Controller
         return Tisk::pdf('pdf.servisni-doklad', [
             'firma' => Firma::get(),
             'z' => $zakazka,
-            'qr' => \App\Support\Qr::dataUri(route('filament.admin.resources.zakazkas.edit', $zakazka), 200),
+            'qr' => \App\Support\Qr::dataUri($this->stavUrl($zakazka), 200),
         ], 'Servisni-doklad-' . $zakazka->cislo);
     }
 
@@ -33,7 +42,7 @@ class TiskController extends Controller
         return Tisk::pdf('pdf.servisni-protokol', [
             'firma' => $firma,
             'z' => $zakazka,
-            'qr' => \App\Support\Qr::dataUri(route('filament.admin.resources.zakazkas.edit', $zakazka), 180),
+            'qr' => \App\Support\Qr::dataUri($this->stavUrl($zakazka), 180),
             'qrPlatba' => $zakazka->zpusob_uhrady === 'ucet' && $doplatek > 0
                 ? \App\Support\QrPlatba::dataUri($firma->cislo_uctu, $doplatek,
                     preg_replace('/\D/', '', $zakazka->cislo), 'Oprava ' . $zakazka->cislo, 200)
@@ -47,7 +56,7 @@ class TiskController extends Controller
 
         return Tisk::pdf('pdf.stitek', [
             'z' => $zakazka,
-            'qr' => \App\Support\Qr::dataUri(route('filament.admin.resources.zakazkas.edit', $zakazka), 260),
+            'qr' => \App\Support\Qr::dataUri($this->stavUrl($zakazka), 260),
         ], 'Stitek-' . $zakazka->cislo, 'stitek');
     }
 
