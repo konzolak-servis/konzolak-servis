@@ -19,6 +19,7 @@ class Sablona extends Model
         'zavada' => 'Závada / popis od zákazníka',
         'reseni' => 'Řešení / provedené práce',
         'poznamka' => 'Poznámka',
+        'whatsapp' => 'WhatsApp / SMS zpráva zákazníkovi',
     ];
 
     public function scopeAktivni($q)

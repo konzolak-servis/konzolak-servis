@@ -188,6 +188,14 @@ class EditZakazka extends EditRecord
                     return redirect(\App\Filament\Resources\Fakturas\FakturaResource::getUrl('edit', ['record' => $f]));
                 }),
 
+            // WhatsApp – rychlá zpráva zákazníkovi ze šablon
+            ActionGroup::make($this->whatsappAkce())
+                ->label('WhatsApp')
+                ->icon('heroicon-o-chat-bubble-left-right')
+                ->color('success')
+                ->button()
+                ->visible(fn () => $this->telefonMezinarodne() !== null),
+
             ActionGroup::make([
                 Action::make('servisni_doklad')
                     ->label('Doklad o převzetí (PDF)')
@@ -229,15 +237,6 @@ class EditZakazka extends EditRecord
                     ->requiresConfirmation()
                     ->modalDescription(fn () => 'Faktura se odešle na ' . $this->record->zakaznik?->email)
                     ->action(fn () => $this->odesliFakturuEmailem($this->record->faktura)),
-
-                Action::make('whatsapp')
-                    ->label('WhatsApp – oznámit vyzvednutí')
-                    ->icon('heroicon-o-chat-bubble-left-right')
-                    ->color('success')
-                    ->visible(fn () => $this->telefonMezinarodne() !== null)
-                    ->url(fn () => 'https://wa.me/' . $this->telefonMezinarodne()
-                        . '?text=' . rawurlencode($this->zpravaProZakaznika()))
-                    ->openUrlInNewTab(),
 
                 Action::make('reklamace')
                     ->label('Založit reklamaci')
@@ -364,6 +363,60 @@ class EditZakazka extends EditRecord
             . ' je hotová a připravená k vyzvednutí. '
             . ($z->cena_celkem > 0 ? 'K úhradě ' . number_format($z->cena_celkem - $z->zaloha, 0, ' ', ' ') . ' Kč. ' : '')
             . 'Tel. ' . (\App\Models\Firma::get()->telefon ?: '');
+    }
+
+    /** Doplní zástupné značky {cislo}, {cena}, {odkaz}… do textu šablony. */
+    private function vyplnSablonu(string $text): string
+    {
+        $z = $this->record;
+        $firma = \App\Models\Firma::get();
+        $doplatek = max((float) $z->cena_celkem - (float) $z->zaloha, 0);
+
+        $odkaz = route('verejne.stav', [
+            'zakazka' => $z->id,
+            'token' => \App\Support\QrPlatba::token('stav', $z->id),
+        ]);
+
+        return strtr($text, [
+            '{cislo}' => $z->cislo,
+            '{zarizeni}' => $z->zarizeni?->oznaceni ?? '',
+            '{zakaznik}' => $z->zakaznik?->nazev ?? '',
+            '{cena}' => number_format((float) $z->cena_celkem, 0, ',', ' '),
+            '{doplatek}' => number_format($doplatek, 0, ',', ' '),
+            '{zaloha}' => number_format((float) $z->zaloha, 0, ',', ' '),
+            '{stav}' => \App\Models\Zakazka::STAVY[$z->stav] ?? $z->stav,
+            '{tel}' => $firma->telefon ?? '',
+            '{firma}' => $firma->nazev ?? '',
+            '{odkaz}' => $odkaz,
+        ]);
+    }
+
+    /** WhatsApp akce ze šablon (typ 'whatsapp') + rychlá „hotovo". */
+    private function whatsappAkce(): array
+    {
+        $tel = $this->telefonMezinarodne();
+
+        $wa = fn (string $text) => 'https://wa.me/' . $tel . '?text=' . rawurlencode($text);
+
+        $akce = [
+            Action::make('wa_hotovo')
+                ->label('Rychlé: hotovo k vyzvednutí')
+                ->icon('heroicon-o-check-circle')
+                ->url(fn () => $wa($this->zpravaProZakaznika()))
+                ->openUrlInNewTab(),
+        ];
+
+        foreach (\App\Models\Sablona::query()
+            ->where('typ', 'whatsapp')->where('aktivni', true)
+            ->orderBy('poradi')->orderBy('nazev')->get() as $s) {
+            $akce[] = Action::make('wa_' . $s->id)
+                ->label($s->nazev)
+                ->icon('heroicon-o-chat-bubble-left-right')
+                ->url(fn () => $wa($this->vyplnSablonu($s->text)))
+                ->openUrlInNewTab();
+        }
+
+        return $akce;
     }
 
     /** Telefon zákazníka v mezinárodním tvaru bez znaků (např. 420773001488) – pro wa.me. */
