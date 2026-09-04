@@ -13,7 +13,8 @@ class Login extends BaseLogin
         return TextInput::make('name')
             ->label('Přihlašovací jméno')
             ->required()
-            ->autocomplete()
+            ->autocomplete('username')
+            ->extraInputAttributes(['autocapitalize' => 'none', 'autocorrect' => 'off'])
             ->autofocus();
     }
 
