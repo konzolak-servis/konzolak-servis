@@ -1,8 +1,8 @@
-<x-mail-layout :firma="$firma" nadpis="Servisní doklad">
+<x-mail-layout :firma="$firma" nadpis="Doklad o převzetí zařízení">
     <p style="margin:0 0 14px;">Dobrý den,</p>
 
     <p style="margin:0 0 14px;">
-        potvrzujeme převzetí zařízení do opravy. V příloze zasíláme <strong>servisní doklad</strong>
+        potvrzujeme převzetí zařízení do opravy. V příloze zasíláme <strong>doklad o převzetí</strong>
         k zakázce <strong>{{ $z->cislo }}</strong>@if ($z->zarizeni) – {{ $z->zarizeni->oznaceni }}@endif.
     </p>
 

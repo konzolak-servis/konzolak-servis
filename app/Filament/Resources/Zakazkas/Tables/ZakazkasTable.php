@@ -125,7 +125,7 @@ class ZakazkasTable
                 ])->label('Stav')->icon('heroicon-o-arrow-path')->button()->color('gray'),
                 ActionGroup::make([
                     Action::make('servisni_doklad')
-                        ->label('Servisní doklad (PDF)')
+                        ->label('Doklad o převzetí (PDF)')
                         ->icon('heroicon-o-document-text')
                         ->url(fn ($record) => route('tisk.zakazka.doklad', $record))
                         ->openUrlInNewTab(),

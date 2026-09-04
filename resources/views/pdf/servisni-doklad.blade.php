@@ -2,7 +2,7 @@
 <html lang="cs">
 <head><meta charset="utf-8">@include('pdf.partials.styl')</head>
 <body>
-@include('pdf.partials.hlavicka', ['nadpis' => 'Servisní doklad', 'cislo' => $z->cislo])
+@include('pdf.partials.hlavicka', ['nadpis' => 'Doklad o převzetí zařízení', 'cislo' => $z->cislo])
 
 <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:4mm">
     <tr>
@@ -65,7 +65,7 @@
 @include('pdf.partials.paticka', [
     'podpisL' => 'Převzal za servis',
     'podpisR' => 'Předal zákazník (podpis)',
-    'doklad' => 'Servisní doklad ' . $z->cislo,
+    'doklad' => 'Doklad o převzetí ' . $z->cislo,
     'gdpr' => true,
 ])
 

@@ -70,7 +70,7 @@ class NastaveniFirmy extends Page
                     ->description('Právní / informační text v patě jednotlivých dokumentů. Uprav podle potřeby – projeví se okamžitě při dalším tisku.')
                     ->schema([
                         Textarea::make('pravni_text_servisni_list')
-                            ->label('Servisní doklad (převzetí do opravy)')->rows(4),
+                            ->label('Doklad o převzetí zařízení (do opravy)')->rows(4),
                         Textarea::make('pravni_text_protokol')
                             ->label('Servisní protokol (dokončení opravy)')->rows(4),
                         Textarea::make('pravni_text_faktura')

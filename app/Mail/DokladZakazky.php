@@ -22,7 +22,7 @@ class DokladZakazky extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Servisní doklad – převzetí zakázky ' . $this->zakazka->cislo,
+            subject: 'Doklad o převzetí zařízení – zakázka ' . $this->zakazka->cislo,
         );
     }
 

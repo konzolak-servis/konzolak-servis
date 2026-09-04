@@ -190,7 +190,7 @@ class EditZakazka extends EditRecord
 
             ActionGroup::make([
                 Action::make('servisni_doklad')
-                    ->label('Servisní doklad (PDF)')
+                    ->label('Doklad o převzetí (PDF)')
                     ->icon('heroicon-o-document-text')
                     ->url(fn () => route('tisk.zakazka.doklad', $this->record))
                     ->openUrlInNewTab(),
@@ -211,7 +211,7 @@ class EditZakazka extends EditRecord
                     ->color('info')
                     ->visible(fn () => filled($this->record->zakaznik?->email))
                     ->requiresConfirmation()
-                    ->modalDescription(fn () => 'Servisní doklad se odešle na ' . $this->record->zakaznik?->email)
+                    ->modalDescription(fn () => 'Doklad o převzetí se odešle na ' . $this->record->zakaznik?->email)
                     ->action(fn () => $this->odesliDokladEmailem()),
                 Action::make('mail_protokol')
                     ->label('Poslat protokol e-mailem')
@@ -280,7 +280,7 @@ class EditZakazka extends EditRecord
             ->send();
     }
 
-    /** Pošle zákazníkovi servisní doklad (potvrzení o převzetí) v PDF. */
+    /** Pošle zákazníkovi doklad o převzetí zařízení do opravy v PDF. */
     private function odesliDokladEmailem(): void
     {
         $z = $this->record->fresh();
@@ -296,7 +296,7 @@ class EditZakazka extends EditRecord
             $pdf = (new \App\Http\Controllers\TiskController)->servisniDoklad($z)->getContent();
             \Illuminate\Support\Facades\Mail::to($email)->send(new \App\Mail\DokladZakazky($z, $pdf));
 
-            Notification::make()->title('Servisní doklad odeslán na ' . $email)->success()->send();
+            Notification::make()->title('Doklad o převzetí odeslán na ' . $email)->success()->send();
         } catch (\Throwable $e) {
             Notification::make()->title('Doklad se nepodařilo odeslat e-mailem')
                 ->body('Pošli ho ručně. ' . $e->getMessage())->danger()->send();

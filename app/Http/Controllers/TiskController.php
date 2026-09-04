@@ -29,7 +29,7 @@ class TiskController extends Controller
             'firma' => Firma::get(),
             'z' => $zakazka,
             'qr' => \App\Support\Qr::dataUri($this->stavUrl($zakazka), 200),
-        ], 'Servisni-doklad-' . $zakazka->cislo);
+        ], 'Doklad-o-prevzeti-' . $zakazka->cislo);
     }
 
     public function servisniProtokol(Zakazka $zakazka): Response
