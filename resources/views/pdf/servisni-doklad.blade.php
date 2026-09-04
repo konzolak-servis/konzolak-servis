@@ -10,12 +10,17 @@
             <div class="muted">
                 Potvrzení o převzetí zařízení do opravy.<br>
                 <b>Tento doklad předložte při vyzvednutí.</b>
+                @if (! empty($qr))
+                    <br>Aktuální stav opravy zjistíte naskenováním QR kódu&nbsp;→
+                @endif
             </div>
         </td>
         @if (! empty($qr))
-            <td width="26mm" style="text-align:right; vertical-align:middle">
+            <td width="28mm" style="text-align:right; vertical-align:middle">
                 <img src="{{ $qr }}" style="width:24mm; height:24mm">
-                <div style="font-size:6pt; color:#9ca3af; text-align:center; margin-top:.5mm">zakázka {{ $z->cislo }}</div>
+                <div style="font-size:6pt; color:#6b7280; text-align:center; margin-top:.5mm; line-height:1.25">
+                    Sledování stavu opravy<br>{{ $z->cislo }}
+                </div>
             </td>
         @endif
     </tr>
