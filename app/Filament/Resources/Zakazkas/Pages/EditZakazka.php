@@ -217,20 +217,20 @@ class EditZakazka extends EditRecord
                     ->label('Poslat doklad e-mailem')
                     ->icon('heroicon-o-envelope')
                     ->color('info')
-                    ->schema([$this->polePriEmailu()])
+                    ->schema(fn () => $this->maEmailZakaznika() ? [] : [$this->polePriEmailu()])
                     ->action(fn (array $data) => $this->odesliDokladEmailem($data['email'] ?? null)),
                 Action::make('mail_protokol')
                     ->label('Poslat protokol e-mailem')
                     ->icon('heroicon-o-envelope')
                     ->color('info')
-                    ->schema([$this->polePriEmailu()])
+                    ->schema(fn () => $this->maEmailZakaznika() ? [] : [$this->polePriEmailu()])
                     ->action(fn (array $data) => $this->odesliProtokolEmailem($data['email'] ?? null)),
                 Action::make('mail_faktura')
                     ->label(fn () => 'Poslat fakturu ' . $this->record->faktura?->cislo . ' e-mailem')
                     ->icon('heroicon-o-envelope')
                     ->color('info')
                     ->visible(fn () => (bool) $this->record->faktura)
-                    ->schema([$this->polePriEmailu()])
+                    ->schema(fn () => $this->maEmailZakaznika() ? [] : [$this->polePriEmailu()])
                     ->action(fn (array $data) => $this->odesliFakturuEmailem($this->record->faktura, $data['email'] ?? null)),
 
                 Action::make('reklamace')
@@ -275,6 +275,12 @@ class EditZakazka extends EditRecord
     }
 
     /** Pošle zákazníkovi doklad o převzetí zařízení do opravy v PDF. */
+    /** Má zákazník uložený e-mail? Pak se posílá rovnou bez potvrzení. */
+    private function maEmailZakaznika(): bool
+    {
+        return filled($this->record->zakaznik?->email);
+    }
+
     /** Pole s e-mailem do modalu odesílacích akcí (předvyplněné e-mailem zákazníka). */
     private function polePriEmailu(): \Filament\Forms\Components\TextInput
     {
