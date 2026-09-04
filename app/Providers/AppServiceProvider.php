@@ -36,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
 
         // WebAuthn – při neúspěšné asserci zaloguj skutečný důvod (jinak ho laragear
         // spolkne, když APP_DEBUG=false).
-        WebAuthnUserProvider::validateUsing(function ($user, array $credentials): ?bool {
+        WebAuthnUserProvider::$validateUsing = function ($user, array $credentials): ?bool {
             if (! $user instanceof WebAuthnAuthenticatable
                 || ! isset($credentials['id'], $credentials['rawId'], $credentials['response'], $credentials['type'])) {
                 return null; // není to WebAuthn assertion → nech laragear rozhodnout
@@ -53,7 +53,7 @@ class AppServiceProvider extends ServiceProvider
 
                 return false;
             }
-        });
+        };
 
         // Záznam každého úspěšného přihlášení do tabulky `prihlaseni`.
         Event::listen(Login::class, function (Login $event): void {
