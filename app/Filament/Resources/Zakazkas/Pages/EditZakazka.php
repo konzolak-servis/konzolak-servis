@@ -217,26 +217,21 @@ class EditZakazka extends EditRecord
                     ->label('Poslat doklad e-mailem')
                     ->icon('heroicon-o-envelope')
                     ->color('info')
-                    ->visible(fn () => filled($this->record->zakaznik?->email))
-                    ->requiresConfirmation()
-                    ->modalDescription(fn () => 'Doklad o převzetí se odešle na ' . $this->record->zakaznik?->email)
-                    ->action(fn () => $this->odesliDokladEmailem()),
+                    ->schema([$this->polePriEmailu()])
+                    ->action(fn (array $data) => $this->odesliDokladEmailem($data['email'] ?? null)),
                 Action::make('mail_protokol')
                     ->label('Poslat protokol e-mailem')
                     ->icon('heroicon-o-envelope')
                     ->color('info')
-                    ->visible(fn () => filled($this->record->zakaznik?->email))
-                    ->requiresConfirmation()
-                    ->modalDescription(fn () => 'Servisní protokol se odešle na ' . $this->record->zakaznik?->email)
-                    ->action(fn () => $this->odesliProtokolEmailem()),
+                    ->schema([$this->polePriEmailu()])
+                    ->action(fn (array $data) => $this->odesliProtokolEmailem($data['email'] ?? null)),
                 Action::make('mail_faktura')
                     ->label(fn () => 'Poslat fakturu ' . $this->record->faktura?->cislo . ' e-mailem')
                     ->icon('heroicon-o-envelope')
                     ->color('info')
-                    ->visible(fn () => $this->record->faktura && filled($this->record->zakaznik?->email))
-                    ->requiresConfirmation()
-                    ->modalDescription(fn () => 'Faktura se odešle na ' . $this->record->zakaznik?->email)
-                    ->action(fn () => $this->odesliFakturuEmailem($this->record->faktura)),
+                    ->visible(fn () => (bool) $this->record->faktura)
+                    ->schema([$this->polePriEmailu()])
+                    ->action(fn (array $data) => $this->odesliFakturuEmailem($this->record->faktura, $data['email'] ?? null)),
 
                 Action::make('reklamace')
                     ->label('Založit reklamaci')
@@ -280,13 +275,26 @@ class EditZakazka extends EditRecord
     }
 
     /** Pošle zákazníkovi doklad o převzetí zařízení do opravy v PDF. */
-    private function odesliDokladEmailem(): void
+    /** Pole s e-mailem do modalu odesílacích akcí (předvyplněné e-mailem zákazníka). */
+    private function polePriEmailu(): \Filament\Forms\Components\TextInput
+    {
+        return \Filament\Forms\Components\TextInput::make('email')
+            ->label('Odeslat na e-mail')
+            ->email()
+            ->required()
+            ->default(fn () => $this->record->zakaznik?->email)
+            ->helperText($this->record->zakaznik?->email
+                ? null
+                : 'Zákazník nemá uložený e-mail – zadej adresu ručně.');
+    }
+
+    private function odesliDokladEmailem(?string $email = null): void
     {
         $z = $this->record->fresh();
-        $email = $z->zakaznik?->email;
+        $email = $email ?: $z->zakaznik?->email;
 
         if (! $email) {
-            Notification::make()->title('Zákazník nemá e-mail – doklad pošli ručně')->warning()->send();
+            Notification::make()->title('Zadej e-mail, na který se má doklad poslat')->warning()->send();
 
             return;
         }
@@ -303,13 +311,13 @@ class EditZakazka extends EditRecord
     }
 
     /** Pošle vytvořenou fakturu zákazníkovi e-mailem (PDF příloha). */
-    private function odesliFakturuEmailem(\App\Models\Faktura $f): void
+    private function odesliFakturuEmailem(\App\Models\Faktura $f, ?string $email = null): void
     {
-        $email = $f->zakaznik?->email;
+        $email = $email ?: $f->zakaznik?->email;
 
         if (! $email) {
             Notification::make()->title('Faktura ' . $f->cislo . ' vytvořena')
-                ->body('Zákazník nemá e-mail – fakturu pošli ručně.')->success()->send();
+                ->body('Zadej e-mail, na který se má faktura poslat.')->success()->send();
 
             return;
         }
@@ -327,13 +335,13 @@ class EditZakazka extends EditRecord
     }
 
     /** Po uzavření zakázky pošle zákazníkovi servisní protokol v PDF (fakturu ne – ta jde zvlášť). */
-    private function odesliProtokolEmailem(): void
+    private function odesliProtokolEmailem(?string $email = null): void
     {
         $z = $this->record->fresh();
-        $zk = $z->zakaznik;
+        $email = $email ?: $z->zakaznik?->email;
 
-        if (! $zk?->email) {
-            Notification::make()->title('Zákazník nemá e-mail – protokol pošli ručně')->warning()->send();
+        if (! $email) {
+            Notification::make()->title('Zadej e-mail, na který se má protokol poslat')->warning()->send();
 
             return;
         }
@@ -344,9 +352,9 @@ class EditZakazka extends EditRecord
                     => (new \App\Http\Controllers\TiskController)->servisniProtokol($z)->getContent(),
             ];
 
-            \Illuminate\Support\Facades\Mail::to($zk->email)->send(new \App\Mail\ProtokolZakazky($z, $prilohy));
+            \Illuminate\Support\Facades\Mail::to($email)->send(new \App\Mail\ProtokolZakazky($z, $prilohy));
 
-            Notification::make()->title('Servisní protokol odeslán na ' . $zk->email)->success()->send();
+            Notification::make()->title('Servisní protokol odeslán na ' . $email)->success()->send();
         } catch (\Throwable $e) {
             Notification::make()->title('Protokol se nepodařilo odeslat e-mailem')
                 ->body('Zakázka je uzavřená, protokol pošli ručně. ' . $e->getMessage())
