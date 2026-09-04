@@ -73,7 +73,9 @@
             var pk = prepPublicKey(await r.json());
             var cred = await navigator.credentials.get({ publicKey: pk });
             var res = await post("/passkey/login", serialize(cred));
-            return res.status === 204 || res.ok;
+            if (!res.ok) return false;
+            var j = await res.json().catch(function () { return {}; });
+            return j.redirect || true;
         },
     };
 })();

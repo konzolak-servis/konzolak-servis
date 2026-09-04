@@ -189,8 +189,8 @@ class AdminPanelProvider extends PanelProvider
                                 if (!window.KsPasskey) { msg.textContent = 'Načítám…'; return; }
                                 msg.textContent = ''; btn.disabled = true; btn.style.opacity = '.6';
                                 try {
-                                    var ok = await window.KsPasskey.login();
-                                    if (ok) { window.location.href = '/admin'; return; }
+                                    var r = await window.KsPasskey.login();
+                                    if (r) { window.location.href = (typeof r === 'string') ? r : '/admin'; return; }
                                     msg.textContent = 'Přihlášení se nezdařilo.';
                                 } catch (e) {
                                     msg.textContent = (e && e.name === 'NotAllowedError')

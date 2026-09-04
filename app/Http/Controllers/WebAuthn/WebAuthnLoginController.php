@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\WebAuthn;
 
+use Filament\Facades\Filament;
 use Illuminate\Contracts\Support\Responsable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Laragear\WebAuthn\Http\Requests\AssertedRequest;
 use Laragear\WebAuthn\Http\Requests\AssertionRequest;
@@ -20,10 +22,18 @@ class WebAuthnLoginController
     }
 
     /**
-     * Log the user in.
+     * Log the user in – po úspěchu vrátí cílovou URL (zamýšlená stránka, jinak nástěnka).
      */
-    public function login(AssertedRequest $request): Response
+    public function login(AssertedRequest $request): Response|JsonResponse
     {
-        return response()->noContent($request->login() ? 204 : 422);
+        if (! $request->login()) {
+            return response()->noContent(422);
+        }
+
+        $intended = $request->session()->pull('url.intended');
+
+        return response()->json([
+            'redirect' => $intended ?: Filament::getUrl(),
+        ]);
     }
 }
