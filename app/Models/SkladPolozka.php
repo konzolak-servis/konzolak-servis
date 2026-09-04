@@ -28,6 +28,11 @@ class SkladPolozka extends Model
         return $this->min_mnozstvi > 0 && $this->mnozstvi_skladem <= $this->min_mnozstvi;
     }
 
+    public function getPlatformaNazevAttribute(): string
+    {
+        return \App\Support\Platformy::label($this->platforma);
+    }
+
     /**
      * Příjem na sklad – přepočítá vážený průměr ceny za kus a zvýší množství.
      * Vytvoří skladový pohyb typu "prijem".

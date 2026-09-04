@@ -23,8 +23,8 @@ class ObchodsTable
                     ->formatStateUsing(fn ($state) => $state === 'vykup' ? 'Výkup' : 'Prodej')
                     ->color(fn ($state) => $state === 'vykup' ? 'warning' : 'success'),
                 TextColumn::make('datum')->label('Datum')->date('d.m.Y')->sortable(),
-                TextColumn::make('kategorie')->label('Kategorie')->badge()
-                    ->formatStateUsing(fn ($state) => Obchod::KATEGORIE[$state] ?? $state),
+                TextColumn::make('kategorie')->label('Platforma')->badge()
+                    ->formatStateUsing(fn ($state) => \App\Support\Platformy::label($state)),
                 TextColumn::make('nazev')->label('Označení')->searchable()->wrap(),
                 TextColumn::make('protistrana_jmeno')->label('Protistrana')->searchable()->toggleable(),
                 TextColumn::make('cena')->label('Cena')->money('CZK')->sortable(),
@@ -33,7 +33,7 @@ class ObchodsTable
             ->filters([
                 SelectFilter::make('typ')->label('Typ')
                     ->options(['vykup' => 'Výkup', 'prodej' => 'Prodej']),
-                SelectFilter::make('kategorie')->label('Kategorie')->options(Obchod::KATEGORIE),
+                SelectFilter::make('kategorie')->label('Platforma')->options(\App\Support\Platformy::HODNOTY),
             ])
             ->defaultSort('datum', 'desc')
             ->recordActions([

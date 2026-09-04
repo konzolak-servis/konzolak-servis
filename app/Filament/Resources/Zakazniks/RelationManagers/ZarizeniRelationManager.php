@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Zakazniks\RelationManagers;
 
-use App\Models\Zarizeni;
+use App\Support\Platformy;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -41,8 +41,8 @@ class ZarizeniRelationManager extends RelationManager
                     })
                     ->helperText('Vyplní označení i kategorii. Nenajdeš? Napiš ručně.'),
                 Select::make('kategorie')
-                    ->label('Kategorie')
-                    ->options(Zarizeni::KATEGORIE)
+                    ->label('Platforma / kategorie')
+                    ->options(Platformy::volby())
                     ->searchable(),
                 TextInput::make('oznaceni')
                     ->label('Označení')
@@ -59,7 +59,8 @@ class ZarizeniRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('oznaceni')
             ->columns([
-                TextColumn::make('kategorie')->label('Kategorie')->badge(),
+                TextColumn::make('kategorie')->label('Platforma')->badge()
+                    ->formatStateUsing(fn ($state) => Platformy::label($state)),
                 TextColumn::make('oznaceni')->label('Označení')->searchable(),
                 TextColumn::make('seriove_cislo')->label('Sériové číslo')->searchable(),
                 TextColumn::make('zakazky_count')->label('Oprav')->counts('zakazky')->badge(),

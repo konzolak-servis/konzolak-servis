@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\CenikPolozkas\Schemas;
 
+use App\Support\Platformy;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
@@ -13,9 +15,10 @@ class CenikPolozkaForm
         return $schema
             ->columns(2)
             ->components([
-                TextInput::make('kategorie')
-                    ->label('Kategorie')
-                    ->datalist(['Ovladač', 'Obecné', 'PS4', 'PS5', 'Nintendo Switch', 'Xbox', 'PC']),
+                Select::make('kategorie')
+                    ->label('Platforma / kategorie')
+                    ->options(Platformy::volby())
+                    ->searchable(),
                 TextInput::make('nazev')->label('Název úkonu')->required()->maxLength(255),
                 TextInput::make('cena')->label('Cena')->numeric()->default(0)->required()->suffix('Kč'),
                 TextInput::make('poradi')->label('Pořadí')->numeric()->default(0),

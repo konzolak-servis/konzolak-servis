@@ -15,4 +15,9 @@ class CenikPolozka extends Model
         'aktivni' => 'boolean',
         'poradi' => 'integer',
     ];
+
+    public function getKategorieNazevAttribute(): string
+    {
+        return \App\Support\Platformy::label($this->kategorie);
+    }
 }

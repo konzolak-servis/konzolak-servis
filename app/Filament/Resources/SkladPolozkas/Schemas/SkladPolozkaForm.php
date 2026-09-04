@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\SkladPolozkas\Schemas;
 
+use App\Support\Platformy;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
@@ -19,8 +21,12 @@ class SkladPolozkaForm
                     ->schema([
                         TextInput::make('nazev')->label('Název')->required()->maxLength(255)->columnSpanFull(),
                         TextInput::make('kod')->label('Kód / označení')->maxLength(255),
-                        TextInput::make('kategorie')->label('Kategorie')
-                            ->datalist(['HDMI IC', 'Laser', 'Ventilátor', 'Potenciometr', 'SSD', 'HDD', 'Baterie', 'Ostatní']),
+                        Select::make('platforma')->label('Platforma')
+                            ->options(Platformy::volby())
+                            ->searchable()
+                            ->helperText('Pro jakou konzoli / PC je díl určený.'),
+                        TextInput::make('kategorie')->label('Typ dílu')
+                            ->datalist(['HDMI IC', 'Laser', 'Ventilátor', 'Potenciometr', 'Konektor', 'SSD', 'HDD', 'Baterie', 'Kabeláž', 'Ostatní']),
                         TextInput::make('umisteni')->label('Umístění')->maxLength(255),
                     ]),
                 Section::make('Zásoby a cena')

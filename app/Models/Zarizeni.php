@@ -12,16 +12,8 @@ class Zarizeni extends Model
 
     protected $guarded = [];
 
-    public const KATEGORIE = [
-        'PS5' => 'PlayStation 5',
-        'PS4' => 'PlayStation 4',
-        'PS3' => 'PlayStation 3',
-        'Switch' => 'Nintendo Switch',
-        'Xbox' => 'Xbox',
-        'ovladac' => 'Ovladač',
-        'PC' => 'PC / notebook',
-        'jine' => 'Jiné',
-    ];
+    /** Jednotný číselník platforem – viz App\Support\Platformy. */
+    public const KATEGORIE = \App\Support\Platformy::HODNOTY;
 
     public function zakaznik(): BelongsTo
     {

@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Zarizenis\Schemas;
 
-use App\Models\Zarizeni;
+use App\Support\Platformy;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -23,8 +23,8 @@ class ZarizeniForm
                     ->preload()
                     ->required(),
                 Select::make('kategorie')
-                    ->label('Kategorie')
-                    ->options(Zarizeni::KATEGORIE)
+                    ->label('Platforma / kategorie')
+                    ->options(Platformy::volby())
                     ->searchable(),
                 TextInput::make('oznaceni')
                     ->label('Označení')

@@ -19,12 +19,8 @@ class Obchod extends Model
         'vyrizeno' => 'boolean',
     ];
 
-    public const KATEGORIE = [
-        'ovladac' => 'Ovladač',
-        'konzole' => 'Konzole',
-        'PC' => 'PC / notebook',
-        'jine' => 'Jiné',
-    ];
+    /** Jednotný číselník platforem – viz App\Support\Platformy. */
+    public const KATEGORIE = \App\Support\Platformy::HODNOTY;
 
     public const ZPUSOBY_UHRADY = ['hotove' => 'Hotově', 'ucet' => 'Na účet'];
 
@@ -68,6 +64,7 @@ class Obchod extends Model
                 $sklad = $this->skladPolozka ?? SkladPolozka::create([
                     'nazev' => $this->nazev,
                     'kategorie' => 'Bazar',
+                    'platforma' => $this->kategorie,
                 ]);
                 $sklad->prijem(1, (float) $this->cena, [
                     'zdroj' => 'obchod',

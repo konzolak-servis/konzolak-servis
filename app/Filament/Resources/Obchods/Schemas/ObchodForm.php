@@ -35,8 +35,9 @@ class ObchodForm
                         DatePicker::make('datum')->label('Datum')->default(now())->native(false),
 
                         Select::make('kategorie')
-                            ->label('Kategorie')
-                            ->options(Obchod::KATEGORIE)
+                            ->label('Platforma / kategorie')
+                            ->options(\App\Support\Platformy::volby())
+                            ->searchable()
                             ->required(),
                         TextInput::make('nazev')
                             ->label('Označení')

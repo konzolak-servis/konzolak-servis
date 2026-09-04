@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\CenikPolozkas\Tables;
 
+use App\Support\Platformy;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class CenikPolozkasTable
@@ -15,10 +17,14 @@ class CenikPolozkasTable
     {
         return $table
             ->columns([
-                TextColumn::make('kategorie')->label('Kategorie')->badge()->searchable()->sortable(),
+                TextColumn::make('kategorie')->label('Platforma / kategorie')->badge()->sortable()
+                    ->formatStateUsing(fn ($state) => Platformy::label($state)),
                 TextColumn::make('nazev')->label('Název úkonu')->searchable()->wrap(),
                 TextColumn::make('cena')->label('Cena')->money('CZK')->sortable(),
                 IconColumn::make('aktivni')->label('Aktivní')->boolean(),
+            ])
+            ->filters([
+                SelectFilter::make('kategorie')->label('Platforma / kategorie')->options(Platformy::HODNOTY),
             ])
             ->defaultSort('kategorie')
             ->reorderable('poradi')

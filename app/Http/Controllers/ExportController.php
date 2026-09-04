@@ -15,6 +15,7 @@ class ExportController extends Controller
         $rows = SkladPolozka::orderBy('nazev')->get()->map(fn ($s) => [
             $s->nazev,
             $s->kod,
+            \App\Support\Platformy::label($s->platforma),
             $s->kategorie,
             $this->cislo($s->mnozstvi_skladem, 3),
             $this->cislo($s->min_mnozstvi, 3),
@@ -25,7 +26,7 @@ class ExportController extends Controller
         ]);
 
         return $this->csv('sklad_' . now()->format('Y-m-d'), [
-            'Název', 'Kód', 'Kategorie', 'Množství skladem', 'Min. množství',
+            'Název', 'Kód', 'Platforma', 'Typ dílu', 'Množství skladem', 'Min. množství',
             'Cena/ks (Ø)', 'Hodnota skladem', 'Umístění', 'Pod minimem',
         ], $rows);
     }

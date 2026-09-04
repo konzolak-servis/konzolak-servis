@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\KatalogZarizenis\Tables;
 
-use App\Models\Zarizeni;
+use App\Support\Platformy;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -19,8 +19,8 @@ class KatalogZarizenisTable
         return $table
             ->columns([
                 SelectColumn::make('kategorie')
-                    ->label('Kategorie')
-                    ->options(Zarizeni::KATEGORIE)
+                    ->label('Platforma')
+                    ->options(Platformy::HODNOTY)
                     ->selectablePlaceholder(false)
                     ->rules(['required'])
                     ->width('1%'),
@@ -36,7 +36,7 @@ class KatalogZarizenisTable
                     ->width('1%'),
             ])
             ->filters([
-                SelectFilter::make('kategorie')->label('Kategorie')->options(Zarizeni::KATEGORIE),
+                SelectFilter::make('kategorie')->label('Platforma')->options(Platformy::HODNOTY),
             ])
             ->defaultSort('poradi')
             ->reorderable('poradi')

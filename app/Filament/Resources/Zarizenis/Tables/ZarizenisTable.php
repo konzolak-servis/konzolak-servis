@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Zarizenis\Tables;
 
-use App\Models\Zarizeni;
+use App\Support\Platformy;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -23,14 +23,14 @@ class ZarizenisTable
                     ->url(fn ($record) => $record->zakaznik
                         ? \App\Filament\Resources\Zakazniks\ZakaznikResource::getUrl('edit', ['record' => $record->zakaznik_id])
                         : null),
-                TextColumn::make('kategorie')->label('Kategorie')->badge()
-                    ->formatStateUsing(fn ($state) => Zarizeni::KATEGORIE[$state] ?? $state),
+                TextColumn::make('kategorie')->label('Platforma')->badge()
+                    ->formatStateUsing(fn ($state) => Platformy::label($state)),
                 TextColumn::make('oznaceni')->label('Označení')->searchable(),
                 TextColumn::make('seriove_cislo')->label('Sériové číslo')->searchable(),
                 TextColumn::make('zakazky_count')->label('Oprav')->counts('zakazky')->badge(),
             ])
             ->filters([
-                SelectFilter::make('kategorie')->label('Kategorie')->options(Zarizeni::KATEGORIE),
+                SelectFilter::make('kategorie')->label('Platforma')->options(Platformy::HODNOTY),
             ])
             ->recordActions([
                 EditAction::make(),

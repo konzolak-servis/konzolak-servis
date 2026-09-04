@@ -37,7 +37,7 @@ class ListCenikPolozkas extends ListRecords
 
         foreach ($kategorie as $nazev => $pocet) {
             $kat = (string) $nazev;
-            $tabs[Str::slug($kat)] = Tab::make($kat)
+            $tabs[Str::slug($kat) ?: $kat] = Tab::make(\App\Support\Platformy::label($kat))
                 ->badge($pocet)
                 ->modifyQueryUsing(function (Builder $query) use ($kat): Builder {
                     return $query->where('kategorie', $kat);

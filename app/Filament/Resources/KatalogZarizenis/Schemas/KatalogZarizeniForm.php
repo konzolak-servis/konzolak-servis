@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\KatalogZarizenis\Schemas;
 
-use App\Models\Zarizeni;
+use App\Support\Platformy;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -13,7 +13,7 @@ class KatalogZarizeniForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->columns(2)->components([
-            Select::make('kategorie')->label('Kategorie')->options(Zarizeni::KATEGORIE)->required(),
+            Select::make('kategorie')->label('Platforma / kategorie')->options(Platformy::volby())->searchable()->required(),
             TextInput::make('nazev')->label('Název modelu')->required()
                 ->placeholder('např. PlayStation 5 Slim (disková)'),
             TextInput::make('model_kod')->label('Kód modelu (nepovinné)')->placeholder('CFI-20xx'),
