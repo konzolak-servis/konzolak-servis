@@ -62,6 +62,7 @@ class AdminPanelProvider extends PanelProvider
                     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
                     <meta name="apple-mobile-web-app-title" content="Konzolák">
                     <link rel="apple-touch-icon" href="/icons/icon-192.png">
+                    <script src="/js/ks-passkey.js" defer></script>
                     <script>
                         if ('serviceWorker' in navigator) {
                             window.addEventListener('load', function () {
@@ -158,6 +159,45 @@ class AdminPanelProvider extends PanelProvider
                         .fi-input-wrp:has(input[inputmode="numeric"]),
                         .fi-input-wrp:has(input[type="number"]){ min-width:7rem; }
                     </style>
+                HTML)
+            )
+            ->renderHook(
+                PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
+                fn (): HtmlString => new HtmlString(<<<'HTML'
+                    <div id="ks-passkey-wrap" style="margin-top:1rem; text-align:center; display:none;">
+                        <div style="display:flex; align-items:center; gap:.75rem; color:#9aa3b2; font-size:.8rem; margin:.25rem 0 .75rem;">
+                            <span style="flex:1; height:1px; background:currentColor; opacity:.3;"></span>nebo<span style="flex:1; height:1px; background:currentColor; opacity:.3;"></span>
+                        </div>
+                        <button type="button" id="ks-passkey-btn"
+                            style="width:100%; padding:.65rem 1rem; border-radius:.6rem; border:1px solid rgba(200,153,46,.5);
+                                   background:transparent; color:#E8C77C; font-weight:600; cursor:pointer; display:flex;
+                                   align-items:center; justify-content:center; gap:.5rem;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 11c0-3 2-4 2-4"/><path d="M7 8a5 5 0 0 1 10 0v3"/><path d="M7 12v3a5 5 0 0 0 .5 2"/><path d="M12 12v4"/><path d="M17 14v1a7 7 0 0 1-1 3.5"/></svg>
+                            Přihlásit se otiskem (passkey)
+                        </button>
+                        <p id="ks-passkey-msg" style="font-size:.8rem; color:#f87171; margin:.5rem 0 0; min-height:1rem;"></p>
+                    </div>
+                    <script>
+                        (function () {
+                            var wrap = document.getElementById('ks-passkey-wrap');
+                            var btn = document.getElementById('ks-passkey-btn');
+                            var msg = document.getElementById('ks-passkey-msg');
+                            if (!wrap || !btn) return;
+                            function show() { if (window.KsPasskey && window.KsPasskey.supported) wrap.style.display = 'block'; }
+                            document.addEventListener('DOMContentLoaded', show); show();
+                            btn.addEventListener('click', async function () {
+                                msg.textContent = ''; btn.disabled = true; btn.style.opacity = '.6';
+                                try {
+                                    var ok = await window.KsPasskey.login();
+                                    if (ok) { window.location.href = '/admin'; return; }
+                                    msg.textContent = 'Přihlášení se nezdařilo.';
+                                } catch (e) {
+                                    msg.textContent = (e && e.name === 'NotAllowedError') ? 'Zrušeno nebo vypršel čas.' : 'Passkey se nepodařilo použít.';
+                                }
+                                btn.disabled = false; btn.style.opacity = '1';
+                            });
+                        })();
+                    </script>
                 HTML)
             )
             ->middleware([

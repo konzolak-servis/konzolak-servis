@@ -4,6 +4,8 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\PostaController;
 use App\Http\Controllers\TiskController;
 use App\Http\Controllers\VerejnyController;
+use App\Http\Controllers\WebAuthn\WebAuthnLoginController;
+use App\Http\Controllers\WebAuthn\WebAuthnRegisterController;
 use App\Http\Controllers\ZalohaController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +20,14 @@ Route::get('qr/zakazka/{zakazka}/{token}', [TiskController::class, 'qrZakazka'])
 
 // Veřejná stránka stavu zakázky (QR na servisním dokladu / štítku).
 Route::get('z/{zakazka}/{token}', [VerejnyController::class, 'stavZakazky'])->name('verejne.stav');
+
+// Přihlášení přes passkey / otisk (WebAuthn). Registrace jen pro přihlášeného admina.
+Route::post('passkey/login/options', [WebAuthnLoginController::class, 'options'])->name('webauthn.login.options');
+Route::post('passkey/login', [WebAuthnLoginController::class, 'login'])->name('webauthn.login');
+Route::middleware('auth')->group(function () {
+    Route::post('passkey/register/options', [WebAuthnRegisterController::class, 'options'])->name('webauthn.register.options');
+    Route::post('passkey/register', [WebAuthnRegisterController::class, 'register'])->name('webauthn.register');
+});
 
 Route::middleware(['web', 'auth'])->group(function () {
     Route::prefix('tisk')->name('tisk.')->group(function () {

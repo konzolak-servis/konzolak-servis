@@ -11,13 +11,15 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laragear\WebAuthn\Contracts\WebAuthnAuthenticatable;
+use Laragear\WebAuthn\WebAuthnAuthentication;
 
 #[Fillable(['name', 'osloveni', 'email', 'password', 'je_admin'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, WebAuthnAuthentication;
 
     /**
      * Get the attributes that should be cast.
