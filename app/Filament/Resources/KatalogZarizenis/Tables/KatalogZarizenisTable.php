@@ -6,7 +6,8 @@ use App\Support\Platformy;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Tables\Columns\SelectColumn;
+use Filament\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -18,17 +19,21 @@ class KatalogZarizenisTable
     {
         return $table
             ->columns([
-                SelectColumn::make('kategorie')
-                    ->label('Platforma')
-                    ->options(Platformy::HODNOTY)
-                    ->selectablePlaceholder(false)
-                    ->rules(['required'])
+                TextInputColumn::make('poradi')
+                    ->label('#')
+                    ->type('number')
+                    ->rules(['numeric'])
+                    ->sortable()
                     ->width('1%'),
-                TextInputColumn::make('nazev')
+                TextColumn::make('kategorie')
+                    ->label('Platforma')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => Platformy::label($state))
+                    ->sortable(),
+                TextColumn::make('nazev')
                     ->label('Model')
-                    ->rules(['required', 'max:255'])
                     ->searchable(),
-                TextInputColumn::make('model_kod')
+                TextColumn::make('model_kod')
                     ->label('Kód modelu')
                     ->searchable(),
                 ToggleColumn::make('aktivni')
@@ -39,10 +44,10 @@ class KatalogZarizenisTable
                 SelectFilter::make('kategorie')->label('Platforma')->options(Platformy::HODNOTY),
             ])
             ->defaultSort('poradi')
-            ->reorderable('poradi')
             ->paginated([25, 50, 100, 'all'])
             ->defaultPaginationPageOption('all')
             ->recordActions([
+                EditAction::make()->iconButton(),
                 DeleteAction::make()->iconButton(),
             ])
             ->toolbarActions([
