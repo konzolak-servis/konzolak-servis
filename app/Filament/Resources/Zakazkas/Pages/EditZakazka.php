@@ -297,19 +297,17 @@ class EditZakazka extends EditRecord
     private function odesliDokladEmailem(?string $email = null): void
     {
         $z = $this->record->fresh();
-        $email = $email ?: $z->zakaznik?->email;
-
-        if (! $email) {
-            Notification::make()->title('Zadej e-mail, na který se má doklad poslat')->warning()->send();
-
-            return;
-        }
 
         try {
-            $pdf = (new \App\Http\Controllers\TiskController)->servisniDoklad($z)->getContent();
-            \Illuminate\Support\Facades\Mail::to($email)->send(new \App\Mail\DokladZakazky($z, $pdf));
+            $poslanoNa = \App\Support\ZakazkaMailer::posliDoklad($z, $email);
 
-            Notification::make()->title('Doklad o převzetí odeslán na ' . $email)->success()->send();
+            if (! $poslanoNa) {
+                Notification::make()->title('Zadej e-mail, na který se má doklad poslat')->warning()->send();
+
+                return;
+            }
+
+            Notification::make()->title('Doklad o převzetí odeslán na ' . $poslanoNa)->success()->send();
         } catch (\Throwable $e) {
             Notification::make()->title('Doklad se nepodařilo odeslat e-mailem')
                 ->body('Pošli ho ručně. ' . $e->getMessage())->danger()->send();
