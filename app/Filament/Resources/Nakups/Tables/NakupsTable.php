@@ -20,6 +20,7 @@ class NakupsTable
                 TextColumn::make('datum')->label('Datum')->date('d.m.Y')->sortable(),
                 TextColumn::make('dodavatel')->label('Dodavatel')->badge()->searchable(),
                 TextColumn::make('polozky_count')->label('Položek')->counts('polozky'),
+                TextColumn::make('postovne')->label('Poštovné')->money('CZK')->toggleable()->placeholder('—'),
                 TextColumn::make('celkem')->label('Celkem')->money('CZK')->sortable(),
                 IconColumn::make('doklad_soubor')->label('Doklad')
                     ->state(fn ($record) => filled($record->doklad_soubor))
@@ -36,7 +37,7 @@ class NakupsTable
                     ->color('success')
                     ->visible(fn ($record) => ! $record->naskladneno && $record->polozky()->exists())
                     ->requiresConfirmation()
-                    ->modalDescription('Přidá kusy na sklad, přepočítá vážený průměr ceny a zapíše výdaj do peněžního deníku. Nelze vzít zpět.')
+                    ->modalDescription('Přidá kusy na sklad v ceně podle položky (bez poštovného), přepočítá vážený průměr a do peněžního deníku zapíše výdaj = položky + poštovné. Nelze vzít zpět.')
                     ->action(fn ($record) => $record->naskladnit()),
                 EditAction::make(),
             ])

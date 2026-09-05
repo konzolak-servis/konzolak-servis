@@ -40,16 +40,33 @@ class ExportController extends Controller
             ->whereYear('datum', $rok)
             ->orderBy('datum')
             ->get()
-            ->flatMap(fn (Nakup $n) => $n->polozky->map(fn ($p) => [
-                optional($n->datum)->format('d.m.Y'),
-                $n->cislo,
-                $n->dodavatel,
-                $p->nazev,
-                $this->cislo($p->mnozstvi_ks, 3),
-                $this->cislo($p->cena_ks),
-                $this->cislo($p->castka_celkem),
-                $n->naskladneno ? 'ano' : 'ne',
-            ]));
+            ->flatMap(function (Nakup $n) {
+                $radky = $n->polozky->map(fn ($p) => [
+                    optional($n->datum)->format('d.m.Y'),
+                    $n->cislo,
+                    $n->dodavatel,
+                    $p->nazev,
+                    $this->cislo($p->mnozstvi_ks, 3),
+                    $this->cislo($p->cena_ks),
+                    $this->cislo($p->castka_celkem),
+                    $n->naskladneno ? 'ano' : 'ne',
+                ]);
+
+                if ($n->postovne > 0) {
+                    $radky->push([
+                        optional($n->datum)->format('d.m.Y'),
+                        $n->cislo,
+                        $n->dodavatel,
+                        'Poštovné / doprava',
+                        '',
+                        '',
+                        $this->cislo($n->postovne),
+                        $n->naskladneno ? 'ano' : 'ne',
+                    ]);
+                }
+
+                return $radky;
+            });
 
         return $this->csv("naklady_{$rok}", [
             'Datum', 'Doklad', 'Dodavatel', 'Položka', 'Počet ks', 'Cena/ks', 'Částka celkem', 'Naskladněno',

@@ -24,12 +24,15 @@ class NakupForm
                         DatePicker::make('datum')->label('Datum')->default(now())->native(false),
                         TextInput::make('dodavatel')->label('Dodavatel')
                             ->datalist(['Alza', 'Allegro', 'Konzoliste', 'Hadex', 'AliExpress', 'GM Electronic']),
-                        TextInput::make('celkem')->label('Celková částka nákupu')->numeric()->suffix('Kč')
-                            ->helperText('Nepovinné – když nevyplníš, sečte se z položek.'),
+                        TextInput::make('postovne')->label('Poštovné / doprava')->numeric()->default(0)->suffix('Kč')
+                            ->helperText('Připočte se k výdaji v peněžním deníku, ale nerozpočítá se do skladové ceny kusů.'),
+                        TextInput::make('celkem')->label('Celkem (položky + poštovné)')->numeric()->suffix('Kč')
+                            ->disabled()->dehydrated(false)
+                            ->helperText('Dopočítá se automaticky při naskladnění.'),
                         Textarea::make('poznamka')->label('Poznámka')->rows(2)->columnSpanFull(),
                         Placeholder::make('info')
                             ->label('')
-                            ->content('Položky přidej po uložení na záložce „Položky". Tlačítkem „Naskladnit" se kusy přidají na sklad, přepočítá se vážený průměr ceny a částka se zapíše do výdajů v peněžním deníku.')
+                            ->content('Položky (co a za kolik) přidej po uložení na záložce „Položky". Tlačítkem „Naskladnit" se kusy přidají na sklad v ceně za kus podle položky (bez poštovného), přepočítá se vážený průměr a do peněžního deníku se zapíše výdaj = položky + poštovné.')
                             ->columnSpanFull(),
                     ]),
 

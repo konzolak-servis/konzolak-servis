@@ -16,6 +16,7 @@ class Nakup extends Model
     protected $casts = [
         'datum' => 'date',
         'celkem' => 'decimal:2',
+        'postovne' => 'decimal:2',
         'naskladneno' => 'boolean',
     ];
 
@@ -38,8 +39,9 @@ class Nakup extends Model
     }
 
     /**
-     * Naskladní všechny položky (příjem + přepočet váženého průměru)
-     * a zapíše celkovou částku jako výdaj do peněžního deníku.
+     * Naskladní všechny položky (příjem + přepočet váženého průměru) a zapíše výdaj
+     * do peněžního deníku. Poštovné se NEROZPOČÍTÁVÁ do skladové ceny kusů (ta zůstává
+     * čistě podle částky u položky) – ale připočte se k celkovému výdaji v deníku.
      */
     public function naskladnit(): void
     {
@@ -65,14 +67,14 @@ class Nakup extends Model
                 }
             }
 
-            $castka = $this->celkem > 0
-                ? (float) $this->celkem
-                : (float) $this->polozky()->sum('castka_celkem');
+            $polozkyCelkem = (float) $this->polozky()->sum('castka_celkem');
+            $castka = $polozkyCelkem + (float) $this->postovne;
 
             PenezniDenik::create([
                 'datum' => $this->datum?->toDateString() ?? now()->toDateString(),
                 'typ' => 'vydej',
-                'popis' => 'Nákup ' . $this->cislo . ($this->dodavatel ? ' – ' . $this->dodavatel : ''),
+                'popis' => 'Nákup ' . $this->cislo . ($this->dodavatel ? ' – ' . $this->dodavatel : '')
+                    . ($this->postovne > 0 ? ' (vč. poštovného ' . number_format((float) $this->postovne, 0, ',', ' ') . ' Kč)' : ''),
                 'castka' => $castka,
                 'kategorie' => 'Materiál',
                 'kde' => $this->dodavatel,
