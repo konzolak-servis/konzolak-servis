@@ -23,7 +23,7 @@ class Posta
         $predmet = $d['subject'] ?? '';
         $telo = $d['text'] ?? '';
 
-        [$zakazka, $zakaznik] = self::najdiZakazku($od, $predmet . ' ' . $telo);
+        [$zakazka, $zakaznik] = self::najdiZakazku($od, $predmet . ' ' . $telo, $d);
 
         return Zprava::create([
             'smer' => 'in',
@@ -45,28 +45,50 @@ class Posta
         ]);
     }
 
-    /** Spárování: podle čísla zakázky v textu (SL-2026-0001) nebo podle e-mailu zákazníka. */
-    public static function najdiZakazku(string $od, string $text): array
+    /**
+     * Spárování zprávy. K zakázce se přiřadí JEN při jasném signálu:
+     *   1) číslo zakázky (SL-2026-0001) v předmětu / textu,
+     *   2) skutečná odpověď – hlavička In-Reply-To / References ukazuje na náš
+     *      dřívější e-mail, který zakázku měl.
+     * Jinak se zpráva naváže pouze na zákazníka (podle e-mailu) a zakázku
+     * si přiřadíš ručně tlačítkem „Přiřadit k zakázce".
+     *
+     * @param  array<string, mixed>  $d  celý příchozí payload (kvůli reply-hlavičkám)
+     * @return array{0: ?Zakazka, 1: ?Zakaznik}
+     */
+    public static function najdiZakazku(string $od, string $text, array $d = []): array
     {
+        $zakaznik = $od
+            ? Zakaznik::whereRaw('LOWER(email) = ?', [$od])->first()
+            : null;
+
+        // 1) číslo zakázky přímo ve zprávě
         if (preg_match('/\bSL-\d{4}-\d{3,}\b/i', $text, $m)) {
             $z = Zakazka::where('cislo', strtoupper($m[0]))->first();
             if ($z) {
-                return [$z, $z->zakaznik];
+                return [$z, $z->zakaznik ?? $zakaznik];
             }
         }
 
-        if ($od) {
-            $zakaznik = Zakaznik::whereRaw('LOWER(email) = ?', [$od])->first();
-            if ($zakaznik) {
-                $z = Zakazka::where('zakaznik_id', $zakaznik->id)
-                    ->orderByDesc('id')
-                    ->first();
+        // 2) odpověď na náš dřívější e-mail
+        $reply = collect([
+            $d['inReplyTo'] ?? null,
+            ...preg_split('/\s+/', trim((string) ($d['references'] ?? ''))) ?: [],
+        ])->filter()->unique();
 
-                return [$z, $zakaznik];
+        if ($reply->isNotEmpty()) {
+            $puvodni = Zprava::whereIn('message_id', $reply->all())
+                ->whereNotNull('zakazka_id')
+                ->orderByDesc('id')
+                ->first();
+
+            if ($puvodni?->zakazka) {
+                return [$puvodni->zakazka, $puvodni->zakazka->zakaznik ?? $zakaznik];
             }
         }
 
-        return [null, null];
+        // 3) nic jistého – jen zákazník, zakázka zůstane nepřiřazená
+        return [null, $zakaznik];
     }
 
     /**
