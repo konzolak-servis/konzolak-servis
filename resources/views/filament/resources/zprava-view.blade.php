@@ -41,7 +41,12 @@
                             <span class="ks-msg-addr">{{ $m->od_jmeno ? $m->od_jmeno . ' · ' : '' }}{{ $m->od }}</span>
                         @endif
                     </div>
-                    <div class="ks-msg-date">{{ $m->datum?->format('d.m.Y H:i') }}</div>
+                    <div class="ks-msg-meta">
+                        <span class="ks-msg-date">{{ $m->datum?->format('d.m.Y H:i') }}</span>
+                        <button type="button" class="ks-msg-del"
+                            wire:click="smazatZpravu({{ $m->id }})"
+                            wire:confirm="Opravdu smazat tuto zprávu? Nelze vzít zpět.">smazat</button>
+                    </div>
                 </div>
 
                 @if ($m->predmet && $m->predmet !== $aktualni->predmet)
@@ -93,7 +98,12 @@
         :is(.dark) .ks-msg-dir--out { color:#6ee7b7; }
         .ks-msg-addr { font-size:.85rem; color:#374151; word-break:break-all; }
         :is(.dark) .ks-msg-addr { color:#d1d5db; }
-        .ks-msg-date { font-size:.78rem; color:#9ca3af; white-space:nowrap; }
+        .ks-msg-meta { display:flex; align-items:center; gap:.6rem; white-space:nowrap; }
+        .ks-msg-date { font-size:.78rem; color:#9ca3af; }
+        .ks-msg-del { font-size:.72rem; color:#b91c1c; background:none; border:0; cursor:pointer;
+            padding:.1rem .3rem; border-radius:.3rem; opacity:.55; }
+        .ks-msg-del:hover { opacity:1; background:rgba(185,28,28,.1); text-decoration:underline; }
+        :is(.dark) .ks-msg-del { color:#fca5a5; }
         .ks-msg-subj { margin-top:.4rem; font-size:.8rem; color:#6b7280; font-style:italic; }
         .ks-msg-body { margin-top:.6rem; white-space:pre-wrap; word-wrap:break-word; font-size:.92rem;
             line-height:1.55; color:#1f2937; }

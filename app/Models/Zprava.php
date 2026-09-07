@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Zprava extends Model
 {
@@ -17,6 +18,16 @@ class Zprava extends Model
         'spam' => 'boolean',
         'prilohy' => 'array',
     ];
+
+    protected static function booted(): void
+    {
+        // Při smazání zprávy ukliď i její uložené přílohy z disku.
+        static::deleting(function (Zprava $zprava) {
+            if (is_array($zprava->prilohy) && $zprava->prilohy !== []) {
+                Storage::disk('local')->deleteDirectory('posta/' . $zprava->id);
+            }
+        });
+    }
 
     public function zakazka(): BelongsTo
     {

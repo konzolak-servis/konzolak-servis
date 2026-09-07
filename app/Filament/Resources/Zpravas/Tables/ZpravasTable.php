@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Zpravas\Tables;
 
 use App\Models\Zprava;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
@@ -60,6 +61,7 @@ class ZpravasTable
             ->defaultSort('datum', 'desc')
             ->recordActions([
                 ViewAction::make()->label('Otevřít'),
+                DeleteAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

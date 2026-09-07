@@ -53,7 +53,26 @@ class ViewZprava extends ViewRecord
             });
         }
 
-        return $q->orderBy('datum')->orderBy('id')->get();
+        return $q->orderByDesc('datum')->orderByDesc('id')->get();
+    }
+
+    /** Smazání jedné zprávy z vlákna (příchozí i odchozí). */
+    public function smazatZpravu(int $id): void
+    {
+        $z = Zprava::find($id);
+
+        if (! $z) {
+            return;
+        }
+
+        $bylaAktualni = $z->id === $this->record->id;
+        $z->delete();
+
+        Notification::make()->title('Zpráva smazána')->success()->send();
+
+        if ($bylaAktualni) {
+            $this->redirect(ZpravaResource::getUrl('index'));
+        }
     }
 
     public function getZakazkaUrl(): ?string

@@ -20,7 +20,13 @@ export default {
     try { raw = await new Response(message.raw).text(); } catch (e) { raw = ""; }
 
     const h = message.headers;
-    const parsed = parseEmail(raw, MAX_ATTACH_B64);
+
+    let parsed;
+    try {
+      parsed = parseEmail(raw, MAX_ATTACH_B64);
+    } catch (e) {
+      parsed = { from: "", fromName: "", subject: "", messageId: "", text: "", html: "", attachments: [] };
+    }
 
     const payload = {
       from: (message.from || h.get("from") || parsed.from || "").toLowerCase().trim(),
