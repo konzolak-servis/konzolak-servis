@@ -1,33 +1,23 @@
-# Cloudflare Email Worker – příjem pošty
+# Cloudflare Email Worker – `posta-servis`
 
-Přeposílá e-maily z `servis@konzolak.com` do servisního systému včetně příloh.
+Přeposílá e-maily z `servis@konzolak.com` do servisního systému **včetně příloh**
+a zároveň nechává kopii chodit na záložní Gmail.
 
-## Deploy přes dashboard (bez Node)
+## Nasazení (dashboard, bez Node)
 
-1. Cloudflare → **Workers & Pages** → otevři worker, který zpracovává poštu
-   (Email Routing → Routing rules ukazuje jeho jméno).
-2. **Edit code** → smaž obsah, vlož `worker.js` z této složky → **Deploy**.
-3. **Settings → Variables and Secrets**:
-   - Secret `POSTA_TOKEN` = stejná hodnota jako `POSTA_TOKEN` v `.env` na serveru.
-   - (volitelně) Variable `FORWARD_TO` = e-mail, kam chodit kopii (Gmail).
+1. Cloudflare → **Workers & Pages** → **posta-servis** → **Edit code**.
+2. Smaž obsah, vlož `worker.js` z této složky → **Deploy**.
+3. Proměnné už jsou nastavené a nemění se:
+   - `INGEST_TOKEN` (secret) = `POSTA_TOKEN` z `.env` na serveru
+   - `INGEST_URL` = `https://servis.konzolak.com/api/posta/prijem`
+   - `BACKUP_EMAIL` = záložní Gmail
 
-Pokud editor odmítne `import PostalMime from "postal-mime"`, použij wrangler:
+Kód nemá žádné npm závislosti – MIME se parsuje ručně, takže projde přímo
+přes dashboard editor.
 
-```bash
-npm i -g wrangler
-wrangler login
-cd deploy/cloudflare-email-worker
-npm init -y && npm i postal-mime
-wrangler deploy
-```
+## Co worker posílá
 
-(k tomu je potřeba `wrangler.toml` s `name`, `main = "worker.js"`, `compatibility_date`
-a `send_email`/`email` triggerem – doplň podle stávajícího workeru).
-
-## Payload, který worker posílá
-
-`POST https://servis.konzolak.com/api/posta/prijem`
-hlavička `X-Posta-Token: <POSTA_TOKEN>`
+`POST {INGEST_URL}` s hlavičkou `X-Posta-Token: {INGEST_TOKEN}`:
 
 ```jsonc
 {
@@ -41,11 +31,17 @@ hlavička `X-Posta-Token: <POSTA_TOKEN>`
   "inReplyTo": "<…>",
   "references": "<…> <…>",
   "date": "Sat, 07 Sep 2026 09:11:42 +0000",
+  "spam": false,
   "attachments": [
     { "filename": "faktura.pdf", "mimeType": "application/pdf", "content": "<base64>" }
   ]
 }
 ```
 
-Server přílohy dekóduje, uloží do `storage/app/private/posta/{zprava_id}/`
-a ve vlákně zprávy je nabídne ke stažení.
+## Omezení
+
+- Přílohy se berou jen z MIME částí kódovaných `base64` (což je u e-mailů standard).
+  Části v `8bit`/`binary` se přeskočí.
+- Strop na přílohy: ~18 MB base64 v jednom e-mailu (server bere do 25 MB / 30 MB post).
+- Server přílohy uloží do `storage/app/private/posta/{zprava_id}/` a nabídne ke
+  stažení ve vlákně zprávy.

@@ -1,113 +1,169 @@
 /**
  * Cloudflare Email Worker – příjem pošty pro servis@konzolak.com
- * ---------------------------------------------------------------
- * Přijme e-mail přes Cloudflare Email Routing, rozparsuje ho (včetně příloh)
- * a pošle JSON na servisní systém (POST /api/posta/prijem).
+ * Nasazení: vlož tento kód do workeru "posta-servis" → Deploy.
+ * Proměnné (Settings → Variables): INGEST_URL, INGEST_TOKEN, BACKUP_EMAIL
  *
- * Nastavení Workeru:
- *   - Secret  POSTA_TOKEN  … stejná hodnota jako POSTA_TOKEN v .env na serveru
- *   - (volitelně) Var  FORWARD_TO  … kam přeposlat kopii e-mailu (např. Gmail)
- *
- * Závislost: postal-mime  (npm) – dashboard editor si ji při Deploy zabalí sám.
+ * Bez npm závislostí – MIME se parsuje ručně, přílohy se posílají jako base64
+ * v poli `attachments`. Server je uloží a nabídne ke stažení u zprávy.
  */
-import PostalMime from "postal-mime";
-
-const ENDPOINT = "https://servis.konzolak.com/api/posta/prijem";
-
-// Strop na celkovou velikost příloh v jednom e-mailu (server bere do ~25 MB).
-const MAX_ATTACHMENTS_BYTES = 15 * 1024 * 1024;
 
 export default {
   async email(message, env, ctx) {
-    let payload;
+    const INGEST_URL = env.INGEST_URL || "https://servis.konzolak.com/api/posta/prijem";
+    const INGEST_TOKEN = env.INGEST_TOKEN || "";
+    const BACKUP_EMAIL = env.BACKUP_EMAIL || "servis.konzoli.zlin@gmail.com";
+
+    // strop na celkovou velikost příloh (v base64) v jednom e-mailu
+    const MAX_ATTACH_B64 = 18 * 1024 * 1024;
+
+    let raw = "";
+    try { raw = await new Response(message.raw).text(); } catch (e) { raw = ""; }
+
+    const h = message.headers;
+    const parsed = parseEmail(raw, MAX_ATTACH_B64);
+
+    const payload = {
+      from: (message.from || h.get("from") || parsed.from || "").toLowerCase().trim(),
+      fromName: parsed.fromName || null,
+      to: (safeTo(message) || h.get("to") || "").toLowerCase().trim(),
+      subject: decodeHeader(h.get("subject") || parsed.subject || "") || "(bez předmětu)",
+      text: parsed.text || "",
+      html: parsed.html || null,
+      messageId: (h.get("message-id") || parsed.messageId || "").trim() || null,
+      inReplyTo: (h.get("in-reply-to") || "").trim() || null,
+      references: (h.get("references") || "").trim() || null,
+      date: h.get("date") || null,
+      spam: false,
+      attachments: parsed.attachments || [],
+    };
 
     try {
-      const raw = new Uint8Array(await new Response(message.raw).arrayBuffer());
-      const email = await PostalMime.parse(raw);
-
-      const attachments = [];
-      let total = 0;
-
-      for (const a of email.attachments || []) {
-        const bytes =
-          a.content instanceof ArrayBuffer
-            ? new Uint8Array(a.content)
-            : typeof a.content === "string"
-            ? new TextEncoder().encode(a.content)
-            : a.content;
-
-        if (!bytes || !bytes.length) continue;
-        total += bytes.length;
-        if (total > MAX_ATTACHMENTS_BYTES) break;
-
-        attachments.push({
-          filename: a.filename || "priloha",
-          mimeType: a.mimeType || "application/octet-stream",
-          content: bytesToBase64(bytes),
-        });
-      }
-
-      const hdr = (name) => {
-        const h = (email.headers || []).find(
-          (x) => (x.key || "").toLowerCase() === name
-        );
-        return h ? h.value : null;
-      };
-
-      payload = {
-        from: (message.from || email.from?.address || "").toLowerCase(),
-        fromName: email.from?.name || null,
-        to: message.to || null,
-        subject: email.subject || "",
-        text: email.text || "",
-        html: email.html || "",
-        messageId: email.messageId || hdr("message-id"),
-        inReplyTo: email.inReplyTo || hdr("in-reply-to"),
-        references: email.references || hdr("references"),
-        date: email.date || hdr("date"),
-        attachments,
-      };
-    } catch (err) {
-      // I kdyby parsování selhalo, ať se aspoň uloží holá zpráva.
-      payload = {
-        from: (message.from || "").toLowerCase(),
-        to: message.to || null,
-        subject: "(e-mail se nepodařilo rozparsovat)",
-        text: String(err && err.stack ? err.stack : err),
-        attachments: [],
-      };
-    }
-
-    try {
-      const res = await fetch(ENDPOINT, {
+      await fetch(INGEST_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Posta-Token": env.POSTA_TOKEN,
-        },
+        headers: { "Content-Type": "application/json", "X-Posta-Token": INGEST_TOKEN },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        console.log("posta/prijem HTTP " + res.status + ": " + (await res.text()));
-      }
-    } catch (err) {
-      console.log("posta/prijem fetch selhal: " + err);
-    }
+    } catch (e) { /* aplikace nedostupná – originál stejně přeposíláme */ }
 
-    // Volitelně: přeposlat kopii na Gmail, ať máš i běžnou schránku.
-    if (env.FORWARD_TO) {
-      try {
-        await message.forward(env.FORWARD_TO);
-      } catch (_) {}
-    }
+    try { await message.forward(BACKUP_EMAIL); } catch (e) { /* neověřená adresa */ }
   },
 };
 
-function bytesToBase64(bytes) {
-  let bin = "";
-  const CHUNK = 0x8000;
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+function safeTo(message) { try { return message.to || ""; } catch (e) { return ""; } }
+
+function parseEmail(raw, maxAttachB64) {
+  const out = { from: "", fromName: "", subject: "", messageId: "", text: "", html: "", attachments: [] };
+  if (!raw) return out;
+
+  const sep = raw.indexOf("\r\n\r\n") >= 0 ? "\r\n\r\n" : "\n\n";
+  const at = raw.indexOf(sep);
+  const headBlock = raw.slice(0, at);
+  const body = raw.slice(at + sep.length);
+  const headers = headBlock.replace(/\r?\n[ \t]+/g, " ");
+
+  const fromRaw = getHeader(headers, "from") || "";
+  const fm = fromRaw.match(/^\s*"?([^"<]*)"?\s*<([^>]+)>/);
+  if (fm) { out.fromName = decodeHeader(fm[1].trim()); out.from = fm[2].trim().toLowerCase(); }
+  else { out.from = fromRaw.trim().toLowerCase(); }
+  out.subject = decodeHeader(getHeader(headers, "subject") || "");
+  out.messageId = (getHeader(headers, "message-id") || "").trim();
+
+  let attachBytes = 0;
+  walkPart(headers, body);
+
+  if (!out.text && out.html) out.text = stripHtml(out.html);
+  return out;
+
+  function walkPart(pHead, pBody) {
+    const ct = (getHeader(pHead, "content-type") || "").toLowerCase();
+    const cte = (getHeader(pHead, "content-transfer-encoding") || "").toLowerCase();
+    const cd = getHeader(pHead, "content-disposition") || "";
+
+    if (ct.startsWith("multipart/")) {
+      const bm = ct.match(/boundary="?([^"\s;]+)"?/i);
+      if (!bm) return;
+      for (let part of pBody.split("--" + bm[1])) {
+        part = part.replace(/^\r?\n/, "");
+        if (part === "" || part.startsWith("--")) continue;
+        const psep = part.indexOf("\r\n\r\n") >= 0 ? "\r\n\r\n" : "\n\n";
+        const pa = part.indexOf(psep);
+        if (pa < 0) continue;
+        const subHead = part.slice(0, pa).replace(/\r?\n[ \t]+/g, " ");
+        const subBody = part.slice(pa + psep.length).replace(/\r?\n$/, "");
+        walkPart(subHead, subBody);
+      }
+      return;
+    }
+
+    const filename = getFilename(pHead);
+    const isAttachment = /attachment/i.test(cd) || (filename && !ct.startsWith("text/"));
+
+    if (isAttachment) {
+      if (attachBytes >= maxAttachB64) return;
+      let b64;
+      if (cte === "base64") {
+        b64 = pBody.replace(/\s+/g, "");
+      } else {
+        try { b64 = btoa(unescape(encodeURIComponent(pBody))); } catch (e) { return; }
+      }
+      if (!b64) return;
+      attachBytes += b64.length;
+      if (attachBytes > maxAttachB64) return;
+      out.attachments.push({
+        filename: filename || "priloha",
+        mimeType: (ct.split(";")[0] || "application/octet-stream").trim() || "application/octet-stream",
+        content: b64,
+      });
+      return;
+    }
+
+    if (ct.startsWith("text/html")) {
+      if (!out.html) out.html = decodeBody(pBody, cte).trim();
+    } else if (ct.startsWith("text/plain") || ct === "") {
+      if (!out.text) out.text = decodeBody(pBody, cte).trim();
+    }
   }
-  return btoa(bin);
+}
+
+function getFilename(head) {
+  let m = head.match(/filename\*=([^']*)'[^']*'([^;\r\n]+)/i);
+  if (m) { try { return decodeURIComponent(m[2].trim().replace(/^"|"$/g, "")); } catch (e) { /* */ } }
+  m = head.match(/filename="?([^";\r\n]+)"?/i);
+  if (m) return decodeHeader(m[1].trim());
+  m = head.match(/\bname="?([^";\r\n]+)"?/i);
+  if (m) return decodeHeader(m[1].trim());
+  return "";
+}
+
+function getHeader(headers, name) {
+  const m = headers.match(new RegExp("^" + name + ":\\s*(.*)$", "im"));
+  return m ? m[1].trim() : "";
+}
+
+function decodeBody(s, cte) {
+  try {
+    if (cte === "base64") return decodeURIComponent(escape(atob(s.replace(/\s+/g, ""))));
+    if (cte === "quoted-printable")
+      return decodeURIComponent(escape(s.replace(/=\r?\n/g, "").replace(/=([A-Fa-f0-9]{2})/g, (_, x) => String.fromCharCode(parseInt(x, 16)))));
+  } catch (e) { /* fallthrough */ }
+  return s;
+}
+
+function decodeHeader(s) {
+  if (!s) return "";
+  return s.replace(/=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g, (_, cs, enc, data) => {
+    try {
+      let bytes = enc.toUpperCase() === "B"
+        ? atob(data)
+        : data.replace(/_/g, " ").replace(/=([A-Fa-f0-9]{2})/g, (_, hh) => String.fromCharCode(parseInt(hh, 16)));
+      return decodeURIComponent(escape(bytes));
+    } catch (e) { return data; }
+  }).trim();
+}
+
+function stripHtml(html) {
+  return html.replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>/gi, "\n\n").replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/\n{3,}/g, "\n\n").trim();
 }
