@@ -6,6 +6,7 @@ use App\Models\Zakazka;
 use App\Models\Zakaznik;
 use App\Models\Zprava;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class Posta
@@ -25,7 +26,7 @@ class Posta
 
         [$zakazka, $zakaznik] = self::najdiZakazku($od, $predmet . ' ' . $telo, $d);
 
-        return Zprava::create([
+        $zprava = Zprava::create([
             'smer' => 'in',
             'schranka' => mb_strtolower(trim($d['to'] ?? '')) ?: null,
             'od' => $od ?: null,
@@ -38,11 +39,80 @@ class Posta
             'in_reply_to' => $d['inReplyTo'] ?? null,
             'reference' => $d['references'] ?? null,
             'datum' => ! empty($d['date']) ? \Illuminate\Support\Carbon::parse($d['date']) : now(),
-            'prilohy' => $d['attachments'] ?? null,
+            'prilohy' => null,
             'spam' => (bool) ($d['spam'] ?? false),
             'zakazka_id' => $zakazka?->id,
             'zakaznik_id' => $zakaznik?->id ?? $zakazka?->zakaznik_id,
         ]);
+
+        if (! empty($d['attachments']) && is_array($d['attachments'])) {
+            $ulozene = self::ulozPrilohy($zprava->id, $d['attachments']);
+            if ($ulozene) {
+                $zprava->update(['prilohy' => $ulozene]);
+            }
+        }
+
+        return $zprava;
+    }
+
+    /**
+     * Uloží binární přílohy z příchozího e-mailu na disk a vrátí jejich seznam
+     * (název, mime, velikost, cesta) pro sloupec `prilohy`.
+     *
+     * @param  array<int, array<string, mixed>>  $attachments
+     * @return array<int, array{nazev:string, mime:string, velikost:int, soubor:string}>
+     */
+    protected static function ulozPrilohy(int $zpravaId, array $attachments): array
+    {
+        $out = [];
+        $celkem = 0;
+
+        foreach (array_values($attachments) as $i => $a) {
+            if (! is_array($a)) {
+                continue;
+            }
+
+            $base64 = $a['content'] ?? $a['data'] ?? $a['contentBytes'] ?? null;
+            if (! is_string($base64) || $base64 === '') {
+                continue;
+            }
+
+            $bin = base64_decode(strtr($base64, '-_', '+/'), true);
+            if ($bin === false) {
+                $bin = base64_decode($base64, false);
+            }
+            if (! is_string($bin) || $bin === '') {
+                continue;
+            }
+
+            $celkem += strlen($bin);
+            if (strlen($bin) > 25 * 1024 * 1024 || $celkem > 30 * 1024 * 1024 || $i >= 20) {
+                break;
+            }
+
+            $nazev = self::bezpecnyNazevSouboru($a['filename'] ?? $a['name'] ?? 'priloha');
+            $soubor = "posta/{$zpravaId}/{$i}-{$nazev}";
+
+            Storage::disk('local')->put($soubor, $bin);
+
+            $out[] = [
+                'nazev' => $nazev,
+                'mime' => (string) ($a['mimeType'] ?? $a['contentType'] ?? $a['mime'] ?? 'application/octet-stream'),
+                'velikost' => strlen($bin),
+                'soubor' => $soubor,
+            ];
+        }
+
+        return $out;
+    }
+
+    protected static function bezpecnyNazevSouboru(string $nazev): string
+    {
+        $nazev = basename(str_replace('\\', '/', $nazev));
+        $nazev = preg_replace('/[^\p{L}\p{N}._-]+/u', '_', $nazev) ?: 'priloha';
+        $nazev = trim($nazev, '_.');
+
+        return mb_substr($nazev !== '' ? $nazev : 'priloha', 0, 120);
     }
 
     /**

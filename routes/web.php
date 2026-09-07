@@ -51,4 +51,6 @@ Route::middleware(['web', 'auth'])->group(function () {
     });
 
     Route::get('zaloha/stahnout', [ZalohaController::class, 'stahnout'])->name('zaloha.stahnout');
+
+    Route::get('posta/priloha/{zprava}/{index}', [PostaController::class, 'priloha'])->name('posta.priloha');
 });

@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Zprava;
 use App\Support\Posta;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PostaController extends Controller
 {
@@ -32,7 +35,8 @@ class PostaController extends Controller
             'references' => ['nullable', 'string'],
             'date' => ['nullable', 'string', 'max:100'],
             'spam' => ['nullable', 'boolean'],
-            'attachments' => ['nullable', 'array'],
+            'attachments' => ['nullable', 'array', 'max:20'],
+            'attachments.*' => ['array'],
         ]);
 
         $zprava = Posta::ulozPrichozi($data);
@@ -41,6 +45,18 @@ class PostaController extends Controller
             'ok' => true,
             'id' => $zprava->id,
             'zakazka_id' => $zprava->zakazka_id,
+            'prilohy' => is_array($zprava->prilohy) ? count($zprava->prilohy) : 0,
         ]);
+    }
+
+    /** Stažení uložené přílohy příchozí zprávy (jen pro přihlášené). */
+    public function priloha(Zprava $zprava, int $index): StreamedResponse
+    {
+        $prilohy = is_array($zprava->prilohy) ? array_values($zprava->prilohy) : [];
+        $p = $prilohy[$index] ?? null;
+
+        abort_unless($p && ! empty($p['soubor']) && Storage::disk('local')->exists($p['soubor']), 404);
+
+        return Storage::disk('local')->download($p['soubor'], $p['nazev'] ?? 'priloha');
     }
 }

@@ -49,6 +49,19 @@
                 @endif
 
                 <div class="ks-msg-body">{{ $m->telo_text ?: strip_tags((string) $m->telo_html) ?: '(prázdná zpráva)' }}</div>
+
+                @if (is_array($m->prilohy) && count($m->prilohy))
+                    <div class="ks-msg-att">
+                        @foreach (array_values($m->prilohy) as $i => $p)
+                            <a class="ks-att" href="{{ route('posta.priloha', ['zprava' => $m->id, 'index' => $i]) }}">
+                                📎 {{ $p['nazev'] ?? 'příloha' }}
+                                @if (! empty($p['velikost']))
+                                    <span class="ks-att-size">{{ number_format($p['velikost'] / 1024, 0, ',', ' ') }} kB</span>
+                                @endif
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         @endforeach
     </div>
@@ -85,5 +98,14 @@
         .ks-msg-body { margin-top:.6rem; white-space:pre-wrap; word-wrap:break-word; font-size:.92rem;
             line-height:1.55; color:#1f2937; }
         :is(.dark) .ks-msg-body { color:#e5e7eb; }
+
+        .ks-msg-att { margin-top:.7rem; padding-top:.6rem; border-top:1px dashed #e5e7eb;
+            display:flex; flex-wrap:wrap; gap:.4rem; }
+        :is(.dark) .ks-msg-att { border-color:#2b3440; }
+        .ks-att { display:inline-flex; align-items:center; gap:.35rem; font-size:.82rem; text-decoration:none;
+            padding:.25rem .55rem; border:1px solid #d7ddE6; border-radius:.4rem; color:#1d4ed8; background:#f8fafc; }
+        :is(.dark) .ks-att { color:#93c5fd; background:#17202b; border-color:#2b3440; }
+        .ks-att:hover { text-decoration:underline; }
+        .ks-att-size { color:#9ca3af; font-size:.72rem; }
     </style>
 </x-filament-panels::page>
