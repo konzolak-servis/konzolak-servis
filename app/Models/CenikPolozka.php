@@ -13,6 +13,7 @@ class CenikPolozka extends Model
     protected $casts = [
         'cena' => 'decimal:2',
         'aktivni' => 'boolean',
+        'na_web' => 'boolean',
         'poradi' => 'integer',
     ];
 

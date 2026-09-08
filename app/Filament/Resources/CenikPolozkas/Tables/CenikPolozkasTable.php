@@ -35,9 +35,11 @@ class CenikPolozkasTable
                 TextColumn::make('nazev')->label('Název úkonu')->searchable()->wrap(),
                 TextColumn::make('cena')->label('Cena')->money('CZK')->sortable(),
                 IconColumn::make('aktivni')->label('Aktivní')->boolean(),
+                IconColumn::make('na_web')->label('Web')->boolean()->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('kategorie')->label('Platforma / kategorie')->options(Platformy::HODNOTY),
+                \Filament\Tables\Filters\TernaryFilter::make('na_web')->label('Na webu'),
             ])
             ->defaultSort('poradi')
             ->paginated([25, 50, 100, 'all'])

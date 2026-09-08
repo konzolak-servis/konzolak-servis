@@ -4,12 +4,37 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\PostaController;
 use App\Http\Controllers\TiskController;
 use App\Http\Controllers\VerejnyController;
+use App\Http\Controllers\Web\CenikController;
+use App\Http\Controllers\Web\KontrolaController;
+use App\Http\Controllers\Web\OpravyController;
+use App\Http\Controllers\Web\PoptavkaController;
+use App\Http\Controllers\Web\WebController;
 use App\Http\Controllers\WebAuthn\WebAuthnLoginController;
 use App\Http\Controllers\WebAuthn\WebAuthnRegisterController;
 use App\Http\Controllers\ZalohaController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect('/admin'));
+/*
+ * Veřejný web konzolak.com. V produkci se servíruje z apexu, servisní systém
+ * z poddomény servis. – lokálně je vše na jednom hostu (/ = web, /admin = systém).
+ */
+Route::name('web.')->group(function () {
+    Route::get('/', [WebController::class, 'home'])->name('home');
+    Route::get('/opravujeme', [OpravyController::class, 'index'])->name('opravy');
+    Route::get('/opravujeme/{slug}', [OpravyController::class, 'detail'])->name('opravy.detail');
+    Route::get('/cenik', [CenikController::class, 'index'])->name('cenik');
+    Route::get('/jak-to-funguje', [WebController::class, 'jakToFunguje'])->name('jak-to-funguje');
+    Route::get('/o-nas', [WebController::class, 'oNas'])->name('o-nas');
+    Route::get('/reference', [WebController::class, 'reference'])->name('reference');
+    Route::get('/caste-dotazy', [WebController::class, 'faq'])->name('faq');
+    Route::get('/kontakt', [WebController::class, 'kontakt'])->name('kontakt');
+    Route::post('/kontakt', [PoptavkaController::class, 'odeslat'])->name('poptavka');
+
+    Route::get('/kontrola-zakazky', [KontrolaController::class, 'form'])->name('kontrola');
+    Route::post('/kontrola-zakazky', [KontrolaController::class, 'najdi'])->name('kontrola.najdi');
+
+    Route::get('/pravni/{dokument}', [WebController::class, 'pravni'])->name('pravni');
+});
 
 // Příjem e-mailů z Cloudflare Email Workeru (autorizace tokenem v controlleru).
 Route::post('api/posta/prijem', [PostaController::class, 'prijem']);

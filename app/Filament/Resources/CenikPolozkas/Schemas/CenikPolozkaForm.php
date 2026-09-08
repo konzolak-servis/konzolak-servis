@@ -23,6 +23,8 @@ class CenikPolozkaForm
                 TextInput::make('cena')->label('Cena')->numeric()->default(0)->required()->suffix('Kč'),
                 TextInput::make('poradi')->label('Pořadí')->numeric()->default(0),
                 Toggle::make('aktivni')->label('Aktivní')->default(true),
+                Toggle::make('na_web')->label('Zobrazit na webu')->default(true)
+                    ->helperText('Ceník na veřejném webu konzolak.com.'),
             ]);
     }
 }
