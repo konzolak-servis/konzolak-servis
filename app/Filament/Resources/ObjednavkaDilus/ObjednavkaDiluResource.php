@@ -33,6 +33,13 @@ class ObjednavkaDiluResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'nazev_dilu';
 
+    // Skryté z menu – nákupy dílů se evidují pod „Nákupy". Model zůstává kvůli
+    // nástěnce „Co řešit" a napojení na zakázku; pro obnovení vrátit na true.
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return ObjednavkaDiluForm::configure($schema);
