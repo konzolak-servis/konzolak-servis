@@ -161,7 +161,7 @@ p { margin: 0 0 1rem; }
 
 /* ---- Panel (gaming karta se zkoseným rohem) ---- */
 .trust { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-.trust__i { position: relative; background: var(--surface); backdrop-filter: blur(8px);
+.trust__i { position: relative; background: radial-gradient(240px circle at var(--mx, -400px) var(--my, -400px), rgba(236, 205, 130, .11), transparent 62%), var(--surface); backdrop-filter: blur(8px);
     border: 1px solid var(--line); padding: 1.6rem 1.4rem; box-shadow: var(--sh-1);
     clip-path: var(--cut); }
 .trust__i::before { content: ""; position: absolute; left: 0; top: 0; width: 3px; height: 34px;
@@ -184,7 +184,7 @@ p { margin: 0 0 1rem; }
 @media (max-width: 940px) { .grid--3, .grid--4 { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 580px) { .grid--2, .grid--3, .grid--4 { grid-template-columns: 1fr; } }
 
-.card { position: relative; background: var(--surface); backdrop-filter: blur(8px);
+.card { position: relative; background: radial-gradient(240px circle at var(--mx, -400px) var(--my, -400px), rgba(236, 205, 130, .11), transparent 62%), var(--surface); backdrop-filter: blur(8px);
     border: 1px solid var(--line); padding: 1.7rem; box-shadow: var(--sh-1);
     clip-path: var(--cut);
     transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
@@ -205,7 +205,7 @@ p { margin: 0 0 1rem; }
 
 /* ---- Kroky ---- */
 .kroky { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.15rem; }
-.kroky__i { position: relative; overflow: hidden; background: var(--surface); backdrop-filter: blur(8px);
+.kroky__i { position: relative; overflow: hidden; background: radial-gradient(240px circle at var(--mx, -400px) var(--my, -400px), rgba(236, 205, 130, .11), transparent 62%), var(--surface); backdrop-filter: blur(8px);
     border: 1px solid var(--line); padding: 1.8rem 1.5rem 1.5rem; box-shadow: var(--sh-1);
     clip-path: var(--cut); }
 .kroky__i::after { content: ""; position: absolute; right: -34px; top: -34px; width: 96px; height: 96px;
@@ -274,7 +274,7 @@ p { margin: 0 0 1rem; }
 .form .note { font-size: .85rem; color: var(--muted); }
 
 /* ---- FAQ ---- */
-.faq details { background: var(--surface); border: 1px solid var(--line); padding: .1rem 1.3rem;
+.faq details { background: radial-gradient(240px circle at var(--mx, -400px) var(--my, -400px), rgba(236, 205, 130, .11), transparent 62%), var(--surface); border: 1px solid var(--line); padding: .1rem 1.3rem;
     margin-bottom: .7rem; box-shadow: var(--sh-1); clip-path: var(--cut); }
 .faq summary { cursor: pointer; font-family: var(--ff-head); font-weight: 600; padding: 1.05rem 0;
     list-style: none; color: #fff; display: flex; justify-content: space-between; gap: 1rem; font-size: 1.02rem; }
@@ -286,7 +286,7 @@ p { margin: 0 0 1rem; }
 
 /* ---- Kontakt / místa ---- */
 .mista { display: grid; grid-template-columns: 1fr 1fr; gap: 1.15rem; }
-.misto { background: var(--surface); border: 1px solid var(--line); padding: 1.4rem;
+.misto { background: radial-gradient(240px circle at var(--mx, -400px) var(--my, -400px), rgba(236, 205, 130, .11), transparent 62%), var(--surface); border: 1px solid var(--line); padding: 1.4rem;
     box-shadow: var(--sh-1); clip-path: var(--cut); }
 .misto b { font-family: var(--ff-head); color: #fff; }
 @media (max-width: 720px) { .mista { grid-template-columns: 1fr; } }
@@ -324,7 +324,7 @@ p { margin: 0 0 1rem; }
 
 /* ---- Stav zakázky ---- */
 .stav-wrap { padding: clamp(2.5rem, 6vw, 4rem) 0; }
-.stav-card { max-width: 620px; margin: 0 auto; background: var(--surface); border: 1px solid var(--line);
+.stav-card { max-width: 620px; margin: 0 auto; background: radial-gradient(240px circle at var(--mx, -400px) var(--my, -400px), rgba(236, 205, 130, .11), transparent 62%), var(--surface); border: 1px solid var(--line);
     padding: clamp(1.5rem, 4vw, 2.4rem); box-shadow: var(--sh-2); clip-path: var(--cut); }
 .stav-eyebrow { font-family: var(--ff-head); text-transform: uppercase; letter-spacing: .2em;
     font-size: .74rem; font-weight: 600; color: var(--muted); }

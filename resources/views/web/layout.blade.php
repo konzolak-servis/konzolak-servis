@@ -20,7 +20,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="{{ asset('css/web.css') }}?v=9">
+    <link rel="stylesheet" href="{{ asset('css/web.css') }}?v=11">
 </head>
 <body>
 <header class="hdr">
@@ -82,6 +82,6 @@
     </div>
 </footer>
 
-<script src="{{ asset('js/web.js') }}?v=1"></script>
+<script src="{{ asset('js/web.js') }}?v=2"></script>
 </body>
 </html>
