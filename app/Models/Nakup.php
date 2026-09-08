@@ -18,6 +18,7 @@ class Nakup extends Model
         'celkem' => 'decimal:2',
         'postovne' => 'decimal:2',
         'naskladneno' => 'boolean',
+        'preneseno_do_objednavek' => 'boolean',
     ];
 
     protected static function booted(): void

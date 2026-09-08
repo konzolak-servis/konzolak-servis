@@ -32,6 +32,9 @@ class NakupsTable
                     ->trueIcon('heroicon-o-paper-clip')->falseIcon('heroicon-o-minus')
                     ->trueColor('success')->falseColor('gray'),
                 IconColumn::make('naskladneno')->label('Naskladněno')->boolean(),
+                IconColumn::make('preneseno_do_objednavek')->label('V objednávkách')->boolean()
+                    ->trueIcon('heroicon-o-inbox-arrow-down')->falseIcon('heroicon-o-minus')
+                    ->trueColor('info')->falseColor('gray')->toggleable(),
             ])
             ->defaultSort('datum', 'desc')
             ->filters([
@@ -51,11 +54,11 @@ class NakupsTable
                     ->label('Vytvořit objednávky dílů')
                     ->icon('heroicon-o-inbox-arrow-down')
                     ->color('gray')
-                    ->visible(fn (Nakup $record) => $record->polozky()->exists())
+                    ->visible(fn (Nakup $record) => $record->polozky()->exists() && ! $record->preneseno_do_objednavek)
                     ->requiresConfirmation()
                     ->modalHeading('Přenést položky nákupu do Objednávek dílů')
-                    ->modalDescription('Z každé položky nákupu vznikne záznam v Objednávkách dílů (nové číslo řady OBJ, stav „Dorazilo", datum doručení = datum nákupu, dodavatel a případná zakázka se přenesou). Nákup zůstává beze změny. Už dříve přenesené položky se přeskočí.')
-                    ->modalSubmitActionLabel('Vytvořit')
+                    ->modalDescription('Z každé položky nákupu vznikne záznam v Objednávkách dílů (nové číslo řady OBJ, stav „Dorazilo", datum doručení = datum nákupu, dodavatel a případná zakázka se přenesou). Účetně nic navíc nevzniká – Objednávka dílu je jen interní sledovník, do peněžního deníku ani daní nejde. Nákup (daňový doklad) zůstává beze změny. Po přenesení tato akce zmizí.')
+                    ->modalSubmitActionLabel('Přenést')
                     ->action(fn (Nakup $record) => self::doObjednavek($record)),
                 EditAction::make(),
             ])
@@ -98,10 +101,12 @@ class NakupsTable
             $vytvoreno++;
         }
 
+        $nakup->update(['preneseno_do_objednavek' => true]);
+
         Notification::make()
             ->title($vytvoreno > 0
-                ? "Vytvořeno {$vytvoreno} objednávek dílů" . ($preskoceno ? " ({$preskoceno} přeskočeno)" : '')
-                : 'Nic nevytvořeno – vše už bylo přeneseno')
+                ? "Přeneseno do Objednávek dílů ({$vytvoreno})" . ($preskoceno ? " – {$preskoceno} už existovalo" : '')
+                : 'Vše už bylo přeneseno')
             ->success()
             ->send();
     }
