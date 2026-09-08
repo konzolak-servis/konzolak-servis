@@ -135,7 +135,7 @@ p { margin: 0 0 1rem; }
         repeating-linear-gradient(0deg, rgba(255, 255, 255, .022) 0 1px, transparent 1px 56px);
     mask-image: linear-gradient(180deg, #000, transparent 85%); opacity: .7; }
 /* Celé logo jako decentní vodoznak – zarovnané do pravého dolního rohu hero. */
-.hero::before { content: ""; position: absolute; right: 40px; bottom: 0; left: auto; transform: none;
+.hero::before { content: ""; position: absolute; right: 40px; bottom: 30px; left: auto; transform: none;
     width: min(38vw, 340px); height: 240px; pointer-events: none; z-index: 0; opacity: .12;
     background: url("/images/konzolak-logo-print.png") right bottom / contain no-repeat; }
 .hero__in { position: relative; z-index: 1; padding: clamp(3rem, 7vw, 5rem) 0 clamp(3rem, 6vw, 4.5rem); }
@@ -146,7 +146,7 @@ p { margin: 0 0 1rem; }
 .hero__note { margin-top: 1.2rem; font-size: .95rem; color: #8698b6; }
 .hero__note a { color: var(--gold-300); }
 @media (max-width: 980px) {
-    .hero::before { width: 180px; height: 130px; right: 14px; bottom: 0; opacity: .1; }
+    .hero::before { width: 180px; height: 130px; right: 14px; bottom: 20px; opacity: .1; }
 }
 
 /* ---- Statistický pruh ---- */
