@@ -3,8 +3,6 @@
 
 @section('body')
 <section class="hero">
-    <div class="hero__glow"></div>
-    <img class="hero__logo" src="/images/konzolak-logo-print.png" alt="" aria-hidden="true">
     <div class="wrap hero__in">
         <h1>Servis herních konzolí a <span class="accent">PC ve Zlíně</span></h1>
         <p>Opravím PlayStation, Xbox, Nintendo i počítače. Diagnostika zdarma při opravě,
