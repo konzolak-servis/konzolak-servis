@@ -11,6 +11,7 @@ use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class NakupsTable
@@ -33,6 +34,10 @@ class NakupsTable
                 IconColumn::make('naskladneno')->label('Naskladněno')->boolean(),
             ])
             ->defaultSort('datum', 'desc')
+            ->filters([
+                TernaryFilter::make('naskladneno')->label('Naskladněno')
+                    ->placeholder('Vše')->trueLabel('Naskladněné')->falseLabel('Čeká na naskladnění'),
+            ])
             ->recordActions([
                 Action::make('naskladnit')
                     ->label('Naskladnit')

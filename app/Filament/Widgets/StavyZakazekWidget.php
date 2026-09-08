@@ -3,9 +3,11 @@
 namespace App\Filament\Widgets;
 
 use App\Filament\Pages\Kalendar;
+use App\Filament\Resources\Nakups\NakupResource;
 use App\Filament\Resources\ObjednavkaDilus\ObjednavkaDiluResource;
 use App\Filament\Resources\PenezniDeniks\PenezniDenikResource;
 use App\Filament\Resources\Zakazkas\ZakazkaResource;
+use App\Models\Nakup;
 use App\Models\ObjednavkaDilu;
 use App\Models\PenezniDenik;
 use App\Models\Zakazka;
@@ -26,7 +28,9 @@ class StavyZakazekWidget extends StatsOverviewWidget
         $kVydani = Zakazka::where('stav', 'hotovo')->count();
         $tentoMesic = Zakazka::whereYear('datum_prijeti', now()->year)
             ->whereMonth('datum_prijeti', now()->month)->count();
-        $ocekavaneBaliky = ObjednavkaDilu::where('stav', 'objednano')->count();
+        $balikyDily = ObjednavkaDilu::where('stav', 'objednano')->count();
+        $balikyNakupy = Nakup::where('naskladneno', false)->count();
+        $ocekavaneBaliky = $balikyDily + $balikyNakupy;
 
         [$prijmy, $vydaje, $zisky] = $this->financeMesicne(6);
         $kc = fn (float $v) => number_format($v, 0, ',', ' ') . ' Kč';
@@ -60,10 +64,16 @@ class StavyZakazekWidget extends StatsOverviewWidget
                 ->url(Kalendar::getUrl()),
 
             Stat::make('Očekávané balíky', $ocekavaneBaliky)
-                ->description('objednané díly na cestě')
+                ->description(trim(
+                    ($balikyNakupy ? $balikyNakupy . '× nákup' : '')
+                    . ($balikyNakupy && $balikyDily ? ' · ' : '')
+                    . ($balikyDily ? $balikyDily . '× díl' : '')
+                ) ?: 'nic na cestě')
                 ->color($ocekavaneBaliky > 0 ? 'info' : 'gray')
                 ->icon('heroicon-o-inbox-arrow-down')
-                ->url(ObjednavkaDiluResource::getUrl('index', ['tableFilters' => ['stav' => ['value' => 'objednano']]])),
+                ->url($balikyDily && ! $balikyNakupy
+                    ? ObjednavkaDiluResource::getUrl('index', ['tableFilters' => ['stav' => ['value' => 'objednano']]])
+                    : NakupResource::getUrl('index', ['tableFilters' => ['naskladneno' => ['value' => '0']]])),
 
             Stat::make('Čistý zisk – ' . $mesic, $kc(end($zisky)))
                 ->description('Příjem ' . $kc(end($prijmy)) . '   ·   Výdej ' . $kc(end($vydaje)))
