@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use App\Filament\Pages\Kalendar;
-use App\Filament\Resources\SkladPolozkas\SkladPolozkaResource;
+use App\Filament\Resources\ObjednavkaDilus\ObjednavkaDiluResource;
 use App\Filament\Resources\Zakazkas\ZakazkaResource;
-use App\Models\SkladPolozka;
+use App\Models\ObjednavkaDilu;
 use App\Models\Zakazka;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -24,8 +24,7 @@ class StavyZakazekWidget extends StatsOverviewWidget
         $kVydani = Zakazka::where('stav', 'hotovo')->count();
         $tentoMesic = Zakazka::whereYear('datum_prijeti', now()->year)
             ->whereMonth('datum_prijeti', now()->month)->count();
-        $podMinimem = SkladPolozka::whereColumn('mnozstvi_skladem', '<=', 'min_mnozstvi')
-            ->where('min_mnozstvi', '>', 0)->count();
+        $ocekavaneBaliky = ObjednavkaDilu::where('stav', 'objednano')->count();
 
         $zakazkyUrl = fn (array $filters = []) => ZakazkaResource::getUrl('index', $filters);
 
@@ -54,11 +53,11 @@ class StavyZakazekWidget extends StatsOverviewWidget
                 ->icon('heroicon-o-calendar-days')
                 ->url(Kalendar::getUrl()),
 
-            Stat::make('Sklad pod minimem', $podMinimem)
-                ->description('položky k doobjednání')
-                ->color($podMinimem > 0 ? 'danger' : 'gray')
-                ->icon('heroicon-o-exclamation-triangle')
-                ->url(SkladPolozkaResource::getUrl('index', ['tableFilters' => ['pod_minimem' => ['isActive' => true]]])),
+            Stat::make('Očekávané balíky', $ocekavaneBaliky)
+                ->description('objednané díly na cestě')
+                ->color($ocekavaneBaliky > 0 ? 'info' : 'gray')
+                ->icon('heroicon-o-inbox-arrow-down')
+                ->url(ObjednavkaDiluResource::getUrl('index', ['tableFilters' => ['stav' => ['value' => 'objednano']]])),
         ];
     }
 }
