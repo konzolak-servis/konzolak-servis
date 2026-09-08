@@ -38,16 +38,18 @@ class KontrolaController extends Controller
             $cislo = 'SL-' . $cislo;
         }
 
-        $vstup = Str::lower(trim($data['overeni']));
+        // porovnání bez ohledu na velikost písmen a diakritiku
+        $norm = fn (?string $s) => Str::lower(Str::ascii((string) $s));
+        $vstup = $norm(trim($data['overeni']));
         $vstupTel = preg_replace('/\D+/', '', $data['overeni']);
 
         $zakazka = Zakazka::query()->where('cislo', $cislo)->with('zakaznik')->first();
         $k = $zakazka?->zakaznik;
 
         $sedi = $k && (
-            Str::contains(Str::lower((string) $k->jmeno), $vstup)
-            || Str::contains(Str::lower((string) $k->firma_nazev), $vstup)
-            || (filled($k->email) && Str::lower($k->email) === $vstup)
+            ($vstup !== '' && str_contains($norm($k->jmeno), $vstup))
+            || ($vstup !== '' && str_contains($norm($k->firma_nazev), $vstup))
+            || (filled($k->email) && $norm($k->email) === $vstup)
             || (strlen($vstupTel) >= 6 && filled($k->telefon)
                 && str_contains(preg_replace('/\D+/', '', $k->telefon), $vstupTel))
         );
