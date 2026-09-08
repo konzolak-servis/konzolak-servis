@@ -34,3 +34,4 @@ Thumbs.db
 /storage/app/public/nakupy
 /storage/app/public/nabidky
 /database/database.sqlite
+.claude/launch.json
