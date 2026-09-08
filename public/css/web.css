@@ -128,7 +128,7 @@ p { margin: 0 0 1rem; }
 /* ---- Hero ---- */
 .hero { position: relative; overflow: hidden;
     background:
-        radial-gradient(560px 420px at 68% 82%, rgba(255, 207, 92, .15), transparent 66%),
+        radial-gradient(520px 400px at 88% 88%, rgba(255, 207, 92, .15), transparent 66%),
         linear-gradient(180deg, var(--navy-850), var(--navy-950));
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 46px), 0 100%); }
 .hero::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
@@ -136,10 +136,9 @@ p { margin: 0 0 1rem; }
         repeating-linear-gradient(0deg, rgba(255, 255, 255, .022) 0 1px, transparent 1px 56px);
     mask-image: linear-gradient(180deg, #000, transparent 85%); opacity: .7; }
 /* Celé logo jako decentní vodoznak – na každém hero. */
-.hero::before { content: ""; position: absolute; left: 68%; bottom: 10px; transform: translateX(-50%);
-    width: min(38vw, 360px); height: 260px; pointer-events: none; z-index: 0; opacity: .12;
-    background: url("/images/konzolak-logo-print.png") center bottom / contain no-repeat;
-    filter: drop-shadow(2px 4px 4px rgba(0, 0, 0, .5)); }
+.hero::before { content: ""; position: absolute; right: 34px; bottom: 6px; left: auto; transform: none;
+    width: min(40vw, 340px); height: 220px; pointer-events: none; z-index: 0; opacity: .12;
+    background: url("/images/konzolak-logo-print.png") right bottom / contain no-repeat; }
 .hero__in { position: relative; z-index: 1; padding: clamp(3.5rem, 9vw, 7rem) 0 clamp(4rem, 9vw, 6.5rem); }
 .hero h1 { max-width: 20ch; }
 .hero h1 .accent { color: var(--gold); text-shadow: 0 0 18px rgba(209, 161, 58, .3); }
@@ -148,8 +147,7 @@ p { margin: 0 0 1rem; }
 .hero__note { margin-top: 1.2rem; font-size: .95rem; color: #8698b6; }
 .hero__note a { color: var(--gold-300); }
 @media (max-width: 980px) {
-    .hero::before { width: 200px; height: 150px; left: auto; right: -4px; bottom: 16px;
-        transform: none; opacity: .1; }
+    .hero::before { width: 190px; height: 130px; right: 12px; bottom: 6px; opacity: .1; }
 }
 
 /* ---- Statistický pruh ---- */
