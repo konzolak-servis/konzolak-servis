@@ -2,7 +2,7 @@
 @section('title', ($firma->nazev ?? 'Konzolák Zlín') . ' – servis herních konzolí a PC ve Zlíně')
 
 @section('body')
-<section class="hero">
+<section class="hero hero--home">
     <div class="wrap hero__in">
         <h1>Servis herních konzolí a <span class="accent">PC ve Zlíně</span></h1>
         <p>Opravím PlayStation, Xbox, Nintendo i počítače. Diagnostika zdarma při opravě,
