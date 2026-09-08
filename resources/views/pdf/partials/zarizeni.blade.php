@@ -1,6 +1,3 @@
-@php
-    $zaruka = $z->zaruka_mesice == 1 ? 'měsíc' : ($z->zaruka_mesice < 5 ? 'měsíce' : 'měsíců');
-@endphp
 <table class="cols" style="margin-bottom:1mm">
     <tr>
         <td width="52%">
@@ -27,10 +24,8 @@
                     </td>
                 </tr>
                 <tr>
-                    <td style="padding-top:2mm"><div class="label">Záruka</div><div class="val">{{ $z->zaruka_mesice }} {{ $zaruka }}</div></td>
-                    <td style="padding-top:2mm">
-                        <div class="label">Zakázka</div><div class="val">{{ $z->cislo }}</div>
-                    </td>
+                    <td style="padding-top:2mm"><div class="label">Zakázka</div><div class="val">{{ $z->cislo }}</div></td>
+                    <td style="padding-top:2mm"></td>
                 </tr>
             </table>
         </td>

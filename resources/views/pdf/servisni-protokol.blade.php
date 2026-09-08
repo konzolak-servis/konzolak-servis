@@ -12,11 +12,10 @@
 
 @include('pdf.partials.zarizeni')
 
-@if ($z->zarukaDo())
-    <div class="muted" style="margin-top:-1mm;font-size:8pt">
-        Záruka na provedenou opravu do <strong>{{ $z->zarukaDo()->format('d. m. Y') }}</strong>.
-    </div>
-@endif
+<div class="muted" style="margin-top:-1mm;font-size:8pt">
+    Odpovědnost za vady provedené opravy: spotřebitel dle zákona (24&nbsp;měsíců, u&nbsp;použitých
+    zařízení 12&nbsp;měsíců), podnikatel 3&nbsp;měsíce od převzetí. Podrobnosti níže.
+</div>
 
 <div class="sekce">Zjištěná závada</div>
 <div class="box">{!! nl2br(e($z->zjistena_zavada ?: $z->popis_zavady ?: '—')) !!}</div>
