@@ -6,6 +6,7 @@ use App\Filament\Pages\Kalendar;
 use App\Filament\Resources\ObjednavkaDilus\ObjednavkaDiluResource;
 use App\Filament\Resources\Zakazkas\ZakazkaResource;
 use App\Models\ObjednavkaDilu;
+use App\Models\PenezniDenik;
 use App\Models\Zakazka;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -25,6 +26,10 @@ class StavyZakazekWidget extends StatsOverviewWidget
         $tentoMesic = Zakazka::whereYear('datum_prijeti', now()->year)
             ->whereMonth('datum_prijeti', now()->month)->count();
         $ocekavaneBaliky = ObjednavkaDilu::where('stav', 'objednano')->count();
+
+        [$prijmy, $vydaje, $zisky] = $this->financeMesicne(6);
+        $kc = fn (float $v) => number_format($v, 0, ',', ' ') . ' Kč';
+        $mesic = now()->translatedFormat('F Y');
 
         $zakazkyUrl = fn (array $filters = []) => ZakazkaResource::getUrl('index', $filters);
 
@@ -48,7 +53,7 @@ class StavyZakazekWidget extends StatsOverviewWidget
                 ->url($zakazkyUrl(['tableFilters' => ['stav' => ['value' => 'ceka_na_dil']]])),
 
             Stat::make('Přijato tento měsíc', $tentoMesic)
-                ->description(now()->translatedFormat('F Y'))
+                ->description($mesic)
                 ->color('info')
                 ->icon('heroicon-o-calendar-days')
                 ->url(Kalendar::getUrl()),
@@ -58,6 +63,50 @@ class StavyZakazekWidget extends StatsOverviewWidget
                 ->color($ocekavaneBaliky > 0 ? 'info' : 'gray')
                 ->icon('heroicon-o-inbox-arrow-down')
                 ->url(ObjednavkaDiluResource::getUrl('index', ['tableFilters' => ['stav' => ['value' => 'objednano']]])),
+
+            Stat::make('Příjem – ' . $mesic, $kc(end($prijmy)))
+                ->description('posledních 6 měsíců')
+                ->color('success')
+                ->icon('heroicon-o-arrow-trending-up')
+                ->chart($prijmy),
+
+            Stat::make('Výdej – ' . $mesic, $kc(end($vydaje)))
+                ->description('posledních 6 měsíců')
+                ->color('danger')
+                ->icon('heroicon-o-arrow-trending-down')
+                ->chart($vydaje),
+
+            Stat::make('Čistý zisk – ' . $mesic, $kc(end($zisky)))
+                ->description('příjem − výdej')
+                ->color(end($zisky) >= 0 ? 'warning' : 'danger')
+                ->icon('heroicon-o-banknotes')
+                ->chart($zisky),
         ];
+    }
+
+    /**
+     * Součty z peněžního deníku po měsících (nejstarší → aktuální).
+     *
+     * @return array{0: array<int>, 1: array<int>, 2: array<int>}  [příjmy, výdaje, zisky]
+     */
+    private function financeMesicne(int $mesicu): array
+    {
+        $prijmy = [];
+        $vydaje = [];
+        $zisky = [];
+
+        for ($i = $mesicu - 1; $i >= 0; $i--) {
+            $m = now()->copy()->subMonthsNoOverflow($i);
+            $q = PenezniDenik::whereYear('datum', $m->year)->whereMonth('datum', $m->month);
+
+            $p = (int) round((float) (clone $q)->where('typ', 'prijem')->sum('castka'));
+            $v = (int) round((float) (clone $q)->where('typ', 'vydej')->sum('castka'));
+
+            $prijmy[] = $p;
+            $vydaje[] = $v;
+            $zisky[] = $p - $v;
+        }
+
+        return [$prijmy, $vydaje, $zisky];
     }
 }
