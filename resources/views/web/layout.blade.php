@@ -14,8 +14,13 @@
     <meta name="robots" content="@yield('robots', 'index,follow')">
     <meta property="og:title" content="@yield('title', $F->nazev ?? 'Konzolák Zlín')">
     <meta property="og:type" content="website">
-    <link rel="icon" href="/images/konzolak-icon.png">
-    <link rel="stylesheet" href="{{ asset('css/web.css') }}?v=1">
+    <meta name="theme-color" content="#0b1a30">
+    <link rel="icon" type="image/png" sizes="512x512" href="/images/konzolak-icon.png">
+    <link rel="apple-touch-icon" href="/images/konzolak-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+    <link rel="stylesheet" href="{{ asset('css/web.css') }}?v=3">
 </head>
 <body>
 <header class="hdr">
@@ -45,8 +50,8 @@
 
 <footer class="ftr">
     <div class="wrap ftr__in">
-        <div>
-            <h4>{{ $F->nazev ?? 'Konzolák Zlín' }}</h4>
+        <div class="ftr__brand">
+            <img src="/images/konzolak-logo-print.png" alt="{{ $F->nazev ?? 'Konzolák Zlín' }}">
             <p style="margin:0">Servis herních konzolí, notebooků a počítačů ve Zlíně.
                 Osobní přístup, cena vždy předem odsouhlasená.</p>
             <p style="margin:.6rem 0 0">

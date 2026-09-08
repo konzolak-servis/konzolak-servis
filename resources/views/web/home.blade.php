@@ -4,7 +4,8 @@
 @section('body')
 <section class="hero">
     <div class="wrap hero__in">
-        <h1>Servis herních konzolí a PC ve Zlíně</h1>
+        <p class="eyebrow">Zlín · PlayStation · Xbox · Nintendo · PC</p>
+        <h1>Servis herních konzolí a <span class="accent">PC ve Zlíně</span></h1>
         <p>Opravím PlayStation, Xbox, Nintendo i počítače. Diagnostika zdarma při opravě,
             cenu vždy odsouhlasíte předem. Osobní přístup jednoho technika.</p>
         <div class="hero__cta">
@@ -12,8 +13,15 @@
             <a class="btn btn--ghost" href="{{ route('web.kontrola') }}">Zkontrolovat stav zakázky</a>
         </div>
         @if($firma->telefon)
-            <div class="hero__note">Nejrychleji telefonicky: <a href="tel:+{{ \App\Support\Web::telMezinarodne() }}" style="color:#E8C77C">{{ $firma->telefon }}</a> · volejte prosím vždy předem.</div>
+            <div class="hero__note">Nejrychleji telefonicky:
+                <a href="tel:+{{ \App\Support\Web::telMezinarodne() }}">{{ $firma->telefon }}</a>
+                · volejte prosím vždy předem.</div>
         @endif
+        <div class="stats">
+            <div><b>100 %</b><span>zákazníků doporučuje</span></div>
+            <div><b>PS · Xbox</b><span>Nintendo, PC i ovladače</span></div>
+            <div><b>Zlín</b><span>osobně i poštou po ČR</span></div>
+        </div>
     </div>
 </section>
 
@@ -27,13 +35,15 @@
     <div class="wrap">
         <h2>Co opravuji</h2>
         <p class="lead">Vyberte zařízení – u každého najdete nejčastější opravy i ceník.</p>
-        <div class="grid grid--3" style="margin-top:1.5rem">
+        <div class="grid grid--3" style="margin-top:1.8rem">
+            @php $zkr = ['playstation'=>'PS','xbox'=>'XB','nintendo'=>'NIN','pc-a-notebooky'=>'PC','ovladace'=>'OVL']; @endphp
             @foreach($dlazdice as $d)
-                <div class="card">
+                <a class="card card--link" href="{{ route('web.opravy.detail', $d['slug']) }}" style="text-decoration:none;color:inherit;display:block">
+                    <div class="card__ico">{{ $zkr[$d['slug']] ?? '•' }}</div>
                     <h3>{{ $d['nazev'] }}</h3>
                     <p>{{ $d['perex'] }}</p>
-                    <a class="more" href="{{ route('web.opravy.detail', $d['slug']) }}">Detail a ceník</a>
-                </div>
+                    <span class="more">Detail a ceník</span>
+                </a>
             @endforeach
         </div>
     </div>

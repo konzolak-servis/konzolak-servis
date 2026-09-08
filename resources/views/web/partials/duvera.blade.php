@@ -9,8 +9,10 @@
 <div class="trust">
     @foreach($duvera as $d)
         <div class="trust__i">
-            <svg class="trust__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                 stroke-linecap="round" stroke-linejoin="round">{!! $ikony[$d['ikona']] ?? '' !!}</svg>
+            <span class="trust__ico">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                     stroke-linecap="round" stroke-linejoin="round">{!! $ikony[$d['ikona']] ?? '' !!}</svg>
+            </span>
             <b>{{ $d['titulek'] }}</b>
             <span>{{ $d['text'] }}</span>
         </div>
