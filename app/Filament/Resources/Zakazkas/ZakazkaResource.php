@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Zakazkas;
 use App\Filament\Resources\Zakazkas\Pages\CreateZakazka;
 use App\Filament\Resources\Zakazkas\Pages\EditZakazka;
 use App\Filament\Resources\Zakazkas\Pages\ListZakazkas;
+use App\Filament\Resources\Zakazkas\RelationManagers\NakupyRelationManager;
 use App\Filament\Resources\Zakazkas\RelationManagers\PolozkyRelationManager;
 use App\Filament\Resources\Zakazkas\RelationManagers\ReklamaceRelationManager;
 use App\Filament\Resources\Zakazkas\Schemas\ZakazkaForm;
@@ -49,6 +50,7 @@ class ZakazkaResource extends Resource
     {
         return [
             PolozkyRelationManager::class,
+            NakupyRelationManager::class,
             ReklamaceRelationManager::class,
         ];
     }

@@ -36,4 +36,9 @@ class NakupPolozka extends Model
     {
         return $this->belongsTo(SkladPolozka::class, 'sklad_polozka_id');
     }
+
+    public function zakazka(): BelongsTo
+    {
+        return $this->belongsTo(Zakazka::class, 'zakazka_id');
+    }
 }

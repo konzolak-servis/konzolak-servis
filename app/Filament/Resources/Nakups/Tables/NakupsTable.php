@@ -2,10 +2,13 @@
 
 namespace App\Filament\Resources\Nakups\Tables;
 
+use App\Models\Nakup;
+use App\Models\ObjednavkaDilu;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -39,6 +42,16 @@ class NakupsTable
                     ->requiresConfirmation()
                     ->modalDescription('Přidá kusy na sklad v ceně podle položky (bez poštovného), přepočítá vážený průměr a do peněžního deníku zapíše výdaj = položky + poštovné. Nelze vzít zpět.')
                     ->action(fn ($record) => $record->naskladnit()),
+                Action::make('do_objednavek')
+                    ->label('Vytvořit objednávky dílů')
+                    ->icon('heroicon-o-inbox-arrow-down')
+                    ->color('gray')
+                    ->visible(fn (Nakup $record) => $record->polozky()->exists())
+                    ->requiresConfirmation()
+                    ->modalHeading('Přenést položky nákupu do Objednávek dílů')
+                    ->modalDescription('Z každé položky nákupu vznikne záznam v Objednávkách dílů (nové číslo řady OBJ, stav „Dorazilo", datum doručení = datum nákupu, dodavatel a případná zakázka se přenesou). Nákup zůstává beze změny. Už dříve přenesené položky se přeskočí.')
+                    ->modalSubmitActionLabel('Vytvořit')
+                    ->action(fn (Nakup $record) => self::doObjednavek($record)),
                 EditAction::make(),
             ])
             ->toolbarActions([
@@ -46,5 +59,45 @@ class NakupsTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /** Vytvoří z položek nákupu objednávky dílů (s vlastní číselnou řadou OBJ). */
+    private static function doObjednavek(Nakup $nakup): void
+    {
+        $vytvoreno = 0;
+        $preskoceno = 0;
+        $znacka = 'Z nákupu ' . $nakup->cislo;
+
+        foreach ($nakup->polozky as $p) {
+            $jizExistuje = ObjednavkaDilu::where('poznamka', 'like', '%' . $znacka . '%')
+                ->where('nazev_dilu', $p->nazev)
+                ->exists();
+
+            if ($jizExistuje) {
+                $preskoceno++;
+
+                continue;
+            }
+
+            ObjednavkaDilu::create([
+                'dodavatel' => $nakup->dodavatel,
+                'datum_objednavky' => $nakup->datum?->toDateString() ?? now()->toDateString(),
+                'doruceno_datum' => $nakup->datum?->toDateString() ?? now()->toDateString(),
+                'nazev_dilu' => $p->nazev,
+                'mnozstvi' => $p->mnozstvi_ks,
+                'cena_odhad' => $p->castka_celkem,
+                'stav' => 'dorazilo',
+                'zakazka_id' => $p->zakazka_id,
+                'poznamka' => $znacka,
+            ]);
+            $vytvoreno++;
+        }
+
+        Notification::make()
+            ->title($vytvoreno > 0
+                ? "Vytvořeno {$vytvoreno} objednávek dílů" . ($preskoceno ? " ({$preskoceno} přeskočeno)" : '')
+                : 'Nic nevytvořeno – vše už bylo přeneseno')
+            ->success()
+            ->send();
     }
 }

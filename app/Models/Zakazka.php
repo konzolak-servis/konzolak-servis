@@ -174,6 +174,12 @@ class Zakazka extends Model
         return $this->hasMany(SkladovyPohyb::class, 'zakazka_id');
     }
 
+    /** Položky nákupů koupené pro tuto zakázku (informační přehled nákladů). */
+    public function nakupPolozky(): HasMany
+    {
+        return $this->hasMany(NakupPolozka::class, 'zakazka_id');
+    }
+
     public function getStavNazevAttribute(): string
     {
         return self::STAVY[$this->stav] ?? $this->stav;

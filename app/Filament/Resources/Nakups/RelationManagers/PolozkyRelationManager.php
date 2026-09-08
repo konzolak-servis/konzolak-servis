@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Nakups\RelationManagers;
 
 use App\Models\SkladPolozka;
+use App\Models\Zakazka;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -48,6 +49,13 @@ class PolozkyRelationManager extends RelationManager
                 TextInput::make('mnozstvi_ks')->label('Počet ks')->numeric()->default(1)->required(),
                 TextInput::make('castka_celkem')->label('Celková částka')->numeric()->default(0)->required()->suffix('Kč')
                     ->helperText('Cena za kus se dopočítá.'),
+                Select::make('zakazka_id')
+                    ->label('Pro zakázku (nepovinné)')
+                    ->options(fn () => Zakazka::query()->orderByDesc('id')->limit(300)
+                        ->get()->mapWithKeys(fn ($z) => [$z->id => $z->cislo . ' · ' . ($z->zakaznik?->nazev ?? '')])->all())
+                    ->searchable()
+                    ->preload()
+                    ->helperText('Pro jakou opravu byl díl koupen. Zobrazí se v zakázce v přehledu nakoupených dílů.'),
             ]);
     }
 
@@ -60,6 +68,7 @@ class PolozkyRelationManager extends RelationManager
                 TextColumn::make('mnozstvi_ks')->label('Ks')->numeric(),
                 TextColumn::make('castka_celkem')->label('Celkem')->money('CZK'),
                 TextColumn::make('cena_ks')->label('Cena/ks')->money('CZK'),
+                TextColumn::make('zakazka.cislo')->label('Pro zakázku')->badge()->placeholder('—'),
             ])
             ->headerActions([
                 CreateAction::make()->label('Přidat položku')
