@@ -74,10 +74,8 @@ p { margin: 0 0 1rem; }
 .lead { font-size: 1.14rem; color: var(--muted); max-width: 60ch; }
 .center { text-align: center; }
 .center .lead { margin-inline: auto; }
-.eyebrow { font-family: var(--ff-head); text-transform: uppercase; letter-spacing: .28em;
-    font-size: .76rem; font-weight: 600; color: var(--gold-300); margin: 0 0 1rem;
-    display: inline-flex; align-items: center; gap: .6rem; }
-.eyebrow::before { content: ""; width: 26px; height: 2px; background: var(--gold); }
+.eyebrow { font-family: var(--ff-head); text-transform: uppercase; letter-spacing: .26em;
+    font-size: .76rem; font-weight: 600; color: var(--gold-300); margin: 0 0 1rem; display: block; }
 .accent { color: var(--gold); }
 
 /* ---- Tlačítka ---- */
