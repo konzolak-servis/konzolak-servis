@@ -34,8 +34,8 @@ class Web
     public static function duvera(): array
     {
         return [
-            ['ikona' => 'shield', 'titulek' => 'Odpovědnost za vady dle zákona',
-                'text' => 'U spotřebitele 24 měsíců (12 u starších zařízení), u firem 3 měsíce.'],
+            ['ikona' => 'bolt', 'titulek' => 'Opravy bez čekání',
+                'text' => 'Běžné závady zpravidla vyřídím během několika dnů.'],
             ['ikona' => 'search', 'titulek' => 'Diagnostika zdarma',
                 'text' => 'Při provedení opravy neplatíte za diagnostiku nic.'],
             ['ikona' => 'pin', 'titulek' => 'Osobně ve Zlíně i poštou',
