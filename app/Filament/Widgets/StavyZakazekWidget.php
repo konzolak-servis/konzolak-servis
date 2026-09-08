@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Pages\Kalendar;
 use App\Filament\Resources\ObjednavkaDilus\ObjednavkaDiluResource;
+use App\Filament\Resources\PenezniDeniks\PenezniDenikResource;
 use App\Filament\Resources\Zakazkas\ZakazkaResource;
 use App\Models\ObjednavkaDilu;
 use App\Models\PenezniDenik;
@@ -64,23 +65,12 @@ class StavyZakazekWidget extends StatsOverviewWidget
                 ->icon('heroicon-o-inbox-arrow-down')
                 ->url(ObjednavkaDiluResource::getUrl('index', ['tableFilters' => ['stav' => ['value' => 'objednano']]])),
 
-            Stat::make('Příjem – ' . $mesic, $kc(end($prijmy)))
-                ->description('posledních 6 měsíců')
-                ->color('success')
-                ->icon('heroicon-o-arrow-trending-up')
-                ->chart($prijmy),
-
-            Stat::make('Výdej – ' . $mesic, $kc(end($vydaje)))
-                ->description('posledních 6 měsíců')
-                ->color('danger')
-                ->icon('heroicon-o-arrow-trending-down')
-                ->chart($vydaje),
-
             Stat::make('Čistý zisk – ' . $mesic, $kc(end($zisky)))
-                ->description('příjem − výdej')
+                ->description('Příjem ' . $kc(end($prijmy)) . '   ·   Výdej ' . $kc(end($vydaje)))
                 ->color(end($zisky) >= 0 ? 'warning' : 'danger')
                 ->icon('heroicon-o-banknotes')
-                ->chart($zisky),
+                ->chart($zisky)
+                ->url(PenezniDenikResource::getUrl('index')),
         ];
     }
 
