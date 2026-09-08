@@ -30,11 +30,13 @@
                 <input id="cislo" name="cislo" placeholder="např. SL-2026-0042" required value="{{ old('cislo') }}">
             </div>
             <div>
-                <label for="prijmeni">Příjmení *</label>
-                <input id="prijmeni" name="prijmeni" required value="{{ old('prijmeni') }}">
+                <label for="overeni">Příjmení, e-mail nebo telefon *</label>
+                <input id="overeni" name="overeni" required value="{{ old('overeni') }}"
+                       placeholder="pro ověření – cokoli z dokladu">
             </div>
             <button class="btn btn--primary" type="submit">Zobrazit stav</button>
-            <p class="note">Číslo zakázky i příjmení najdete na dokladu o převzetí, který jste dostali při předání zařízení.</p>
+            <p class="note">Obojí najdete na dokladu o převzetí, který jste dostali při předání zařízení.
+                Stačí příjmení, e-mail nebo telefonní číslo.</p>
         </form>
     </div>
 </section>

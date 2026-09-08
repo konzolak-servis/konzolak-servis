@@ -23,9 +23,9 @@ class KontrolaController extends Controller
     {
         $data = $request->validate([
             'cislo' => ['required', 'string', 'max:30'],
-            'prijmeni' => ['required', 'string', 'max:80'],
+            'overeni' => ['required', 'string', 'min:3', 'max:120'],
             'web' => ['nullable', 'size:0'], // honeypot
-        ], [], ['cislo' => 'číslo zakázky', 'prijmeni' => 'příjmení']);
+        ], [], ['cislo' => 'číslo zakázky', 'overeni' => 'příjmení, e-mail nebo telefon']);
 
         $klic = 'kontrola:' . $request->ip();
         if (RateLimiter::tooManyAttempts($klic, 8)) {
@@ -38,21 +38,23 @@ class KontrolaController extends Controller
             $cislo = 'SL-' . $cislo;
         }
 
-        $prijmeni = Str::lower(trim($data['prijmeni']));
+        $vstup = Str::lower(trim($data['overeni']));
+        $vstupTel = preg_replace('/\D+/', '', $data['overeni']);
 
-        $zakazka = Zakazka::query()
-            ->where('cislo', $cislo)
-            ->with('zakaznik')
-            ->first();
+        $zakazka = Zakazka::query()->where('cislo', $cislo)->with('zakaznik')->first();
+        $k = $zakazka?->zakaznik;
 
-        $sedi = $zakazka && $zakazka->zakaznik && (
-            Str::contains(Str::lower((string) $zakazka->zakaznik->jmeno), $prijmeni)
-            || Str::contains(Str::lower((string) $zakazka->zakaznik->firma_nazev), $prijmeni)
+        $sedi = $k && (
+            Str::contains(Str::lower((string) $k->jmeno), $vstup)
+            || Str::contains(Str::lower((string) $k->firma_nazev), $vstup)
+            || (filled($k->email) && Str::lower($k->email) === $vstup)
+            || (strlen($vstupTel) >= 6 && filled($k->telefon)
+                && str_contains(preg_replace('/\D+/', '', $k->telefon), $vstupTel))
         );
 
         if (! $sedi) {
             return back()->withInput()->with('chyba',
-                'Zakázku se nepodařilo najít. Zkontrolujte číslo zakázky i příjmení podle dokladu o převzetí.');
+                'Zakázku se nepodařilo najít. Zkontrolujte číslo zakázky a druhý údaj (příjmení, e-mail nebo telefon) podle dokladu o převzetí.');
         }
 
         return redirect()->route('verejne.stav', [
