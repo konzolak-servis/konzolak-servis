@@ -9,15 +9,13 @@ use Illuminate\View\View;
 
 class VerejnyController extends Controller
 {
-    /** Veřejná stránka stavu zakázky – přístup přes token v URL (z QR na dokladu). */
+    /** Veřejná stránka stavu zakázky (krátká URL /z/…, cíl QR z dokladu i webového formuláře). */
     public function stavZakazky(Zakazka $zakazka, string $token): View
     {
         abort_unless(hash_equals(QrPlatba::token('stav', $zakazka->id), $token), 404);
 
         $zakazka->load('zarizeni');
-        $firma = Firma::get();
 
-        // mapa stavů na krok v časové ose (0–4) a přátelský text
         [$krok, $nadpis, $popis, $tonalita] = match ($zakazka->stav) {
             'prijato' => [0, 'Přijato do servisu', 'Zařízení máme převzaté, brzy se do něj podíváme.', 'info'],
             'diagnostika' => [1, 'Probíhá diagnostika', 'Zjišťujeme závadu a rozsah opravy.', 'info'],
@@ -29,17 +27,14 @@ class VerejnyController extends Controller
             default => [0, 'Přijato do servisu', '', 'info'],
         };
 
-        $kUhrade = max((float) $zakazka->cena_celkem - (float) $zakazka->zaloha, 0);
-
-        return view('verejne.stav-zakazky', [
-            'firma' => $firma,
+        return view('web.kontrola-stav', [
+            'firma' => Firma::get(),
             'z' => $zakazka,
             'krok' => $krok,
             'nadpis' => $nadpis,
             'popis' => $popis,
             'tonalita' => $tonalita,
-            'kUhrade' => $kUhrade,
-            'adminUrl' => route('filament.admin.resources.zakazkas.edit', $zakazka),
+            'kUhrade' => max((float) $zakazka->cena_celkem - (float) $zakazka->zaloha, 0),
         ]);
     }
 }
