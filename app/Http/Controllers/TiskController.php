@@ -42,6 +42,7 @@ class TiskController extends Controller
         return Tisk::pdf('pdf.servisni-protokol', [
             'firma' => $firma,
             'z' => $zakazka,
+            'jeProtokol' => true,
             'qr' => \App\Support\Qr::dataUri($this->stavUrl($zakazka), 180),
             'qrPlatba' => $zakazka->zpusob_uhrady === 'ucet' && $doplatek > 0
                 ? \App\Support\QrPlatba::dataUri($firma->cislo_uctu, $doplatek,

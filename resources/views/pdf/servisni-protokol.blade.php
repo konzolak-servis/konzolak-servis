@@ -56,13 +56,12 @@
                 </tr></table>
             @elseif ($z->zpusob_uhrady === 'hotove' && max($z->cena_celkem - $z->zaloha, 0) > 0)
                 <strong>Platba hotově</strong> při vyzvednutí.
-                @if ($z->zaloha > 0)
-                    <br>Cena celkem {{ number_format($z->cena_celkem, 0, ',', ' ') }} Kč &nbsp;−&nbsp;
-                    záloha {{ number_format($z->zaloha, 0, ',', ' ') }} Kč
-                @endif
-            @elseif ($z->zaloha > 0)
-                Cena celkem {{ number_format($z->cena_celkem, 0, ',', ' ') }} Kč &nbsp;−&nbsp;
-                záloha {{ number_format($z->zaloha, 0, ',', ' ') }} Kč
+            @endif
+            @if ($z->zaloha > 0)
+                <div style="margin-top:1mm;font-size:8pt;color:#374151">
+                    Cena celkem {{ number_format($z->cena_celkem, 0, ',', ' ') }} Kč
+                    &nbsp;−&nbsp; přijatá záloha {{ number_format($z->zaloha, 0, ',', ' ') }} Kč
+                </div>
             @endif
         </td>
         <td class="tsum">

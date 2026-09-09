@@ -18,14 +18,18 @@
                 <tr>
                     <td><div class="label">Přijato</div><div class="val">{{ optional($z->datum_prijeti)->format('d. m. Y') ?: '—' }}</div></td>
                     <td>
-                        @if ($z->datum_vyrizeni)
-                            <div class="label">Vyřízeno</div><div class="val">{{ $z->datum_vyrizeni->format('d. m. Y') }}</div>
+                        @if ($z->datum_vyrizeni || ($jeProtokol ?? false))
+                            <div class="label">Vyřízeno</div><div class="val">{{ ($z->datum_vyrizeni ?? now())->format('d. m. Y') }}</div>
                         @endif
                     </td>
                 </tr>
                 <tr>
                     <td style="padding-top:2mm"><div class="label">Zakázka</div><div class="val">{{ $z->cislo }}</div></td>
-                    <td style="padding-top:2mm"></td>
+                    <td style="padding-top:2mm">
+                        @if ($z->zaloha > 0)
+                            <div class="label">Přijatá záloha</div><div class="val">{{ number_format($z->zaloha, 0, ',', ' ') }} Kč</div>
+                        @endif
+                    </td>
                 </tr>
             </table>
         </td>
