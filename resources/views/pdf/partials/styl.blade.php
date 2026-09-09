@@ -60,6 +60,6 @@
     .podpisy td { width: 50%; padding: 8mm 6mm 0; }
     .podpisy .cara { border-top: .5px solid #9ca3af; padding-top: 1.5mm; font-size: 7.5pt; color: #6b7280; }
     .razitko-otisk { position: absolute; bottom: 21mm; left: 12mm; width: 38mm; height: 38mm; }
-    .razitko-podpis { position: absolute; bottom: 25mm; left: 42mm; width: 20mm; }
+    .razitko-podpis { display: block; width: 22mm; margin: -13mm 0 0 24mm; }
     .paticka .meta { border-top: .5px solid #e5e7eb; padding-top: 1.5mm; font-size: 6.5pt; color: #9ca3af; text-align: center; }
 </style>
