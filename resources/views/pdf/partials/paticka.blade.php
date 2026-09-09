@@ -1,7 +1,8 @@
 {{-- Patička dokumentu – mPDF ji vykreslí vždy u spodního okraje stránky --}}
 @php
-    // Hlavní firemní razítko – otisk nad levým (firemním) podpisovým řádkem na všech dokladech.
+    // Hlavní firemní razítko + podpis nad levým (firemním) podpisovým řádkem na všech dokladech.
     $razitkoSoubor = public_path('images/razitko.png');
+    $podpisSoubor  = public_path('images/podpis.png');
     $zobrazitRazitko = ! empty($podpisL) && is_file($razitkoSoubor);
 @endphp
 <htmlpagefooter name="paticka">
@@ -11,8 +12,13 @@
                 <td>
                     @if ($zobrazitRazitko)
                         <img src="{{ $razitkoSoubor }}" class="razitko-otisk">
+                        @if (is_file($podpisSoubor))
+                            <img src="{{ $podpisSoubor }}" class="razitko-podpis">
+                        @endif
+                        <div class="cara">&nbsp;</div>
+                    @else
+                        <div class="cara">{{ $podpisL ?? 'Za servis (razítko a podpis)' }}</div>
                     @endif
-                    <div class="cara">{{ $podpisL ?? 'Za servis (razítko a podpis)' }}</div>
                 </td>
                 <td>@isset($podpisR)<div class="cara">{{ $podpisR }}</div>@endisset</td>
             </tr>
