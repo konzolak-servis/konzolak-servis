@@ -59,5 +59,6 @@
     .podpisy { width: 100%; border-collapse: collapse; margin-bottom: 3mm; }
     .podpisy td { width: 50%; padding: 8mm 6mm 0; }
     .podpisy .cara { border-top: .5px solid #9ca3af; padding-top: 1.5mm; font-size: 7.5pt; color: #6b7280; }
+    .razitko-otisk { position: absolute; bottom: 24mm; left: 20mm; width: 32mm; height: 32mm; }
     .paticka .meta { border-top: .5px solid #e5e7eb; padding-top: 1.5mm; font-size: 6.5pt; color: #9ca3af; text-align: center; }
 </style>
