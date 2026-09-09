@@ -135,10 +135,10 @@
                         <span class="v">{{ number_format((float) $z->predpokladana_cena, 0, ',', ' ') }} Kč</span>
                     </div>
                 @endif
-                @if ($z->stav === 'vydano')
+                @if ($z->zaruka_mesice && $z->stav === 'vydano')
                     <div class="row">
-                        <span class="k">Odpovědnost za vady opravy</span>
-                        <span class="v">24 měs. (spotřebitel) · 3 měs. (firma)</span>
+                        <span class="k">Záruka</span>
+                        <span class="v">{{ $z->zaruka_mesice }} měs.</span>
                     </div>
                 @endif
             </div>
