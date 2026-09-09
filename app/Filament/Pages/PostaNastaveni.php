@@ -58,7 +58,7 @@ class PostaNastaveni extends Page
                         Textarea::make('podpis_email')
                             ->label('Podpis e-mailu')
                             ->rows(6)
-                            ->placeholder("S pozdravem\nKonzolák Zlín\ntel. 773 001 488"),
+                            ->placeholder("S pozdravem\nKonzolák Zlín\ntel. 778 796 868"),
                     ]),
 
                 Section::make('Text o vyzvednutí zařízení')

@@ -431,7 +431,7 @@ class EditZakazka extends EditRecord
         return $akce;
     }
 
-    /** Telefon zákazníka v mezinárodním tvaru bez znaků (např. 420773001488) – pro wa.me. */
+    /** Telefon zákazníka v mezinárodním tvaru bez znaků (např. 420776123456) – pro wa.me. */
     private function telefonMezinarodne(): ?string
     {
         $tel = preg_replace('/\D+/', '', (string) $this->record->zakaznik?->telefon);

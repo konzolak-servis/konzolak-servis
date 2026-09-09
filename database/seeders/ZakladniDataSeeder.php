@@ -17,7 +17,7 @@ class ZakladniDataSeeder extends Seeder
             'ulice' => 'Na Honech I 4905',
             'mesto' => 'Zlín',
             'psc' => '760 05',
-            'telefon' => '773 001 488',
+            'telefon' => '778 796 868',
             'email' => null, // doplní se po spuštění webu
             'cislo_uctu' => '197127370/0600',
             'platce_dph' => false,
