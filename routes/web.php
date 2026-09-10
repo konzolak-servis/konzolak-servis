@@ -12,7 +12,24 @@ use App\Http\Controllers\Web\WebController;
 use App\Http\Controllers\WebAuthn\WebAuthnLoginController;
 use App\Http\Controllers\WebAuthn\WebAuthnRegisterController;
 use App\Http\Controllers\ZalohaController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+/*
+ * Přihlašovací brána veřejného webu (stránka „ve výstavbě") – ověří heslo
+ * z config/web.php a pustí dál. Middleware App\Http\Middleware\WebGate.
+ */
+Route::post('/vstup', function (Request $request) {
+    $heslo = (string) config('web.gate_heslo');
+
+    if ($heslo !== '' && hash_equals($heslo, (string) $request->input('heslo'))) {
+        $request->session()->put('web_gate_ok', true);
+
+        return redirect('/');
+    }
+
+    return back()->withErrors(['heslo' => 'Nesprávné heslo.']);
+})->name('web.vstup');
 
 /*
  * Veřejný web konzolak.com. V produkci se servíruje z apexu, servisní systém
