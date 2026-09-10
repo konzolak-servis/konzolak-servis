@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Zakazkas\Tables;
 
+use App\Filament\Resources\Zakazkas\ZakazkaResource;
 use App\Models\Zakazka;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -48,7 +49,7 @@ class ZakazkasTable
                     ->badge()->color('danger')->icon('heroicon-o-arrow-uturn-left')
                     ->placeholder('—')
                     ->url(fn ($record) => $record->reklamace_k_id
-                        ? \App\Filament\Resources\Zakazkas\ZakazkaResource::getUrl('edit', ['record' => $record->reklamace_k_id])
+                        ? ZakazkaResource::getUrl('edit', ['record' => $record->reklamace_k_id])
                         : null)
                     ->toggleable(),
                 TextColumn::make('zaruka_do')
@@ -96,33 +97,6 @@ class ZakazkasTable
             ->defaultSort('datum_prijeti', 'desc')
             ->recordActions([
                 EditAction::make(),
-                ActionGroup::make([
-                    Action::make('stav_diagnostika')->label('Diagnostikováno')->icon('heroicon-o-magnifying-glass')->color('info')
-                        ->visible(fn ($record) => ! in_array($record->stav, ['diagnostika', 'hotovo', 'vydano'], true))
-                        ->action(fn ($record) => $record->update(['stav' => 'diagnostika'])),
-                    Action::make('stav_ceka')->label('Čeká na díl')->icon('heroicon-o-truck')->color('warning')
-                        ->visible(fn ($record) => ! in_array($record->stav, ['ceka_na_dil', 'vydano'], true))
-                        ->action(fn ($record) => $record->update(['stav' => 'ceka_na_dil'])),
-                    Action::make('stav_hotovo')->label('Opraveno')->icon('heroicon-o-check-circle')->color('success')
-                        ->visible(fn ($record) => ! in_array($record->stav, ['hotovo', 'vydano'], true))
-                        ->action(fn ($record) => $record->update(['stav' => 'hotovo'])),
-                    Action::make('uzavrit')->label('Uzavřít a tisk protokolu')->icon('heroicon-o-lock-closed')->color('primary')
-                        ->visible(fn ($record) => $record->stav !== 'vydano')
-                        ->schema([
-                            \Filament\Forms\Components\Radio::make('zpusob_uhrady')->label('Platba')
-                                ->options(Zakazka::ZPUSOBY_UHRADY)->default('hotove')->inline()->required(),
-                        ])
-                        ->modalDescription('Nastaví „Vydáno", zapíše příjem do deníku a otevře servisní protokol.')
-                        ->action(function (array $data, $record) {
-                            $record->update([
-                                'stav' => 'vydano',
-                                'zpusob_uhrady' => $data['zpusob_uhrady'],
-                                'datum_vyrizeni' => $record->datum_vyrizeni ?? now()->toDateString(),
-                            ]);
-
-                            return redirect(route('tisk.zakazka.protokol', $record));
-                        }),
-                ])->label('Stav')->icon('heroicon-o-arrow-path')->button()->color('gray'),
                 ActionGroup::make([
                     Action::make('servisni_doklad')
                         ->label('Doklad o převzetí (PDF)')
