@@ -2,11 +2,12 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\Login;
+use App\Filament\Pages\Dashboard;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use App\Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -27,7 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login(\App\Filament\Pages\Auth\Login::class)
+            ->login(Login::class)
             ->profile()
             ->brandName('Konzolák Zlín')
             ->brandLogo(asset('images/konzolak-logo-print.png'))
@@ -214,6 +215,30 @@ class AdminPanelProvider extends PanelProvider
                         });
                     </script>
                 HTML)
+            )
+            ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+                function (): HtmlString {
+                    $host = request()->getHost();
+                    $web = str_starts_with($host, 'servis.')
+                        ? request()->getScheme().'://'.substr($host, 7)
+                        : url('/');
+
+                    return new HtmlString(<<<HTML
+                        <a href="{$web}" target="_blank" rel="noopener"
+                           title="Otevřít veřejný web konzolák.com"
+                           style="display:inline-flex; align-items:center; gap:.4rem; white-space:nowrap;
+                                  padding:.4rem .75rem; border-radius:.5rem; border:1px solid rgba(200,153,46,.5);
+                                  color:inherit; font-size:.8rem; font-weight:600; text-decoration:none;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9"/><path d="M3 12h18"/>
+                                <path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/>
+                            </svg>
+                            <span>Web</span>
+                        </a>
+                    HTML);
+                }
             )
             ->middleware([
                 EncryptCookies::class,
