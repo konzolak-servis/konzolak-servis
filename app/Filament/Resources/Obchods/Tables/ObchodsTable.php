@@ -11,6 +11,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -61,7 +62,21 @@ class ObchodsTable
                     ->action(function (array $data, Obchod $record) {
                         $record->prodat((float) $data['prodejni_cena'], $data['prodej_datum'], $data['prodej_komu'] ?? null);
 
-                        return redirect(route('tisk.obchod', $record));
+                        Notification::make()
+                            ->title('Prodáno za '.number_format((float) $data['prodejni_cena'], 0, ',', ' ').' Kč')
+                            ->body($record->zisk !== null
+                                ? 'Zisk: '.number_format($record->zisk, 0, ',', ' ').' Kč'
+                                : null)
+                            ->success()
+                            ->actions([
+                                Action::make('doklad_prodej')
+                                    ->label('Otevřít doklad o prodeji (PDF)')
+                                    ->icon('heroicon-o-document-check')
+                                    ->url(route('tisk.obchod', ['obchod' => $record, 'typ' => 'prodej']), shouldOpenInNewTab: true)
+                                    ->button(),
+                            ])
+                            ->persistent()
+                            ->send();
                     }),
                 ActionGroup::make([
                     EditAction::make(),
