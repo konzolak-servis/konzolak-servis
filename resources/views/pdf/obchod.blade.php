@@ -2,7 +2,10 @@
 <html lang="cs">
 <head><meta charset="utf-8">@include('pdf.partials.styl')</head>
 <body>
-@php($jeVykup = $o->typ === 'vykup')
+@php($jakoProdej = ($jakoProdej ?? false) || $o->typ === 'prodej')
+@php($jeVykup = ! $jakoProdej)
+@php($castka = $jakoProdej ? (float) ($o->prodejni_cena ?? $o->cena) : (float) $o->cena)
+@php($datumDokladu = $jakoProdej ? ($o->prodej_datum ?: $o->datum) : $o->datum)
 @include('pdf.partials.hlavicka', [
     'nadpis' => $jeVykup ? 'Doklad o výkupu' : 'Doklad o prodeji',
     'cislo' => $o->cislo,
@@ -18,8 +21,9 @@
         </td>
         <td width="50%">
             <div class="label">{{ $jeVykup ? 'Prodávající' : 'Kupující' }}</div>
-            <div class="val"><strong>{{ $o->protistrana_jmeno ?: '—' }}</strong></div>
-            @if ($o->protistrana_kontakt)<div>{{ $o->protistrana_kontakt }}</div>@endif
+            @php($druha = $jakoProdej ? ($o->prodej_komu ?: $o->protistrana_jmeno) : $o->protistrana_jmeno)
+            <div class="val"><strong>{{ $druha ?: '—' }}</strong></div>
+            @if (! $jakoProdej && $o->protistrana_kontakt)<div>{{ $o->protistrana_kontakt }}</div>@endif
             @if ($jeVykup && $o->protistrana_doklad)<div class="muted">Doklad totožnosti: {{ $o->protistrana_doklad }}</div>@endif
         </td>
     </tr>
@@ -28,11 +32,11 @@
 <table class="items">
     <tr><th>Datum</th><th>Kategorie</th><th>Označení</th><th>Sériové číslo</th><th class="num">Cena</th></tr>
     <tr>
-        <td>{{ optional($o->datum)->format('d. m. Y') }}</td>
+        <td>{{ optional($datumDokladu)->format('d. m. Y') }}</td>
         <td>{{ \App\Models\Obchod::KATEGORIE[$o->kategorie] ?? $o->kategorie }}</td>
         <td>{{ $o->nazev }}</td>
         <td>{{ $o->seriove_cislo ?: '—' }}</td>
-        <td class="num">{{ number_format($o->cena, 0, ',', ' ') }} Kč</td>
+        <td class="num">{{ number_format($castka, 0, ',', ' ') }} Kč</td>
     </tr>
 </table>
 
@@ -45,7 +49,7 @@
     <tr>
         <td class="tlabel"></td>
         <td class="tsum">
-            {{ number_format($o->cena, 0, ',', ' ') }} Kč
+            {{ number_format($castka, 0, ',', ' ') }} Kč
             <div style="font-size:6.5pt;font-weight:normal;color:#9ca3af">
                 {{ $jeVykup ? 'VYPLACENO' : 'K ÚHRADĚ' }}
             </div>

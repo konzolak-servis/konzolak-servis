@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Filament\Resources\Fakturas\FakturaResource;
+use App\Filament\Resources\Nakups\NakupResource;
+use App\Filament\Resources\Obchods\ObchodResource;
+use App\Filament\Resources\Zakazkas\ZakazkaResource;
 use Illuminate\Database\Eloquent\Model;
 
 class PenezniDenik extends Model
@@ -19,7 +23,6 @@ class PenezniDenik extends Model
     public const SKUPINY = [
         'opravy' => 'Opravy',
         'faktury' => 'Faktury',
-        'bazar' => 'Bazar (výkup/prodej)',
         'material' => 'Nákup dílů',
         'ostatni' => 'Ostatní',
     ];
@@ -41,13 +44,13 @@ class PenezniDenik extends Model
     {
         return match ($this->zdroj) {
             'zakazka', 'zakazka_zaloha' => $this->odkaz(Zakazka::class,
-                \App\Filament\Resources\Zakazkas\ZakazkaResource::class),
+                ZakazkaResource::class),
             'faktura' => $this->odkaz(Faktura::class,
-                \App\Filament\Resources\Fakturas\FakturaResource::class),
+                FakturaResource::class),
             'nakup' => $this->odkaz(Nakup::class,
-                \App\Filament\Resources\Nakups\NakupResource::class),
+                NakupResource::class),
             'obchod' => $this->odkaz(Obchod::class,
-                \App\Filament\Resources\Obchods\ObchodResource::class),
+                ObchodResource::class),
             default => [$this->kde ?: null, null],
         };
     }

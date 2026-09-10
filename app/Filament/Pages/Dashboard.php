@@ -24,13 +24,9 @@ class Dashboard extends BaseDashboard
 
             ActionGroup::make([
                 Action::make('novy_vykup')
-                    ->label('Výkup zboží')
+                    ->label('Bazar – nová položka')
                     ->icon('heroicon-o-arrow-down-on-square')
-                    ->url(ObchodResource::getUrl('create') . '?typ=vykup'),
-                Action::make('novy_prodej')
-                    ->label('Prodej zboží')
-                    ->icon('heroicon-o-arrow-up-on-square')
-                    ->url(ObchodResource::getUrl('create') . '?typ=prodej'),
+                    ->url(ObchodResource::getUrl('create').'?typ=vykup'),
                 Action::make('nova_faktura')
                     ->label('Faktura')
                     ->icon('heroicon-o-document-currency-dollar')

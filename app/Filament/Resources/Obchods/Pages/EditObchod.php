@@ -14,26 +14,17 @@ class EditObchod extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('vyridit')
-                ->label('Vyřídit a tisk dokladu')
-                ->icon('heroicon-o-check-circle')
-                ->color('success')
-                ->button()
-                ->visible(fn () => ! $this->record->vyrizeno)
-                ->requiresConfirmation()
-                ->modalDescription(fn () => $this->record->typ === 'vykup'
-                    ? 'Zapíše výdej peněz a naskladní kus do bazaru. Otevře doklad o výkupu.'
-                    : 'Zapíše příjem peněz a odečte kus ze skladu. Otevře doklad o prodeji.')
-                ->action(function () {
-                    $this->record->vyridit();
-
-                    return redirect(route('tisk.obchod', $this->record));
-                }),
-
-            Action::make('doklad')
-                ->label('Doklad (PDF)')
-                ->icon('heroicon-o-printer')
+            Action::make('doklad_vykup')
+                ->label('Doklad o výkupu (PDF)')
+                ->icon('heroicon-o-document-text')
                 ->url(fn () => route('tisk.obchod', $this->record))
+                ->openUrlInNewTab(),
+
+            Action::make('doklad_prodej')
+                ->label('Doklad o prodeji (PDF)')
+                ->icon('heroicon-o-document-check')
+                ->visible(fn () => (bool) $this->record->prodano)
+                ->url(fn () => route('tisk.obchod', ['obchod' => $this->record, 'typ' => 'prodej']))
                 ->openUrlInNewTab(),
 
             DeleteAction::make(),

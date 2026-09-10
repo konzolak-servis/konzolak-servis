@@ -5,7 +5,7 @@ namespace App\Models;
 use App\Support\Cisla;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Obchod extends Model
 {
@@ -16,6 +16,9 @@ class Obchod extends Model
     protected $casts = [
         'datum' => 'date',
         'cena' => 'decimal:2',
+        'prodejni_cena' => 'decimal:2',
+        'prodej_datum' => 'date',
+        'prodano' => 'boolean',
         'vyrizeno' => 'boolean',
     ];
 
@@ -28,13 +31,10 @@ class Obchod extends Model
     {
         static::creating(function (Obchod $o) {
             $o->datum ??= now()->toDateString();
+            $o->typ ??= 'vykup';
             $o->cislo ??= $o->typ === 'vykup'
                 ? Cisla::dalsi('vykup', 'VYK')
                 : Cisla::dalsi('prodej', 'PRD');
-        });
-
-        static::deleted(function (Obchod $o) {
-            PenezniDenik::where('zdroj', 'obchod')->where('zdroj_id', $o->id)->delete();
         });
     }
 
@@ -43,69 +43,57 @@ class Obchod extends Model
         return $this->belongsTo(SkladPolozka::class, 'sklad_polozka_id');
     }
 
+    /** Díly a náklady vložené do zařízení (investice před prodejem). */
+    public function naklady(): HasMany
+    {
+        return $this->hasMany(BazarNaklad::class, 'obchod_id');
+    }
+
     public function getTypNazevAttribute(): string
     {
         return $this->typ === 'vykup' ? 'Výkup' : 'Prodej';
     }
 
+    /** Součet nákladů na díly + ruční náklady vložené do zařízení. */
+    public function getNakladyDiluAttribute(): float
+    {
+        return round((float) $this->naklady->sum(fn (BazarNaklad $n) => $n->cena_celkem), 2);
+    }
+
+    /** Celková investice = pořizovací cena + díly + náklady. */
+    public function getNakladyCelkemAttribute(): float
+    {
+        return round((float) $this->cena + $this->naklady_dilu, 2);
+    }
+
+    /** Zisk po prodeji (null, dokud není prodáno). */
+    public function getZiskAttribute(): ?float
+    {
+        return $this->prodano
+            ? round((float) $this->prodejni_cena - $this->naklady_celkem, 2)
+            : null;
+    }
+
     /**
-     * Potvrzení obchodu:
-     *  - výkup  → výdej peněz + naskladnění kusu (bazar)
-     *  - prodej → příjem peněz + odečet ze skladu
+     * „Vyřídit" výkup – jen potvrdí záznam kvůli dokladu o výkupu.
+     * Bazar je interní: NEzapisuje do peněžního deníku ani do dílenského skladu.
      */
     public function vyridit(): void
     {
-        if ($this->vyrizeno) {
-            return;
+        if (! $this->vyrizeno) {
+            $this->update(['vyrizeno' => true]);
         }
+    }
 
-        DB::transaction(function () {
-            if ($this->typ === 'vykup') {
-                $sklad = $this->skladPolozka ?? SkladPolozka::create([
-                    'nazev' => $this->nazev,
-                    'kategorie' => 'Bazar',
-                    'platforma' => $this->kategorie,
-                ]);
-                $sklad->prijem(1, (float) $this->cena, [
-                    'zdroj' => 'obchod',
-                    'poznamka' => 'Výkup ' . $this->cislo,
-                    'datum' => $this->datum->toDateString(),
-                ]);
-
-                PenezniDenik::create([
-                    'datum' => $this->datum->toDateString(),
-                    'typ' => 'vydej',
-                    'popis' => 'Výkup ' . $this->cislo . ' – ' . $this->nazev,
-                    'castka' => (float) $this->cena,
-                    'kategorie' => 'Bazar – výkup',
-                    'kde' => $this->protistrana_jmeno,
-                    'zpusob' => $this->zpusob_uhrady,
-                    'zdroj' => 'obchod',
-                    'zdroj_id' => $this->id,
-                ]);
-
-                $this->update(['vyrizeno' => true, 'sklad_polozka_id' => $sklad->id]);
-            } else {
-                if ($this->skladPolozka) {
-                    $this->skladPolozka->vydej(1, [
-                        'zdroj' => 'obchod',
-                        'poznamka' => 'Prodej ' . $this->cislo,
-                    ]);
-                }
-
-                PenezniDenik::create([
-                    'datum' => $this->datum->toDateString(),
-                    'typ' => 'prijem',
-                    'popis' => 'Prodej ' . $this->cislo . ' – ' . $this->nazev,
-                    'castka' => (float) $this->cena,
-                    'kategorie' => 'Bazar – prodej',
-                    'zpusob' => $this->zpusob_uhrady,
-                    'zdroj' => 'obchod',
-                    'zdroj_id' => $this->id,
-                ]);
-
-                $this->update(['vyrizeno' => true]);
-            }
-        });
+    /** Prodej zařízení – zapíše prodejní cenu a datum (bez deníku). */
+    public function prodat(float $cena, ?string $datum = null, ?string $komu = null): void
+    {
+        $this->update([
+            'prodano' => true,
+            'prodejni_cena' => $cena,
+            'prodej_datum' => $datum ?: now()->toDateString(),
+            'prodej_komu' => $komu,
+            'vyrizeno' => true,
+        ]);
     }
 }

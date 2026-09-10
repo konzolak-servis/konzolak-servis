@@ -3,13 +3,17 @@
 namespace App\Filament\Resources\Obchods\Tables;
 
 use App\Models\Obchod;
+use App\Support\Platformy;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Tables\Columns\IconColumn;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class ObchodsTable
@@ -19,44 +23,60 @@ class ObchodsTable
         return $table
             ->columns([
                 TextColumn::make('cislo')->label('Číslo')->searchable()->sortable(),
-                TextColumn::make('typ')->label('Typ')->badge()
-                    ->formatStateUsing(fn ($state) => $state === 'vykup' ? 'Výkup' : 'Prodej')
-                    ->color(fn ($state) => $state === 'vykup' ? 'warning' : 'success'),
-                TextColumn::make('datum')->label('Datum')->date('d.m.Y')->sortable(),
+                TextColumn::make('datum')->label('Nakoupeno')->date('d.m.Y')->sortable(),
                 TextColumn::make('kategorie')->label('Platforma')->badge()
-                    ->formatStateUsing(fn ($state) => \App\Support\Platformy::label($state)),
-                TextColumn::make('nazev')->label('Označení')->searchable()->wrap(),
-                TextColumn::make('protistrana_jmeno')->label('Protistrana')->searchable()->toggleable(),
-                TextColumn::make('cena')->label('Cena')->money('CZK')->sortable(),
-                IconColumn::make('vyrizeno')->label('Vyřízeno')->boolean(),
+                    ->formatStateUsing(fn ($state) => Platformy::label($state))->toggleable(),
+                TextColumn::make('nazev')->label('Zařízení')->searchable()->wrap(),
+                TextColumn::make('cena')->label('Nákup')->money('CZK')->sortable(),
+                TextColumn::make('naklady_dilu')->label('Díly / náklady')->money('CZK')
+                    ->state(fn (Obchod $r) => $r->naklady_dilu)->placeholder('—'),
+                TextColumn::make('prodejni_cena')->label('Prodej')->money('CZK')->placeholder('—')->sortable(),
+                TextColumn::make('zisk')->label('Zisk')
+                    ->state(fn (Obchod $r) => $r->zisk)
+                    ->money('CZK')->placeholder('—')
+                    ->color(fn (?float $state) => $state === null ? 'gray' : ($state >= 0 ? 'success' : 'danger'))
+                    ->weight('bold'),
+                TextColumn::make('prodano')->label('Stav')->badge()
+                    ->formatStateUsing(fn ($state) => $state ? 'Prodáno' : 'Skladem')
+                    ->color(fn ($state) => $state ? 'success' : 'warning'),
             ])
             ->filters([
-                SelectFilter::make('typ')->label('Typ')
-                    ->options(['vykup' => 'Výkup', 'prodej' => 'Prodej']),
-                SelectFilter::make('kategorie')->label('Platforma')->options(\App\Support\Platformy::HODNOTY),
+                TernaryFilter::make('prodano')->label('Stav')
+                    ->placeholder('Vše')->trueLabel('Prodané')->falseLabel('Skladem'),
+                SelectFilter::make('kategorie')->label('Platforma')->options(Platformy::HODNOTY),
             ])
             ->defaultSort('datum', 'desc')
             ->recordActions([
-                Action::make('vyridit')
-                    ->label('Vyřídit')
-                    ->icon('heroicon-o-check-circle')
+                Action::make('prodat')
+                    ->label('Prodat')
+                    ->icon('heroicon-o-banknotes')
                     ->color('success')
-                    ->visible(fn (Obchod $record) => ! $record->vyrizeno)
-                    ->requiresConfirmation()
-                    ->modalDescription(fn (Obchod $record) => $record->typ === 'vykup'
-                        ? 'Zapíše výdej peněz a naskladní kus do bazaru. Otevře doklad o výkupu.'
-                        : 'Zapíše příjem peněz a odečte kus ze skladu. Otevře doklad o prodeji.')
-                    ->action(function (Obchod $record) {
-                        $record->vyridit();
+                    ->visible(fn (Obchod $record) => ! $record->prodano)
+                    ->schema([
+                        TextInput::make('prodejni_cena')->label('Prodejní cena')->numeric()->required()->suffix('Kč'),
+                        DatePicker::make('prodej_datum')->label('Datum prodeje')->default(now())->native(false)->required(),
+                        TextInput::make('prodej_komu')->label('Komu (nepovinné)'),
+                    ])
+                    ->modalDescription(fn (Obchod $record) => 'Investováno celkem: '.number_format($record->naklady_celkem, 0, ',', ' ').' Kč (nákup '.number_format((float) $record->cena, 0, ',', ' ').' + díly '.number_format($record->naklady_dilu, 0, ',', ' ').'). Bazar je interní – do peněžního deníku se nic nezapisuje.')
+                    ->action(function (array $data, Obchod $record) {
+                        $record->prodat((float) $data['prodejni_cena'], $data['prodej_datum'], $data['prodej_komu'] ?? null);
 
                         return redirect(route('tisk.obchod', $record));
                     }),
-                Action::make('doklad')
-                    ->label('Doklad (PDF)')
-                    ->icon('heroicon-o-printer')
-                    ->url(fn (Obchod $record) => route('tisk.obchod', $record))
-                    ->openUrlInNewTab(),
-                EditAction::make(),
+                ActionGroup::make([
+                    EditAction::make(),
+                    Action::make('doklad_vykup')
+                        ->label('Doklad o výkupu (PDF)')
+                        ->icon('heroicon-o-document-text')
+                        ->url(fn (Obchod $record) => route('tisk.obchod', $record))
+                        ->openUrlInNewTab(),
+                    Action::make('doklad_prodej')
+                        ->label('Doklad o prodeji (PDF)')
+                        ->icon('heroicon-o-document-check')
+                        ->visible(fn (Obchod $record) => $record->prodano)
+                        ->url(fn (Obchod $record) => route('tisk.obchod', ['obchod' => $record, 'typ' => 'prodej']))
+                        ->openUrlInNewTab(),
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

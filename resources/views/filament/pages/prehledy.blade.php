@@ -28,18 +28,6 @@
             @endforelse
         </x-filament::section>
 
-        {{-- Bazar --}}
-        <x-filament::section>
-            <x-slot name="heading">Bazar – výkup / prodej · {{ $rok }}</x-slot>
-            <div class="pr-cards">
-                <div class="pr-card"><span class="pr-l">Výkup ({{ $this->bazar['pocet_vykup'] }}×)</span><span class="pr-v">{{ $f($this->bazar['vykup']) }}</span></div>
-                <div class="pr-card"><span class="pr-l">Prodej ({{ $this->bazar['pocet_prodej'] }}×)</span><span class="pr-v">{{ $f($this->bazar['prodej']) }}</span></div>
-                <div class="pr-card {{ $this->bazar['zisk'] < 0 ? 'pr-neg' : 'pr-pos' }}">
-                    <span class="pr-l">Hrubá marže</span><span class="pr-v">{{ $f($this->bazar['zisk']) }}</span>
-                </div>
-            </div>
-        </x-filament::section>
-
         {{-- Nejčastější opravy --}}
         <x-filament::section>
             <x-slot name="heading">Nejčastější práce · {{ $rok }}</x-slot>

@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\Obchod;
 use App\Models\PenezniDenik;
 use App\Models\Zakazka;
 use App\Models\ZakazkaPolozka;
@@ -57,7 +56,7 @@ class Prehledy extends Page
                     ->url(fn () => route('export.naklady', ['rok' => $this->rok]))
                     ->openUrlInNewTab(),
             ])
-                ->label('Export ' . $this->rok)
+                ->label('Export '.$this->rok)
                 ->icon('heroicon-o-arrow-down-tray')
                 ->button(),
         ];
@@ -84,7 +83,7 @@ class Prehledy extends Page
 
         foreach ($zk as $kat => $skupina) {
             $radky[] = [
-                'nazev' => 'Servis – ' . (Zarizeni::KATEGORIE[$kat] ?? 'ostatní'),
+                'nazev' => 'Servis – '.(Zarizeni::KATEGORIE[$kat] ?? 'ostatní'),
                 'castka' => (float) $skupina->sum('cena_celkem'),
                 'pocet' => $skupina->count(),
             ];
@@ -95,31 +94,12 @@ class Prehledy extends Page
             $radky[] = ['nazev' => 'Faktury', 'castka' => (float) $fakt, 'pocet' => PenezniDenik::whereYear('datum', $rok)->where('zdroj', 'faktura')->count()];
         }
 
-        $bazarProdej = Obchod::where('typ', 'prodej')->where('vyrizeno', true)->whereYear('datum', $rok)->sum('cena');
-        if ($bazarProdej > 0) {
-            $radky[] = ['nazev' => 'Bazar – prodej', 'castka' => (float) $bazarProdej, 'pocet' => Obchod::where('typ', 'prodej')->where('vyrizeno', true)->whereYear('datum', $rok)->count()];
-        }
+        // Bazar je interní – nezapočítává se do oficiálního obratu. Vlastní přehled: „Bazar – přehled".
 
         usort($radky, fn ($a, $b) => $b['castka'] <=> $a['castka']);
         $max = collect($radky)->max('castka') ?: 1;
 
         return ['radky' => $radky, 'max' => $max, 'celkem' => collect($radky)->sum('castka')];
-    }
-
-    /** Bazar – výkup vs. prodej. */
-    public function getBazarProperty(): array
-    {
-        $rok = $this->rok;
-        $vykup = (float) Obchod::where('typ', 'vykup')->where('vyrizeno', true)->whereYear('datum', $rok)->sum('cena');
-        $prodej = (float) Obchod::where('typ', 'prodej')->where('vyrizeno', true)->whereYear('datum', $rok)->sum('cena');
-
-        return [
-            'vykup' => $vykup,
-            'prodej' => $prodej,
-            'zisk' => $prodej - $vykup,
-            'pocet_vykup' => Obchod::where('typ', 'vykup')->where('vyrizeno', true)->whereYear('datum', $rok)->count(),
-            'pocet_prodej' => Obchod::where('typ', 'prodej')->where('vyrizeno', true)->whereYear('datum', $rok)->count(),
-        ];
     }
 
     /** Nejčastější prováděné práce. */
@@ -155,12 +135,10 @@ class Prehledy extends Page
             $servis = (float) Zakazka::whereIn('stav', ['vydano', 'nerentabilni'])
                 ->whereYear('datum_vyrizeni', $rok)->whereMonth('datum_vyrizeni', $m)->sum('cena_celkem');
             $fakt = (float) PenezniDenik::where('zdroj', 'faktura')->whereYear('datum', $rok)->whereMonth('datum', $m)->sum('castka');
-            $bazar = (float) Obchod::where('typ', 'prodej')->where('vyrizeno', true)
-                ->whereYear('datum', $rok)->whereMonth('datum', $m)->sum('cena');
 
             $out[] = [
                 'nazev' => ucfirst(Carbon::create($rok, $m, 1)->translatedFormat('M')),
-                'castka' => $servis + $fakt + $bazar,
+                'castka' => $servis + $fakt,
             ];
         }
 

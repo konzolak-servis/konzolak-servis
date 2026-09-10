@@ -7,6 +7,8 @@ use App\Models\Firma;
 use App\Models\Nabidka;
 use App\Models\Obchod;
 use App\Models\Zakazka;
+use App\Support\Qr;
+use App\Support\QrPlatba;
 use App\Support\Tisk;
 use Illuminate\Http\Response;
 
@@ -17,7 +19,7 @@ class TiskController extends Controller
     {
         return route('verejne.stav', [
             'zakazka' => $zakazka->id,
-            'token' => \App\Support\QrPlatba::token('stav', $zakazka->id),
+            'token' => QrPlatba::token('stav', $zakazka->id),
         ]);
     }
 
@@ -28,8 +30,8 @@ class TiskController extends Controller
         return Tisk::pdf('pdf.servisni-doklad', [
             'firma' => Firma::get(),
             'z' => $zakazka,
-            'qr' => \App\Support\Qr::dataUri($this->stavUrl($zakazka), 200),
-        ], 'Doklad-o-prevzeti-' . $zakazka->cislo);
+            'qr' => Qr::dataUri($this->stavUrl($zakazka), 200),
+        ], 'Doklad-o-prevzeti-'.$zakazka->cislo);
     }
 
     public function servisniProtokol(Zakazka $zakazka): Response
@@ -43,12 +45,12 @@ class TiskController extends Controller
             'firma' => $firma,
             'z' => $zakazka,
             'jeProtokol' => true,
-            'qr' => \App\Support\Qr::dataUri($this->stavUrl($zakazka), 180),
+            'qr' => Qr::dataUri($this->stavUrl($zakazka), 180),
             'qrPlatba' => $zakazka->zpusob_uhrady === 'ucet' && $doplatek > 0
-                ? \App\Support\QrPlatba::dataUri($firma->cislo_uctu, $doplatek,
-                    preg_replace('/\D/', '', $zakazka->cislo), 'Oprava ' . $zakazka->cislo, 200)
+                ? QrPlatba::dataUri($firma->cislo_uctu, $doplatek,
+                    preg_replace('/\D/', '', $zakazka->cislo), 'Oprava '.$zakazka->cislo, 200)
                 : '',
-        ], 'Servisni-protokol-' . $zakazka->cislo);
+        ], 'Servisni-protokol-'.$zakazka->cislo);
     }
 
     public function stitek(Zakazka $zakazka): Response
@@ -57,8 +59,8 @@ class TiskController extends Controller
 
         return Tisk::pdf('pdf.stitek', [
             'z' => $zakazka,
-            'qr' => \App\Support\Qr::dataUri($this->stavUrl($zakazka), 260),
-        ], 'Stitek-' . $zakazka->cislo, 'stitek');
+            'qr' => Qr::dataUri($this->stavUrl($zakazka), 260),
+        ], 'Stitek-'.$zakazka->cislo, 'stitek');
     }
 
     public function faktura(Faktura $faktura): Response
@@ -69,13 +71,13 @@ class TiskController extends Controller
         return Tisk::pdf('pdf.faktura', [
             'firma' => $firma,
             'f' => $faktura,
-            'qrPlatba' => \App\Support\QrPlatba::dataUri(
+            'qrPlatba' => QrPlatba::dataUri(
                 $firma->cislo_uctu,
                 (float) $faktura->celkem,
                 $faktura->variabilni_symbol,
-                'Faktura ' . $faktura->cislo,
+                'Faktura '.$faktura->cislo,
             ),
-        ], 'Faktura-' . $faktura->cislo);
+        ], 'Faktura-'.$faktura->cislo);
     }
 
     public function nabidka(Nabidka $nabidka): Response
@@ -85,30 +87,30 @@ class TiskController extends Controller
         return Tisk::pdf('pdf.nabidka', [
             'firma' => Firma::get(),
             'n' => $nabidka,
-        ], 'Nabidka-' . $nabidka->cislo);
+        ], 'Nabidka-'.$nabidka->cislo);
     }
 
     public function nahledNabidka(): Response
     {
-        return \App\Support\Tisk::nahledNabidka((array) session('nahled_nabidka', []));
+        return Tisk::nahledNabidka((array) session('nahled_nabidka', []));
     }
 
     public function nahledFaktura(): Response
     {
-        return \App\Support\Tisk::nahledFaktura((array) session('nahled_faktura', []));
+        return Tisk::nahledFaktura((array) session('nahled_faktura', []));
     }
 
     /** Veřejná QR platba (PNG) pro fakturu – vkládá se do e-mailu. */
     public function qrFaktura(Faktura $faktura, string $token): Response
     {
-        abort_unless(hash_equals(\App\Support\QrPlatba::token('faktura', $faktura->id), $token), 404);
+        abort_unless(hash_equals(QrPlatba::token('faktura', $faktura->id), $token), 404);
 
         $firma = Firma::get();
-        $png = \App\Support\QrPlatba::png(
+        $png = QrPlatba::png(
             $firma->cislo_uctu,
             (float) $faktura->celkem,
             $faktura->variabilni_symbol,
-            'Faktura ' . $faktura->cislo,
+            'Faktura '.$faktura->cislo,
         );
 
         abort_if($png === null, 404);
@@ -119,13 +121,13 @@ class TiskController extends Controller
     /** Veřejná QR platba (PNG) pro doplatek zakázky. */
     public function qrZakazka(Zakazka $zakazka, string $token): Response
     {
-        abort_unless(hash_equals(\App\Support\QrPlatba::token('zakazka', $zakazka->id), $token), 404);
+        abort_unless(hash_equals(QrPlatba::token('zakazka', $zakazka->id), $token), 404);
 
         $firma = Firma::get();
         $doplatek = max((float) $zakazka->cena_celkem - (float) $zakazka->zaloha, 0);
         $png = $doplatek > 0
-            ? \App\Support\QrPlatba::png($firma->cislo_uctu, $doplatek,
-                preg_replace('/\D/', '', $zakazka->cislo), 'Oprava ' . $zakazka->cislo)
+            ? QrPlatba::png($firma->cislo_uctu, $doplatek,
+                preg_replace('/\D/', '', $zakazka->cislo), 'Oprava '.$zakazka->cislo)
             : null;
 
         abort_if($png === null, 404);
@@ -135,9 +137,14 @@ class TiskController extends Controller
 
     public function obchod(Obchod $obchod): Response
     {
+        // Bazarová položka se pořizuje jako „výkup" a později se prodá – doklad o prodeji
+        // se vyžádá parametrem ?typ=prodej (a musí být opravdu prodáno).
+        $jakoProdej = request()->query('typ') === 'prodej' && $obchod->prodano;
+
         return Tisk::pdf('pdf.obchod', [
             'firma' => Firma::get(),
             'o' => $obchod,
-        ], ($obchod->typ === 'vykup' ? 'Doklad-o-vykupu-' : 'Doklad-o-prodeji-') . $obchod->cislo);
+            'jakoProdej' => $jakoProdej,
+        ], ($jakoProdej ? 'Doklad-o-prodeji-' : 'Doklad-o-vykupu-').$obchod->cislo);
     }
 }

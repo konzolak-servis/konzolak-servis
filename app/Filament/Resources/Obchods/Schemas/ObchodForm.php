@@ -3,12 +3,14 @@
 namespace App\Filament\Resources\Obchods\Schemas;
 
 use App\Models\Obchod;
-use App\Models\SkladPolozka;
+use App\Support\Platformy;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -36,7 +38,7 @@ class ObchodForm
 
                         Select::make('kategorie')
                             ->label('Platforma / kategorie')
-                            ->options(\App\Support\Platformy::volby())
+                            ->options(Platformy::volby())
                             ->searchable()
                             ->required(),
                         TextInput::make('nazev')
@@ -46,19 +48,38 @@ class ObchodForm
                             ->columnSpan(2),
 
                         TextInput::make('seriove_cislo')->label('Sériové číslo'),
-                        TextInput::make('cena')->label('Cena')->numeric()->required()->suffix('Kč'),
+                        TextInput::make('cena')->label('Nákupní cena')->numeric()->required()->suffix('Kč'),
                         Radio::make('zpusob_uhrady')->label('Platba')
                             ->options(Obchod::ZPUSOBY_UHRADY)->default('hotove')->inline(),
 
-                        Select::make('sklad_polozka_id')
-                            ->label('Skladová položka (u prodeje)')
-                            ->options(SkladPolozka::where('aktivni', true)->orderBy('nazev')
-                                ->get()->mapWithKeys(fn ($s) => [$s->id => "{$s->nazev} (skladem {$s->mnozstvi_skladem})"]))
-                            ->searchable()
-                            ->visible(fn (Get $get) => $get('typ') === 'prodej')
-                            ->helperText('Vyber položku, která se má odečíst ze skladu.'),
-
                         Textarea::make('stav_popis')->label('Stav / příslušenství')->rows(2)->columnSpanFull(),
+                    ]),
+
+                Section::make('Prodej a zisk')
+                    ->columns(3)
+                    ->visible(fn (?Obchod $record) => $record !== null)
+                    ->description('Bazar je interní – do peněžního deníku ani do oficiálních účetních dat se nic nezapisuje. Díly a náklady vkládej níže v „Investováno do zařízení“.')
+                    ->schema([
+                        Toggle::make('prodano')->label('Prodáno')->live(),
+                        TextInput::make('prodejni_cena')->label('Prodejní cena')->numeric()->suffix('Kč')
+                            ->required(fn (Get $get) => (bool) $get('prodano'))
+                            ->visible(fn (Get $get) => (bool) $get('prodano')),
+                        DatePicker::make('prodej_datum')->label('Datum prodeje')->native(false)
+                            ->visible(fn (Get $get) => (bool) $get('prodano')),
+                        TextInput::make('prodej_komu')->label('Komu')
+                            ->visible(fn (Get $get) => (bool) $get('prodano')),
+                        Placeholder::make('naklady_celkem_info')
+                            ->label('Investováno celkem')
+                            ->content(fn (?Obchod $record) => $record
+                                ? number_format($record->naklady_celkem, 0, ',', ' ').' Kč  (nákup '
+                                    .number_format((float) $record->cena, 0, ',', ' ').' + díly '
+                                    .number_format($record->naklady_dilu, 0, ',', ' ').')'
+                                : '—'),
+                        Placeholder::make('zisk_info')
+                            ->label('Zisk po prodeji')
+                            ->content(fn (?Obchod $record) => $record && $record->zisk !== null
+                                ? number_format($record->zisk, 0, ',', ' ').' Kč'
+                                : 'zatím neprodáno'),
                     ]),
 
                 Section::make(fn (Get $get) => $get('typ') === 'prodej' ? 'Kupující' : 'Prodávající')

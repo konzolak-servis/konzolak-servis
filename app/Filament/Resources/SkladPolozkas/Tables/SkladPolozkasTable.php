@@ -16,6 +16,8 @@ class SkladPolozkasTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->where(fn ($q) => $q
+                ->where('kategorie', '!=', 'Bazar')->orWhereNull('kategorie')))
             ->columns([
                 TextColumn::make('nazev')->label('Název')->searchable()->wrap(),
                 TextColumn::make('platforma')->label('Platforma')->badge()->color('gray')

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Obchods;
 use App\Filament\Resources\Obchods\Pages\CreateObchod;
 use App\Filament\Resources\Obchods\Pages\EditObchod;
 use App\Filament\Resources\Obchods\Pages\ListObchods;
+use App\Filament\Resources\Obchods\RelationManagers\NakladyRelationManager;
 use App\Filament\Resources\Obchods\Schemas\ObchodForm;
 use App\Filament\Resources\Obchods\Tables\ObchodsTable;
 use App\Models\Obchod;
@@ -19,17 +20,17 @@ class ObchodResource extends Resource
 {
     protected static ?string $model = Obchod::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingBag;
 
     protected static string|UnitEnum|null $navigationGroup = 'Sklad';
 
     protected static ?int $navigationSort = 3;
 
-    protected static ?string $navigationLabel = 'Výkup / prodej';
+    protected static ?string $navigationLabel = 'Bazar';
 
-    protected static ?string $modelLabel = 'výkup / prodej';
+    protected static ?string $modelLabel = 'bazarová položka';
 
-    protected static ?string $pluralModelLabel = 'Výkup / prodej';
+    protected static ?string $pluralModelLabel = 'Bazar';
 
     protected static ?string $recordTitleAttribute = 'nazev';
 
@@ -41,6 +42,13 @@ class ObchodResource extends Resource
     public static function table(Table $table): Table
     {
         return ObchodsTable::configure($table);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            NakladyRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
