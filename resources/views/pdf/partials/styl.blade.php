@@ -60,7 +60,7 @@
     .podpisy td { width: 50%; padding: 8mm 6mm 0; vertical-align: bottom; }
     .podpisy td.podpis-zakaznik { padding-top: 22mm; }
     .podpisy .cara { border-top: .5px solid #9ca3af; padding-top: 1.5mm; font-size: 7.5pt; color: #6b7280; }
-    .podpisy .cara-sub { display: block; margin-top: .4mm; font-size: 7pt; color: #9ca3af; }
+    .podpisy .cara-sub { float: right; font-size: 7.5pt; color: #6b7280; }
     .razitko-otisk { position: absolute; bottom: 21mm; left: 12mm; width: 38mm; height: 38mm; }
     .razitko-podpis { display: block; width: 22mm; margin: -13mm 0 0 24mm; }
     .paticka .meta { border-top: .5px solid #e5e7eb; padding-top: 1.5mm; font-size: 6.5pt; color: #9ca3af; text-align: center; }
