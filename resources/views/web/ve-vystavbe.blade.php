@@ -30,7 +30,12 @@
                 radial-gradient(900px 600px at 12% 108%, rgba(37,73,128,.38), transparent 55%),
                 linear-gradient(180deg, var(--navy-800), var(--navy-900));
             display:flex; flex-direction:column; align-items:center; justify-content:center;
-            padding:2.5rem 1.25rem; min-height:100%;
+            gap:2.6rem; padding:3rem 1.25rem; min-height:100%;
+        }
+        .brand{
+            position:relative; z-index:1;
+            width:min(80vw, 420px); height:auto; display:block;
+            filter:drop-shadow(0 12px 40px rgba(0,0,0,.55)) drop-shadow(0 0 60px rgba(209,161,58,.28));
         }
         body::before{
             content:""; position:fixed; inset:0; pointer-events:none; opacity:.5;
@@ -53,7 +58,6 @@
             content:""; position:absolute; left:0; top:0; width:56px; height:3px;
             background:linear-gradient(90deg, var(--gold-hi), var(--gold));
         }
-        .logo{display:block; height:52px; width:auto; margin:0 0 1.6rem}
         .eyebrow{
             font-family:var(--ff-head); text-transform:uppercase; letter-spacing:.24em;
             font-size:.68rem; color:var(--gold-hi); margin:0 0 .6rem;
@@ -90,14 +94,15 @@
             margin-top:1.9rem; text-align:center; color:var(--muted); font-size:.82rem; line-height:1.7;
         }
         .foot a{color:var(--gold-hi); text-decoration:none; font-weight:600}
-        @media (max-width:420px){ h1{font-size:1.45rem} .box{padding:2rem 1.4rem} }
+        @media (max-width:420px){ h1{font-size:1.45rem} .box{padding:2rem 1.4rem} .brand{width:74vw} }
     </style>
 </head>
 <body>
+    <img class="brand" src="/images/konzolak-logo-print.png" alt="Konzolák Zlín">
+
     <main class="box">
-        <img class="logo" src="/images/konzolak-logo-print.png" alt="Konzolák Zlín">
-        <p class="eyebrow">Konzolák Zlín</p>
-        <h1>Spouštíme brzy</h1>
+        <p class="eyebrow">Spouštíme brzy</p>
+        <h1>Stránky ve výstavbě</h1>
         <p class="lead">
             Nové stránky jsou ve výstavbě. Máte-li přístupové heslo, přihlaste se a podívejte se,
             jak web postupuje.
