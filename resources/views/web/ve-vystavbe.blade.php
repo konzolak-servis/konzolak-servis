@@ -33,17 +33,10 @@
             gap:2.6rem; padding:3rem 1.25rem; min-height:100%;
         }
         .brand-wrap{
-            position:relative; display:flex; justify-content:center;
+            display:flex; justify-content:center;
             width:min(80vw, 420px);
         }
-        .brand-wrap::after{
-            content:""; position:absolute; left:50%; bottom:-14%;
-            width:78%; height:46%; transform:translateX(-50%);
-            background:radial-gradient(ellipse at center, rgba(255,207,92,.45), rgba(209,161,58,.22) 45%, transparent 72%);
-            filter:blur(26px); z-index:0; pointer-events:none;
-        }
         .brand{
-            position:relative; z-index:1;
             width:100%; height:auto; display:block;
             filter:drop-shadow(0 14px 34px rgba(0,0,0,.5));
         }

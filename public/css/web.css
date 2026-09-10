@@ -127,9 +127,7 @@ p { margin: 0 0 1rem; }
 
 /* ---- Hero ---- */
 .hero { position: relative; overflow: hidden;
-    background:
-        radial-gradient(520px 380px at 88% 92%, rgba(255, 207, 92, .14), transparent 66%),
-        linear-gradient(180deg, var(--navy-850), var(--navy-950)); }
+    background: linear-gradient(180deg, var(--navy-850), var(--navy-950)); }
 .hero::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
     background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, .022) 0 1px, transparent 1px 56px),
         repeating-linear-gradient(0deg, rgba(255, 255, 255, .022) 0 1px, transparent 1px 56px);
@@ -140,15 +138,6 @@ p { margin: 0 0 1rem; }
     background: url("/images/konzolak-logo-print.png") right bottom / contain no-repeat; }
 /* úvod má navíc pruh se statistikami – logo výš a víc doleva */
 .hero--home::before { bottom: 340px; right: 230px; }
-/* zlatá záře přímo pod vodoznakem loga na úvodu */
-@media (min-width: 981px) {
-    .hero--home {
-        background:
-            radial-gradient(520px 340px at calc(100% - 400px) calc(100% - 360px),
-                rgba(255, 207, 92, .20), rgba(209, 161, 58, .08) 46%, transparent 72%),
-            linear-gradient(180deg, var(--navy-850), var(--navy-950));
-    }
-}
 .hero__in { position: relative; z-index: 1; padding: clamp(3rem, 7vw, 5rem) 0 clamp(3rem, 6vw, 4.5rem); }
 .hero h1 { max-width: 20ch; }
 .hero h1 .accent { color: var(--gold); text-shadow: 0 0 18px rgba(209, 161, 58, .3); }
