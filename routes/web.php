@@ -31,6 +31,12 @@ Route::post('/vstup', function (Request $request) {
     return redirect('/')->with('web_gate_error', 'Nesprávné heslo, zkuste to znovu.');
 })->name('web.vstup');
 
+Route::get('/odhlasit', function (Request $request) {
+    $request->session()->forget('web_gate_ok');
+
+    return redirect('/');
+})->name('web.odhlasit');
+
 /*
  * Veřejný web konzolak.com. V produkci se servíruje z apexu, servisní systém
  * z poddomény servis. – lokálně je vše na jednom hostu (/ = web, /admin = systém).

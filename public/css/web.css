@@ -96,6 +96,14 @@ p { margin: 0 0 1rem; }
 .btn--dark:hover { background: var(--navy-700); border-color: rgba(236, 205, 130, .4); }
 .btn--sm { padding: .6rem 1.15rem; font-size: .82rem; }
 
+/* ---- Lišta náhledu (jen když je web za bránou a jsem přihlášen) ---- */
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 1rem;
+    flex-wrap: wrap; background: #10233f; border-bottom: 1px solid rgba(236, 205, 130, .28);
+    color: #c3d0e2; font-size: .8rem; padding: .5rem 1rem; text-align: center; }
+.preview-bar a { color: var(--gold-300); font-weight: 700; text-decoration: none;
+    border: 1px solid rgba(236, 205, 130, .45); border-radius: 4px; padding: .2rem .7rem; }
+.preview-bar a:hover { background: rgba(236, 205, 130, .12); }
+
 /* ---- Hlavička ---- */
 .hdr { background: rgba(6, 15, 30, .82); backdrop-filter: saturate(140%) blur(12px);
     color: #fff; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--line); }

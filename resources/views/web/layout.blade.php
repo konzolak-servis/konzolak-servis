@@ -3,6 +3,7 @@
     $F = $firma ?? Web::firma();
     $tel = Web::telMezinarodne();
     $adminUrl = rtrim(config('app.url'), '/') . '/admin';
+    $nahledWebu = filled(config('web.gate_heslo')) && session('web_gate_ok');
 @endphp
 <!DOCTYPE html>
 <html lang="cs">
@@ -20,9 +21,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="{{ asset('css/web.css') }}?v=23">
+    <link rel="stylesheet" href="{{ asset('css/web.css') }}?v=24">
 </head>
 <body>
+@if($nahledWebu)
+<div class="preview-bar">
+    <span>Náhled webu – zatím nezveřejněno</span>
+    <a href="{{ route('web.odhlasit') }}">Odhlásit náhled</a>
+</div>
+@endif
 <header class="hdr">
     <div class="wrap hdr__in">
         <a href="{{ route('web.home') }}" class="hdr__logo">
@@ -41,6 +48,7 @@
         </nav>
         <div class="hdr__cta">
             @if($tel)<a class="hdr__tel" href="tel:+{{ $tel }}">{{ $F->telefon }}</a>@endif
+            <a class="btn btn--dark btn--sm" href="{{ $adminUrl }}">Přihlášení do servisu</a>
             <a class="btn btn--primary btn--sm" href="{{ route('web.kontakt') }}#poptavka">Objednat opravu</a>
         </div>
     </div>
@@ -72,7 +80,8 @@
             <a href="{{ route('web.pravni', 'ochrana-osobnich-udaju') }}">Ochrana osobních údajů</a>
             <a href="{{ route('web.pravni', 'reklamacni-rad') }}">Reklamační řád</a>
             <a href="{{ route('web.pravni', 'cookies') }}">Cookies</a>
-            <a href="{{ $adminUrl }}">Přihlášení do systému</a>
+            <a href="{{ $adminUrl }}">Přihlášení do servisu</a>
+            @if($nahledWebu)<a href="{{ route('web.odhlasit') }}">Odhlásit náhled webu</a>@endif
         </div>
     </div>
     <div class="wrap ftr__legal">

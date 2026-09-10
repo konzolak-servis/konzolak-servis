@@ -18,7 +18,7 @@ class WebGate
 
     /** Cesty, které projdou i bez přihlášení (odemčení, statické soubory, health). */
     private const VOLNE = [
-        'vstup', 'up', 'favicon.ico', 'robots.txt',
+        'vstup', 'odhlasit', 'up', 'favicon.ico', 'robots.txt',
         'css/*', 'js/*', 'images/*', 'build/*', 'storage/*', '.well-known/*',
     ];
 
