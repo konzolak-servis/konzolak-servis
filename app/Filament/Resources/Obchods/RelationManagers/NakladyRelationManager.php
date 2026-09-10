@@ -17,6 +17,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 
 class NakladyRelationManager extends RelationManager
 {
@@ -50,7 +51,7 @@ class NakladyRelationManager extends RelationManager
                     ->state(fn (BazarNaklad $r) => $r->cena_celkem)
                     ->summarize(Summarizer::make()
                         ->label('Náklady na díly')
-                        ->using(fn ($query) => $query->get()->sum(fn ($r) => $r->cena_celkem))
+                        ->using(fn ($query) => (float) $query->sum(DB::raw('mnozstvi * cena_ks')))
                         ->money('CZK')),
                 TextColumn::make('skladPolozka.nazev')->label('Zdroj')->badge()->color('info')
                     ->placeholder('ruční náklad'),
