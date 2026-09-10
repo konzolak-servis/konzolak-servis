@@ -83,7 +83,7 @@
 
 @include('pdf.partials.paticka', [
     'podpisL' => 'Za servis (razítko a podpis)',
-    'podpisR' => 'Zařízení převzal zákazník (podpis)',
+    'podpisR' => 'Převzal dne<span class="cara-sub">podpis</span>',
     'doklad' => 'Servisní protokol ' . $z->cislo,
     'gdpr' => true,
 ])

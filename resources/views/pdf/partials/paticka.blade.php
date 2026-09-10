@@ -20,7 +20,7 @@
                         <div class="cara">{{ $podpisL ?? 'Za servis (razítko a podpis)' }}</div>
                     @endif
                 </td>
-                <td>@isset($podpisR)<div class="cara">{{ $podpisR }}</div>@endisset</td>
+                <td class="podpis-zakaznik">@isset($podpisR)<div class="cara">{!! $podpisR !!}</div>@endisset</td>
             </tr>
         </table>
         <div class="meta">
