@@ -32,10 +32,20 @@
             display:flex; flex-direction:column; align-items:center; justify-content:center;
             gap:2.6rem; padding:3rem 1.25rem; min-height:100%;
         }
+        .brand-wrap{
+            position:relative; display:flex; justify-content:center;
+            width:min(80vw, 420px);
+        }
+        .brand-wrap::after{
+            content:""; position:absolute; left:50%; bottom:-14%;
+            width:78%; height:46%; transform:translateX(-50%);
+            background:radial-gradient(ellipse at center, rgba(255,207,92,.45), rgba(209,161,58,.22) 45%, transparent 72%);
+            filter:blur(26px); z-index:0; pointer-events:none;
+        }
         .brand{
             position:relative; z-index:1;
-            width:min(80vw, 420px); height:auto; display:block;
-            filter:drop-shadow(0 12px 40px rgba(0,0,0,.55)) drop-shadow(0 0 60px rgba(209,161,58,.28));
+            width:100%; height:auto; display:block;
+            filter:drop-shadow(0 14px 34px rgba(0,0,0,.5));
         }
         body::before{
             content:""; position:fixed; inset:0; pointer-events:none; opacity:.5;
@@ -94,11 +104,13 @@
             margin-top:1.9rem; text-align:center; color:var(--muted); font-size:.82rem; line-height:1.7;
         }
         .foot a{color:var(--gold-hi); text-decoration:none; font-weight:600}
-        @media (max-width:420px){ h1{font-size:1.45rem} .box{padding:2rem 1.4rem} .brand{width:74vw} }
+        @media (max-width:420px){ h1{font-size:1.45rem} .box{padding:2rem 1.4rem} .brand-wrap{width:74vw} }
     </style>
 </head>
 <body>
-    <img class="brand" src="/images/konzolak-logo-print.png" alt="Konzolák Zlín">
+    <div class="brand-wrap">
+        <img class="brand" src="/images/konzolak-logo-print.png" alt="Konzolák Zlín">
+    </div>
 
     <main class="box">
         <p class="eyebrow">Spouštíme brzy</p>
