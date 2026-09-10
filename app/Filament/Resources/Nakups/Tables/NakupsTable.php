@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Nakups\Tables;
 use App\Models\Nakup;
 use App\Models\ObjednavkaDilu;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -24,7 +25,8 @@ class NakupsTable
                 TextColumn::make('datum')->label('Datum')->date('d.m.Y')->sortable(),
                 TextColumn::make('dodavatel')->label('Dodavatel')->badge()->searchable(),
                 TextColumn::make('polozky_count')->label('Položek')->counts('polozky'),
-                TextColumn::make('postovne')->label('Poštovné')->money('CZK')->toggleable()->placeholder('—'),
+                TextColumn::make('postovne')->label('Poštovné')->money('CZK')->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('celkem')->label('Celkem')->money('CZK')->sortable(),
                 IconColumn::make('doklad_soubor')->label('Doklad')
                     ->state(fn ($record) => filled($record->doklad_soubor))
@@ -34,7 +36,8 @@ class NakupsTable
                 IconColumn::make('naskladneno')->label('Naskladněno')->boolean(),
                 IconColumn::make('preneseno_do_objednavek')->label('V objednávkách')->boolean()
                     ->trueIcon('heroicon-o-inbox-arrow-down')->falseIcon('heroicon-o-minus')
-                    ->trueColor('info')->falseColor('gray')->toggleable(),
+                    ->trueColor('info')->falseColor('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('datum', 'desc')
             ->filters([
@@ -42,25 +45,27 @@ class NakupsTable
                     ->placeholder('Vše')->trueLabel('Naskladněné')->falseLabel('Čeká na naskladnění'),
             ])
             ->recordActions([
-                Action::make('naskladnit')
-                    ->label('Naskladnit')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->color('success')
-                    ->visible(fn ($record) => ! $record->naskladneno && $record->polozky()->exists())
-                    ->requiresConfirmation()
-                    ->modalDescription('Přidá kusy na sklad v ceně podle položky (bez poštovného), přepočítá vážený průměr a do peněžního deníku zapíše výdaj = položky + poštovné. Nelze vzít zpět.')
-                    ->action(fn ($record) => $record->naskladnit()),
-                Action::make('do_objednavek')
-                    ->label('Vytvořit objednávky dílů')
-                    ->icon('heroicon-o-inbox-arrow-down')
-                    ->color('gray')
-                    ->visible(fn (Nakup $record) => $record->polozky()->exists() && ! $record->preneseno_do_objednavek)
-                    ->requiresConfirmation()
-                    ->modalHeading('Přenést položky nákupu do Objednávek dílů')
-                    ->modalDescription('Z každé položky nákupu vznikne záznam v Objednávkách dílů (nové číslo řady OBJ, stav „Dorazilo", datum doručení = datum nákupu, dodavatel a případná zakázka se přenesou). Účetně nic navíc nevzniká – Objednávka dílu je jen interní sledovník, do peněžního deníku ani daní nejde. Nákup (daňový doklad) zůstává beze změny. Po přenesení tato akce zmizí.')
-                    ->modalSubmitActionLabel('Přenést')
-                    ->action(fn (Nakup $record) => self::doObjednavek($record)),
-                EditAction::make(),
+                ActionGroup::make([
+                    EditAction::make(),
+                    Action::make('naskladnit')
+                        ->label('Naskladnit')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->color('success')
+                        ->visible(fn ($record) => ! $record->naskladneno && $record->polozky()->exists())
+                        ->requiresConfirmation()
+                        ->modalDescription('Přidá kusy na sklad v ceně podle položky (bez poštovného), přepočítá vážený průměr a do peněžního deníku zapíše výdaj = položky + poštovné. Nelze vzít zpět.')
+                        ->action(fn ($record) => $record->naskladnit()),
+                    Action::make('do_objednavek')
+                        ->label('Vytvořit objednávky dílů')
+                        ->icon('heroicon-o-inbox-arrow-down')
+                        ->color('gray')
+                        ->visible(fn (Nakup $record) => $record->polozky()->exists() && ! $record->preneseno_do_objednavek)
+                        ->requiresConfirmation()
+                        ->modalHeading('Přenést položky nákupu do Objednávek dílů')
+                        ->modalDescription('Z každé položky nákupu vznikne záznam v Objednávkách dílů (nové číslo řady OBJ, stav „Dorazilo", datum doručení = datum nákupu, dodavatel a případná zakázka se přenesou). Účetně nic navíc nevzniká – Objednávka dílu je jen interní sledovník, do peněžního deníku ani daní nejde. Nákup (daňový doklad) zůstává beze změny. Po přenesení tato akce zmizí.')
+                        ->modalSubmitActionLabel('Přenést')
+                        ->action(fn (Nakup $record) => self::doObjednavek($record)),
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
