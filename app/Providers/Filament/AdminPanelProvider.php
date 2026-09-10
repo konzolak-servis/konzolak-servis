@@ -158,6 +158,18 @@ class AdminPanelProvider extends PanelProvider
                         /* Číselná / peněžní pole ať mají rozumnou minimální šířku */
                         .fi-input-wrp:has(input[inputmode="numeric"]),
                         .fi-input-wrp:has(input[type="number"]){ min-width:7rem; }
+
+                        /* ============ TABULKY: vejít se bez vodorovného posouvání ============ */
+                        .fi-ta-table{ table-layout:auto; width:100%; }
+                        .fi-ta-header-cell, .fi-ta-cell{ padding-left:.5rem !important; padding-right:.5rem !important; }
+                        .fi-ta-row > .fi-ta-cell:first-child, .fi-ta-header-row > .fi-ta-header-cell:first-child{ padding-left:.75rem !important; }
+                        .fi-ta-row > .fi-ta-cell:last-child,  .fi-ta-header-row > .fi-ta-header-cell:last-child{ padding-right:.75rem !important; }
+                        .fi-ta-cell .fi-ta-text, .fi-ta-text-item-label{ white-space:normal !important; overflow-wrap:anywhere; }
+                        .fi-ta-header-cell-label{ white-space:normal; line-height:1.15; font-size:.72rem; letter-spacing:.02em; }
+                        .fi-ta-text-item-label{ font-size:.82rem; }
+                        .fi-ta-actions{ gap:.125rem; flex-wrap:nowrap; }
+                        .fi-ta-actions .fi-btn{ padding-left:.4rem; padding-right:.4rem; }
+                        .fi-ta-cell .fi-badge{ font-size:.72rem; }
                     </style>
                 HTML)
             )
