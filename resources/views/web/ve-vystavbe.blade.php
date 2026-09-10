@@ -107,7 +107,7 @@
             @csrf
             <label for="heslo">Heslo</label>
             <input type="password" id="heslo" name="heslo" autocomplete="current-password" autofocus required>
-            @if(isset($errors) && $errors->has('heslo'))<p class="err">{{ $errors->first('heslo') }}</p>@endif
+            @if(session('web_gate_error'))<p class="err">{{ session('web_gate_error') }}</p>@endif
             <button type="submit">Vstoupit</button>
         </form>
 

@@ -28,7 +28,7 @@ Route::post('/vstup', function (Request $request) {
         return redirect('/');
     }
 
-    return back()->withErrors(['heslo' => 'Nesprávné heslo.']);
+    return redirect('/')->with('web_gate_error', 'Nesprávné heslo, zkuste to znovu.');
 })->name('web.vstup');
 
 /*
