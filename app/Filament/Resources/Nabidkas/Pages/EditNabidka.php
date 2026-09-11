@@ -23,6 +23,11 @@ class EditNabidka extends EditRecord
                 ->color('primary')
                 ->url(fn () => route('tisk.nabidka', $this->record))
                 ->openUrlInNewTab(),
+            Action::make('nahled_cb')
+                ->label('Tisk ČB (PDF)')
+                ->icon('heroicon-o-printer')
+                ->url(fn () => route('tisk.nabidka', ['nabidka' => $this->record, 'cb' => 1]))
+                ->openUrlInNewTab(),
 
             Action::make('prevest_na_fakturu')
                 ->label('Převést na fakturu')

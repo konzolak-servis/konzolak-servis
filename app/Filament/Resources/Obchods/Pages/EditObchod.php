@@ -19,12 +19,23 @@ class EditObchod extends EditRecord
                 ->icon('heroicon-o-document-text')
                 ->url(fn () => route('tisk.obchod', $this->record))
                 ->openUrlInNewTab(),
+            Action::make('doklad_vykup_cb')
+                ->label('Doklad o výkupu – tisk ČB (PDF)')
+                ->icon('heroicon-o-printer')
+                ->url(fn () => route('tisk.obchod', ['obchod' => $this->record, 'cb' => 1]))
+                ->openUrlInNewTab(),
 
             Action::make('doklad_prodej')
                 ->label('Doklad o prodeji (PDF)')
                 ->icon('heroicon-o-document-check')
                 ->visible(fn () => (bool) $this->record->prodano)
                 ->url(fn () => route('tisk.obchod', ['obchod' => $this->record, 'typ' => 'prodej']))
+                ->openUrlInNewTab(),
+            Action::make('doklad_prodej_cb')
+                ->label('Doklad o prodeji – tisk ČB (PDF)')
+                ->icon('heroicon-o-printer')
+                ->visible(fn () => (bool) $this->record->prodano)
+                ->url(fn () => route('tisk.obchod', ['obchod' => $this->record, 'typ' => 'prodej', 'cb' => 1]))
                 ->openUrlInNewTab(),
 
             DeleteAction::make(),

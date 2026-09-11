@@ -20,6 +20,11 @@ class EditFaktura extends EditRecord
                 ->color('primary')
                 ->url(fn () => route('tisk.faktura', $this->record))
                 ->openUrlInNewTab(),
+            Action::make('nahled_cb')
+                ->label('Tisk ČB (PDF)')
+                ->icon('heroicon-o-printer')
+                ->url(fn () => route('tisk.faktura', ['faktura' => $this->record, 'cb' => 1]))
+                ->openUrlInNewTab(),
             DeleteAction::make(),
         ];
     }

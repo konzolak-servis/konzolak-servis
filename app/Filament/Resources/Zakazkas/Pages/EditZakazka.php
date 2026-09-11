@@ -202,10 +202,20 @@ class EditZakazka extends EditRecord
                     ->icon('heroicon-o-document-text')
                     ->url(fn () => route('tisk.zakazka.doklad', $this->record))
                     ->openUrlInNewTab(),
+                Action::make('servisni_doklad_cb')
+                    ->label('Doklad o převzetí – tisk ČB (PDF)')
+                    ->icon('heroicon-o-printer')
+                    ->url(fn () => route('tisk.zakazka.doklad', ['zakazka' => $this->record, 'cb' => 1]))
+                    ->openUrlInNewTab(),
                 Action::make('servisni_protokol')
                     ->label('Servisní protokol (PDF)')
                     ->icon('heroicon-o-document-check')
                     ->url(fn () => route('tisk.zakazka.protokol', $this->record))
+                    ->openUrlInNewTab(),
+                Action::make('servisni_protokol_cb')
+                    ->label('Servisní protokol – tisk ČB (PDF)')
+                    ->icon('heroicon-o-printer')
+                    ->url(fn () => route('tisk.zakazka.protokol', ['zakazka' => $this->record, 'cb' => 1]))
                     ->openUrlInNewTab(),
                 Action::make('stitek')
                     ->label('Štítek na zařízení (PDF)')

@@ -61,7 +61,24 @@
     .podpisy td.podpis-zakaznik { padding-top: 22mm; }
     .podpisy .cara { border-top: .5px solid #9ca3af; padding-top: 1.5mm; font-size: 7.5pt; color: #6b7280; }
     .podpisy .cara-sub { float: right; font-size: 7.5pt; color: #6b7280; }
-    .razitko-otisk { position: absolute; bottom: 21mm; left: 12mm; width: 38mm; height: 38mm; }
-    .razitko-podpis { display: block; width: 22mm; margin: -13mm 0 0 24mm; }
+    .razitko-otisk { position: absolute; bottom: 6mm; left: 12mm; width: 38mm; height: 38mm; }
+    .razitko-podpis { display: block; width: 22mm; margin: -4mm 0 0 20mm; }
     .paticka .meta { border-top: .5px solid #e5e7eb; padding-top: 1.5mm; font-size: 6.5pt; color: #9ca3af; text-align: center; }
+
+    @isset($cb)
+        @if ($cb)
+            /* ---- Černobílá varianta (tisk) – bez plných barevných ploch, šetří toner ---- */
+            .band { background-color: #fff; border-bottom: 0.6mm solid #000; }
+            .band-doc, .band-doc .num { color: #000; }
+            .band .band-firma { color: #444; }
+            .band .band-firma strong { color: #000; }
+            .band-logo img { filter: grayscale(100%); }
+            .goldrule { background-color: #000; height: 0.4mm; }
+            .val strong, .sekce { color: #000; }
+            table.items th { color: #000; border-bottom: 1px solid #000; }
+            .totalbar .tsum { color: #000; border-color: #000; border-top-color: #000; }
+            .upozorneni { border-left-color: #000; }
+            .upozorneni b { color: #000; }
+        @endif
+    @endisset
 </style>

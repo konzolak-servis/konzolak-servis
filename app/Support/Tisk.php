@@ -39,6 +39,8 @@ class Tisk
 
         $mpdf->SetTitle($filename);
         $mpdf->SetAuthor('Konzolák Zlín');
+        // Černobílá varianta pro tisk (?cb=1) – dokument uložený/poslaný e-mailem zůstává barevný.
+        $data['cb'] = $data['cb'] ?? request()->boolean('cb');
         // Patičku (podpisy + meta) si nastavuje každá A4 šablona přes <htmlpagefooter>.
         $mpdf->WriteHTML(view($view, $data)->render());
 
