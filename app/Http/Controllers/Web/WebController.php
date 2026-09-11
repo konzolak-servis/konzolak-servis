@@ -46,7 +46,11 @@ class WebController extends Controller
 
     public function reference(): View
     {
-        return view('web.reference', ['firma' => Web::firma()]);
+        return view('web.reference', [
+            'firma' => Web::firma(),
+            'recenze' => Web::recenze(),
+            'facebookUrl' => Web::facebookUrl(),
+        ]);
     }
 
     public function faq(): View

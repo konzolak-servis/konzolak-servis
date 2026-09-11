@@ -148,6 +148,35 @@ class Web
         return $out;
     }
 
+    /** Odkaz na Facebook stránku firmy. */
+    public static function facebookUrl(): string
+    {
+        return 'https://www.facebook.com/Konzolak.Zlin';
+    }
+
+    /**
+     * Hodnocení a recenze z Facebooku (ručně přepsané, Facebook nemá veřejné API pro
+     * recenze bez schválené aplikace). Aktualizováno 2026-09-11 – při nových recenzích
+     * doplnit ručně z facebook.com/Konzolak.Zlin/reviews.
+     */
+    public static function recenze(): array
+    {
+        return [
+            'procento' => 100,
+            'pocet' => 5,
+            'sledujici' => 140,
+            'seznam' => [
+                [
+                    'jmeno' => 'Petr Mamica',
+                    'datum' => '10. září 2025',
+                    'text' => 'Driftoval mě ovladač k PS5, oprava proběhla naprosto v pořádku, ráno dovezeno '
+                        . 'a odpoledne jsem měl ovladač zpět. Ještě jednou díky, velká spokojenost, '
+                        . 'určitě servis doporučuji.',
+                ],
+            ],
+        ];
+    }
+
     /** Časté dotazy (draft – zákazník doplní/upraví). */
     public static function faq(): array
     {

@@ -65,6 +65,7 @@
             <p style="margin:.6rem 0 0">
                 @if($F->telefon)<a href="tel:+{{ $tel }}">{{ $F->telefon }}</a>@endif
                 @if($F->email)<a href="mailto:{{ $F->email }}">{{ $F->email }}</a>@endif
+                <a href="{{ \App\Support\Web::facebookUrl() }}" target="_blank" rel="noopener">Facebook</a>
             </p>
         </div>
         <div>

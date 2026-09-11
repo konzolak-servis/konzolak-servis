@@ -17,7 +17,9 @@
                 · volejte prosím vždy předem.</div>
         @endif
         <div class="stats">
-            <div><b>100 %</b><span>zákazníků doporučuje</span></div>
+            <a href="{{ route('web.reference') }}" style="text-decoration:none;color:inherit;display:block">
+                <b>100 %</b><span>doporučuje na Facebooku</span>
+            </a>
             <div><b>PS · Xbox</b><span>Nintendo, PC i ovladače</span></div>
             <div><b>Zlín</b><span>osobně i poštou po ČR</span></div>
         </div>
