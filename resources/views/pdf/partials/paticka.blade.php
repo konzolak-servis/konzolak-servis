@@ -11,10 +11,12 @@
             <tr>
                 <td>
                     @if ($zobrazitRazitko)
-                        <img src="{{ $razitkoSoubor }}" class="razitko-otisk">
-                        @if (is_file($podpisSoubor))
-                            <img src="{{ $podpisSoubor }}" class="razitko-podpis">
-                        @endif
+                        <div class="razitko-wrap">
+                            <img src="{{ $razitkoSoubor }}" class="razitko-otisk">
+                            @if (is_file($podpisSoubor))
+                                <img src="{{ $podpisSoubor }}" class="razitko-podpis">
+                            @endif
+                        </div>
                         <div class="cara">&nbsp;</div>
                     @else
                         <div class="cara">{{ $podpisL ?? 'Za servis (razítko a podpis)' }}</div>

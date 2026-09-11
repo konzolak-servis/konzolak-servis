@@ -61,8 +61,11 @@
     .podpisy td.podpis-zakaznik { padding-top: 22mm; }
     .podpisy .cara { border-top: .5px solid #9ca3af; padding-top: 1.5mm; font-size: 7.5pt; color: #6b7280; }
     .podpisy .cara-sub { float: right; font-size: 7.5pt; color: #6b7280; }
-    .razitko-otisk { position: absolute; bottom: 6mm; left: 12mm; width: 38mm; height: 38mm; }
-    .razitko-podpis { display: block; width: 22mm; margin: -4mm 0 0 20mm; }
+    /* Razítko v normálním toku patičky (ne absolutně vůči stránce) – nemůže tak nikdy
+       přesáhnout mimo vyhrazenou patičku, ať je obsah dokladu nad ním jakkoli dlouhý. */
+    .razitko-wrap { position: relative; width: 38mm; height: 38mm; margin: 1mm 0 0 6mm; }
+    .razitko-otisk { display: block; width: 38mm; height: 38mm; }
+    .razitko-podpis { position: absolute; width: 22mm; left: 18mm; top: 9mm; }
     .paticka .meta { border-top: .5px solid #e5e7eb; padding-top: 1.5mm; font-size: 6.5pt; color: #9ca3af; text-align: center; }
 
     @isset($cb)
