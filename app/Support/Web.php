@@ -177,9 +177,9 @@ class Web
     /**
      * Jednotlivé recenze napříč zdroji (ručně přepsané – žádný ze zdrojů nemá veřejné
      * API na recenze bez schválené aplikace/ověření firmy). `zdroj` = klíč ze
-     * zdrojeRecenzi(). Aktualizováno 2026-09-11 z facebook.com/Konzolak.Zlin/reviews –
-     * Facebook veřejně (bez přihlášení) ukazuje jen 1 z 5 recenzí, zbylé 4 schovává za
-     * login. Až přijdou od zákazníka (screenshoty/text), doplnit sem.
+     * zdrojeRecenzi(). Aktualizováno 2026-09-11 – 4 z 5 facebookových recenzí přidány
+     * ze screenshotů, co poslal zákazník (FB je bez loginu neukáže). 1 recenze
+     * (5. z FB) zatím chybí – doplnit, až přijde.
      */
     public static function recenze(): array
     {
@@ -191,6 +191,27 @@ class Web
                 'text' => 'Driftoval mě ovladač k PS5, oprava proběhla naprosto v pořádku, ráno dovezeno '
                     . 'a odpoledne jsem měl ovladač zpět. Ještě jednou díky, velká spokojenost, '
                     . 'určitě servis doporučuji.',
+            ],
+            [
+                'zdroj' => 'facebook',
+                'jmeno' => 'Roman Smladas',
+                'datum' => '7. září 2023',
+                'text' => 'Oprava DualShocku PS4 – top rychlost, cca za 22 hodin opravený. '
+                    . 'Max spokojenost, doporučuji všem.',
+            ],
+            [
+                'zdroj' => 'facebook',
+                'jmeno' => 'Martin Hulík',
+                'datum' => '4. května 2023',
+                'text' => 'Můžu jen doporučit, rychlá a kvalitní práce. Vyčištěná konzole '
+                    . 'a sestavený počítač, vše v pořádku.',
+            ],
+            [
+                'zdroj' => 'facebook',
+                'jmeno' => 'Josef Holub',
+                'datum' => '3. května 2023',
+                'text' => 'Každoroční čištění konzole, oprava notebooku – vždy vše v naprostém '
+                    . 'pořádku a hlavně rychle. Můžu doporučit.',
             ],
         ];
     }
