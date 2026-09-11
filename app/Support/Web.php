@@ -155,24 +155,42 @@ class Web
     }
 
     /**
-     * Hodnocení a recenze z Facebooku (ručně přepsané, Facebook nemá veřejné API pro
-     * recenze bez schválené aplikace). Aktualizováno 2026-09-11 – při nových recenzích
-     * doplnit ručně z facebook.com/Konzolak.Zlin/reviews.
+     * Zdroje hodnocení (agregátní čísla) – Facebook aktivní, ostatní se doplní, až
+     * budou profily založené. Klíč = interní id zdroje, použité i u jednotlivých
+     * recenzí v recenze().
+     */
+    public static function zdrojeRecenzi(): array
+    {
+        return [
+            'facebook' => [
+                'nazev' => 'Facebook',
+                'url' => self::facebookUrl() . '/reviews',
+                'procento' => 100,
+                'pocet' => 5,
+                'popis' => '5 recenzí · 140 sledujících',
+            ],
+            // 'google' => ['nazev' => 'Google', 'url' => '...', 'procento' => null, 'pocet' => null, 'popis' => 'zatím nezaloženo'],
+            // 'firmy' => ['nazev' => 'Firmy.cz', ...],
+        ];
+    }
+
+    /**
+     * Jednotlivé recenze napříč zdroji (ručně přepsané – žádný ze zdrojů nemá veřejné
+     * API na recenze bez schválené aplikace/ověření firmy). `zdroj` = klíč ze
+     * zdrojeRecenzi(). Aktualizováno 2026-09-11 z facebook.com/Konzolak.Zlin/reviews –
+     * Facebook veřejně (bez přihlášení) ukazuje jen 1 z 5 recenzí, zbylé 4 schovává za
+     * login. Až přijdou od zákazníka (screenshoty/text), doplnit sem.
      */
     public static function recenze(): array
     {
         return [
-            'procento' => 100,
-            'pocet' => 5,
-            'sledujici' => 140,
-            'seznam' => [
-                [
-                    'jmeno' => 'Petr Mamica',
-                    'datum' => '10. září 2025',
-                    'text' => 'Driftoval mě ovladač k PS5, oprava proběhla naprosto v pořádku, ráno dovezeno '
-                        . 'a odpoledne jsem měl ovladač zpět. Ještě jednou díky, velká spokojenost, '
-                        . 'určitě servis doporučuji.',
-                ],
+            [
+                'zdroj' => 'facebook',
+                'jmeno' => 'Petr Mamica',
+                'datum' => '10. září 2025',
+                'text' => 'Driftoval mě ovladač k PS5, oprava proběhla naprosto v pořádku, ráno dovezeno '
+                    . 'a odpoledne jsem měl ovladač zpět. Ještě jednou díky, velká spokojenost, '
+                    . 'určitě servis doporučuji.',
             ],
         ];
     }
