@@ -142,6 +142,22 @@ class ZakazkaForm
                                     'seriove_cislo' => $data['seriove_cislo'] ?? null,
                                 ])->id;
                             })
+                            ->getSelectedRecordUsing(fn ($state) => $state ? Zarizeni::find($state) : null)
+                            ->editOptionForm([
+                                Select::make('kategorie')->label('Kategorie')
+                                    ->options(\App\Support\Platformy::HODNOTY)
+                                    ->searchable()->required(),
+                                TextInput::make('oznaceni')->label('Označení zařízení')->required()
+                                    ->placeholder('např. Xbox Series S – Xbox One S – bílá – model 1681'),
+                                TextInput::make('seriove_cislo')->label('Sériové číslo'),
+                            ])
+                            ->updateOptionUsing(function (array $data, Get $get) {
+                                Zarizeni::where('id', $get('zarizeni_id'))->update([
+                                    'kategorie' => $data['kategorie'],
+                                    'oznaceni' => $data['oznaceni'],
+                                    'seriove_cislo' => $data['seriove_cislo'] ?? null,
+                                ]);
+                            })
                             ->columnSpan(2),
 
                         DatePicker::make('datum_prijeti')->label('Datum přijetí')->default(now())->native(false),
