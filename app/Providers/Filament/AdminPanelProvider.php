@@ -160,17 +160,25 @@ class AdminPanelProvider extends PanelProvider
                         .fi-input-wrp:has(input[inputmode="numeric"]),
                         .fi-input-wrp:has(input[type="number"]){ min-width:7rem; }
 
-                        /* ============ TABULKY: vejít se bez vodorovného posouvání ============ */
-                        .fi-ta-table{ table-layout:auto; width:100%; }
+                        /* ============ TABULKY: na širších obrazovkách bez vodorovného
+                           posouvání (zalamování textu); na mobilu je sloupců na zalomení
+                           moc málo místa (text se lámal písmeno po písmenu) – tam necháme
+                           přirozený vodorovný scroll s nezalomeným textem. ============ */
                         .fi-ta-header-cell, .fi-ta-cell{ padding-left:.5rem !important; padding-right:.5rem !important; }
                         .fi-ta-row > .fi-ta-cell:first-child, .fi-ta-header-row > .fi-ta-header-cell:first-child{ padding-left:.75rem !important; }
                         .fi-ta-row > .fi-ta-cell:last-child,  .fi-ta-header-row > .fi-ta-header-cell:last-child{ padding-right:.75rem !important; }
-                        .fi-ta-cell .fi-ta-text, .fi-ta-text-item-label{ white-space:normal !important; overflow-wrap:anywhere; }
                         .fi-ta-header-cell-label{ white-space:normal; line-height:1.15; font-size:.72rem; letter-spacing:.02em; }
                         .fi-ta-text-item-label{ font-size:.82rem; }
                         .fi-ta-actions{ gap:.125rem; flex-wrap:nowrap; }
                         .fi-ta-actions .fi-btn{ padding-left:.4rem; padding-right:.4rem; }
                         .fi-ta-cell .fi-badge{ font-size:.72rem; }
+                        @media (min-width:768px){
+                            .fi-ta-table{ table-layout:auto; width:100%; }
+                            .fi-ta-cell .fi-ta-text, .fi-ta-text-item-label{ white-space:normal !important; overflow-wrap:anywhere; }
+                        }
+                        @media (max-width:767px){
+                            .fi-ta-cell .fi-ta-text{ white-space:nowrap; }
+                        }
                     </style>
                 HTML)
             )
