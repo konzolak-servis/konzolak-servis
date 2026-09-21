@@ -188,6 +188,7 @@ class Web
                 'zdroj' => 'facebook',
                 'jmeno' => 'Petr Mamica',
                 'datum' => '10. září 2025',
+                'datum_iso' => '2025-09-10',
                 'text' => 'Driftoval mě ovladač k PS5, oprava proběhla naprosto v pořádku, ráno dovezeno '
                     . 'a odpoledne jsem měl ovladač zpět. Ještě jednou díky, velká spokojenost, '
                     . 'určitě servis doporučuji.',
@@ -196,6 +197,7 @@ class Web
                 'zdroj' => 'facebook',
                 'jmeno' => 'Roman Smladas',
                 'datum' => '7. září 2023',
+                'datum_iso' => '2023-09-07',
                 'text' => 'Oprava DualShocku PS4 – top rychlost, cca za 22 hodin opravený. '
                     . 'Max spokojenost, doporučuji všem.',
             ],
@@ -203,6 +205,7 @@ class Web
                 'zdroj' => 'facebook',
                 'jmeno' => 'Martin Hulík',
                 'datum' => '4. května 2023',
+                'datum_iso' => '2023-05-04',
                 'text' => 'Můžu jen doporučit, rychlá a kvalitní práce. Vyčištěná konzole '
                     . 'a sestavený počítač, vše v pořádku.',
             ],
@@ -210,6 +213,7 @@ class Web
                 'zdroj' => 'facebook',
                 'jmeno' => 'Josef Holub',
                 'datum' => '3. května 2023',
+                'datum_iso' => '2023-05-03',
                 'text' => 'Každoroční čištění konzole, oprava notebooku – vždy vše v naprostém '
                     . 'pořádku a hlavně rychle. Můžu doporučit.',
             ],

@@ -22,6 +22,39 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
     <link rel="stylesheet" href="{{ asset('css/web.css') }}?v=25">
+
+    {{-- Strukturovaná data pro Google (Knowledge Panel, místní vyhledávání) – na každé stránce.
+         Hodnocení/recenze jsou navíc jen na stránce Reference, kde jsou vidět i jako text
+         (Google vyžaduje, aby značkovaná recenze byla na stránce opravdu zobrazená).
+         Pole se sestavuje v PHP bloku předem, ne přímo v echo výrazu – Blade jinak
+         literální klíč pole "kontext" spletl s vlastní direktivou a rozbil výstup. --}}
+    @php
+        $schemaFirmy = [
+            '@context' => 'https://schema.org',
+            '@type' => 'ElectronicsStore',
+            'name' => $F->nazev ?: 'Konzolák Zlín',
+            'image' => rtrim(config('app.url'), '/') . '/images/konzolak-logo-print.png',
+            'url' => url('/'),
+            'telephone' => $tel ? '+' . $tel : null,
+            'email' => $F->email ?: null,
+            'address' => [
+                '@type' => 'PostalAddress',
+                'streetAddress' => $F->ulice ?: null,
+                'addressLocality' => $F->mesto ?: 'Zlín',
+                'postalCode' => $F->psc ?: null,
+                'addressCountry' => 'CZ',
+            ],
+            'openingHoursSpecification' => [[
+                '@type' => 'OpeningHoursSpecification',
+                'dayOfWeek' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                'opens' => '09:00',
+                'closes' => '17:00',
+            ]],
+        ];
+    @endphp
+    <script type="application/ld+json">{!! json_encode($schemaFirmy, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+
+    @stack('head')
 </head>
 <body>
 @if($nahledWebu)

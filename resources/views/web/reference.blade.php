@@ -2,6 +2,39 @@
 @section('title', 'Reference a recenze | ' . ($firma->nazev ?? 'Konzolák Zlín'))
 @section('desc', 'Co říkají zákazníci servisu Konzolák Zlín – hodnocení a recenze.')
 
+@php
+    $fbZdroj = $zdroje['facebook'] ?? null;
+    // Pole se sestavuje tady (ne přímo v {!! !!}) – Blade jinak literální '@context'
+    // v poli spletl s vlastní direktivou @context a rozbil výstup (viz layout.blade.php).
+    $schemaRecenze = $fbZdroj && $fbZdroj['procento'] !== null ? [
+        '@context' => 'https://schema.org',
+        '@type' => 'ElectronicsStore',
+        'name' => $firma->nazev ?: 'Konzolák Zlín',
+        'url' => route('web.home'),
+        'aggregateRating' => [
+            '@type' => 'AggregateRating',
+            'ratingValue' => '5',
+            'bestRating' => '5',
+            'reviewCount' => (string) $fbZdroj['pocet'],
+        ],
+        'review' => collect($recenze)->map(fn ($r) => [
+            '@type' => 'Review',
+            'author' => ['@type' => 'Person', 'name' => $r['jmeno']],
+            'datePublished' => $r['datum_iso'] ?? null,
+            'reviewBody' => $r['text'],
+            'reviewRating' => ['@type' => 'Rating', 'ratingValue' => '5', 'bestRating' => '5'],
+        ])->all(),
+    ] : null;
+@endphp
+
+@push('head')
+    @if($schemaRecenze)
+        {{-- Recenze jsou na téhle stránce opravdu zobrazené jako text (viz níže) –
+             Google to u strukturovaných dat o recenzích vyžaduje. --}}
+        <script type="application/ld+json">{!! json_encode($schemaRecenze, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+    @endif
+@endpush
+
 @section('body')
 <section class="hero">
     <div class="wrap hero__in">
