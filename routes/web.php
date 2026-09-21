@@ -101,4 +101,12 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('zaloha/stahnout', [ZalohaController::class, 'stahnout'])->name('zaloha.stahnout');
 
     Route::get('posta/priloha/{zprava}/{index}', [PostaController::class, 'priloha'])->name('posta.priloha');
+
+    // Naskenovaný QR ze štítku/dokladu (stejný token jako veřejná stránka stavu) →
+    // rovnou na zakázku v systému, místo na veřejnou stránku pro zákazníka.
+    Route::get('stitek/{zakazka}/{token}', function (\App\Models\Zakazka $zakazka, string $token) {
+        abort_unless(hash_equals(\App\Support\QrPlatba::token('stav', $zakazka->id), $token), 404);
+
+        return redirect()->route('filament.admin.resources.zakazkas.edit', $zakazka);
+    })->name('stitek.otevrit');
 });
