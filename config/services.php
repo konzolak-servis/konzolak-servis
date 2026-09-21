@@ -45,6 +45,12 @@ return [
         'from_name' => env('BREVO_FROM_NAME', env('APP_NAME', 'Konzolák Zlín')),
     ],
 
+    // Web push notifikace (VAPID) – prázdné klíče = notifikace vypnuté.
+    'push' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+    ],
+
     // Offsite záloha na Cloudflare R2 (přes rclone). Prázdný remote = jen lokální zálohy.
     'zaloha' => [
         'r2_remote' => env('ZALOHA_R2_REMOTE'),

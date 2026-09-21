@@ -45,4 +45,9 @@ class User extends Authenticatable implements FilamentUser, WebAuthnAuthenticata
     {
         return (bool) $this->je_admin;
     }
+
+    public function pushSubscriptions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
 }

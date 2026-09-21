@@ -231,6 +231,8 @@ class AdminPanelProvider extends PanelProvider
                     $web = str_starts_with($host, 'servis.')
                         ? request()->getScheme().'://'.substr($host, 7)
                         : url('/');
+                    $pushZapnuty = \App\Support\Push::aktivni() ? 'true' : 'false';
+                    $vapidKlic = e((string) config('services.push.public_key'));
 
                     return new HtmlString(<<<HTML
                         <a href="{$web}" target="_blank" rel="noopener"
@@ -245,6 +247,50 @@ class AdminPanelProvider extends PanelProvider
                             </svg>
                             <span>Web</span>
                         </a>
+
+                        <button type="button" id="ks-push-btn" title="Oznámení vypnutá – klikni pro zapnutí"
+                           style="display:none; align-items:center; gap:.4rem; white-space:nowrap;
+                                  padding:.4rem .6rem; border-radius:.5rem; border:1px solid rgba(200,153,46,.5);
+                                  background:transparent; color:inherit; font-size:.8rem; font-weight:600;
+                                  cursor:pointer;">
+                            <svg id="ks-push-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                            </svg>
+                        </button>
+                        <script src="/js/ks-push.js" defer></script>
+                        <script>
+                            window.addEventListener('load', function () {
+                                var btn = document.getElementById('ks-push-btn');
+                                var ico = document.getElementById('ks-push-ico');
+                                var vapidKlic = "{$vapidKlic}";
+                                if (!window.KsPush || !window.KsPush.podporovano() || !vapidKlic) return;
+
+                                function vykresli(aktivni) {
+                                    btn.title = aktivni ? 'Oznámení zapnutá – klikni pro vypnutí' : 'Oznámení vypnutá – klikni pro zapnutí';
+                                    btn.style.borderColor = aktivni ? 'rgba(34,197,94,.55)' : 'rgba(200,153,46,.5)';
+                                    ico.style.color = aktivni ? '#22c55e' : 'inherit';
+                                }
+
+                                btn.style.display = 'inline-flex';
+                                window.KsPush.jeAktivni().then(vykresli);
+
+                                btn.addEventListener('click', function () {
+                                    btn.disabled = true;
+                                    window.KsPush.jeAktivni().then(function (aktivni) {
+                                        var akce = aktivni ? window.KsPush.odhlasit() : window.KsPush.prihlasit(vapidKlic);
+                                        return akce.then(function () { return window.KsPush.jeAktivni(); });
+                                    }).then(function (novyStav) {
+                                        vykresli(novyStav);
+                                        btn.disabled = false;
+                                    }).catch(function () {
+                                        alert('Nepovolil jsi oznámení, nebo se je nepodařilo zapnout. Zkontroluj oprávnění prohlížeče.');
+                                        btn.disabled = false;
+                                    });
+                                });
+                            });
+                        </script>
                     HTML);
                 }
             )

@@ -102,6 +102,9 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     Route::get('posta/priloha/{zprava}/{index}', [PostaController::class, 'priloha'])->name('posta.priloha');
 
+    Route::post('push/subscribe', [\App\Http\Controllers\PushController::class, 'subscribe'])->name('push.subscribe');
+    Route::post('push/unsubscribe', [\App\Http\Controllers\PushController::class, 'unsubscribe'])->name('push.unsubscribe');
+
     // Naskenovaný QR ze štítku/dokladu (stejný token jako veřejná stránka stavu) →
     // rovnou na zakázku v systému, místo na veřejnou stránku pro zákazníka.
     Route::get('stitek/{zakazka}/{token}', function (\App\Models\Zakazka $zakazka, string $token) {

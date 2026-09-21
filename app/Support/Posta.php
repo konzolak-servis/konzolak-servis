@@ -52,6 +52,14 @@ class Posta
             }
         }
 
+        if (! $zprava->spam) {
+            Push::posliAdminum(
+                'Nová zpráva' . ($zprava->od_jmeno ? ' – ' . $zprava->od_jmeno : ''),
+                Str::limit($zprava->predmet, 90),
+                \App\Filament\Resources\Zpravas\ZpravaResource::getUrl('view', ['record' => $zprava]),
+            );
+        }
+
         return $zprava;
     }
 
