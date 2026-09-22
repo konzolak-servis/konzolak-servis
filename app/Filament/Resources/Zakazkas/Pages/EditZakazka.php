@@ -420,12 +420,44 @@ class EditZakazka extends EditRecord
 
         $wa = fn (string $text) => 'https://wa.me/' . $tel . '?text=' . rawurlencode($text);
 
+        // wa.me neumí předvyplnit přílohu (omezení WhatsAppu) – tohle PDF potichu
+        // stáhne (bez otevření nové karty) a hned poté otevře WhatsApp s textem.
+        // Zákazník pak v appce už jen jedním klepnutím sponku → stažený soubor.
+        $waSPrilohou = function (string $text, string $pdfUrl) use ($wa) {
+            $waUrl = $wa($text);
+            $this->js(<<<JS
+                (function () {
+                    var a = document.createElement('a');
+                    a.href = '{$pdfUrl}';
+                    a.download = '';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.open('{$waUrl}', '_blank');
+                })();
+            JS);
+        };
+
         $akce = [
             Action::make('wa_hotovo')
                 ->label('Rychlé: hotovo k vyzvednutí')
                 ->icon('heroicon-o-check-circle')
                 ->url(fn () => $wa($this->zpravaProZakaznika()))
                 ->openUrlInNewTab(),
+            Action::make('wa_hotovo_doklad')
+                ->label('Hotovo + přiložit doklad o převzetí')
+                ->icon('heroicon-o-paper-clip')
+                ->action(fn () => $waSPrilohou(
+                    $this->zpravaProZakaznika(),
+                    route('tisk.zakazka.doklad', $this->record),
+                )),
+            Action::make('wa_hotovo_protokol')
+                ->label('Hotovo + přiložit servisní protokol')
+                ->icon('heroicon-o-paper-clip')
+                ->action(fn () => $waSPrilohou(
+                    $this->zpravaProZakaznika(),
+                    route('tisk.zakazka.protokol', $this->record),
+                )),
         ];
 
         foreach (\App\Models\Sablona::query()
