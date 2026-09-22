@@ -6,11 +6,13 @@
         <strong>{{ $z->cislo }}</strong>@if ($z->zarizeni) – {{ $z->zarizeni->oznaceni }}@endif.
     </p>
 
-    @if (($z->cena_celkem - $z->zaloha) > 0)
+    @if ($z->doplatek() > 0)
         <p style="margin:0 0 12px;">
             K úhradě:
-            <strong style="color:#0F2038;">{{ number_format(max($z->cena_celkem - $z->zaloha, 0), 0, ',', ' ') }} Kč</strong>
+            <strong style="color:#0F2038;">{{ number_format($z->doplatek(), 0, ',', ' ') }} Kč</strong>
+            @if ($z->cena_dopravy > 0) (vč. dopravy {{ number_format($z->cena_dopravy, 0, ',', ' ') }} Kč)@endif
             @if ($z->zpusob_uhrady === 'ucet') – platba na účet.
+            @elseif ($z->zpusob_uhrady === 'hotove' && $z->zpusob_vydani === 'odeslani') – hotově dobírkou.
             @elseif ($z->zpusob_uhrady === 'hotove') – hotově při vyzvednutí.
             @endif
         </p>
@@ -39,7 +41,14 @@
         </p>
     @endif
 
-    @if ($firma->email_vyzvednuti)
+    @if ($z->zpusob_vydani === 'odeslani' && $z->sledovaci_cislo)
+        <p style="margin:0 0 14px; font-size:14px;">
+            Odesláno{{ $z->dopravce ? ' přes ' . $z->dopravce : '' }}, sledovací číslo:
+            <strong style="color:#0F2038;">{{ $z->sledovaci_cislo }}</strong>
+        </p>
+    @endif
+
+    @if ($firma->email_vyzvednuti && $z->zpusob_vydani !== 'odeslani')
         <table role="presentation" cellpadding="0" cellspacing="0" width="100%"
                style="margin:14px 0 6px; background:#f6f8fb; border:1px solid #e2e8f0; border-left:3px solid #0F2038; border-radius:8px;">
             <tr>

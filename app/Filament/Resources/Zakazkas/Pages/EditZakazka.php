@@ -382,8 +382,8 @@ class EditZakazka extends EditRecord
         $z = $this->record;
 
         return 'Konzolák Zlín: Vaše zakázka ' . $z->cislo
-            . ' je hotová a připravená k vyzvednutí. '
-            . ($z->cena_celkem > 0 ? 'K úhradě ' . number_format($z->cena_celkem - $z->zaloha, 0, ' ', ' ') . ' Kč. ' : '')
+            . ($z->zpusob_vydani === 'odeslani' ? ' je hotová, brzy ji odešleme zpět. ' : ' je hotová a připravená k vyzvednutí. ')
+            . ($z->cena_celkem > 0 ? 'K úhradě ' . number_format($z->doplatek(), 0, ' ', ' ') . ' Kč. ' : '')
             . 'Tel. ' . (\App\Models\Firma::get()->telefon ?: '');
     }
 
@@ -392,7 +392,7 @@ class EditZakazka extends EditRecord
     {
         $z = $this->record;
         $firma = \App\Models\Firma::get();
-        $doplatek = max((float) $z->cena_celkem - (float) $z->zaloha, 0);
+        $doplatek = $z->doplatek();
 
         $odkaz = route('verejne.stav', [
             'zakazka' => $z->id,

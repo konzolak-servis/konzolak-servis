@@ -52,9 +52,29 @@
                     <span class="v">{{ $z->zaruka_mesice }} měs.</span>
                 </div>
             @endif
+            @if($z->zpusob_vydani === 'odeslani' && $z->odeslano_datum)
+                <div class="stav-row">
+                    <span class="k">Odesláno</span>
+                    <span class="v">{{ $z->odeslano_datum->format('d.m.Y') }}</span>
+                </div>
+            @endif
+            @if($z->zpusob_vydani === 'odeslani' && $z->sledovaci_cislo)
+                <div class="stav-row">
+                    <span class="k">Sledovací číslo</span>
+                    <span class="v">{{ $z->sledovaci_cislo }}</span>
+                </div>
+            @endif
         </div>
 
-        @if($z->stav === 'hotovo')
+        @if($z->stav === 'hotovo' && $z->zpusob_vydani === 'odeslani')
+            <div class="stav-box">
+                <h3>Odesíláme zpět</h3>
+                <div class="adr">
+                    @if($z->dopravce)Pošleme přes {{ $z->dopravce }}.@else Brzy zařízení odešleme zpět. @endif
+                    Jakmile bude na cestě, doplníme sem sledovací číslo.
+                </div>
+            </div>
+        @elseif($z->stav === 'hotovo')
             <div class="stav-box">
                 <h3>Kde a kdy vyzvednout</h3>
                 @if($firma->email_vyzvednuti)

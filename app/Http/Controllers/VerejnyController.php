@@ -16,14 +16,20 @@ class VerejnyController extends Controller
 
         $zakazka->load('zarizeni');
 
-        [$krok, $nadpis, $popis, $tonalita] = match ($zakazka->stav) {
-            'prijato' => [0, 'Přijato do servisu', 'Zařízení máme převzaté, brzy se do něj podíváme.', 'info'],
-            'diagnostika' => [1, 'Probíhá diagnostika', 'Zjišťujeme závadu a rozsah opravy.', 'info'],
-            'ceka_na_dil' => [2, 'Čeká na náhradní díl', 'Máme objednaný díl, po dodání pokračujeme v opravě.', 'wait'],
-            'hotovo' => [3, 'Hotovo – připraveno k vyzvednutí', 'Oprava je dokončená, zařízení si můžete vyzvednout.', 'ok'],
-            'vydano' => [4, 'Vyzvednuto', 'Zakázka byla uzavřena a zařízení předáno.', 'done'],
-            'nerentabilni' => [1, 'Oprava nerentabilní', 'Oprava se nevyplatí. Ozveme se s dalším postupem.', 'stop'],
-            'storno' => [0, 'Zakázka stornována', 'Zakázka byla zrušena.', 'stop'],
+        $odeslani = $zakazka->zpusob_vydani === 'odeslani';
+        $jizOdeslano = $odeslani && $zakazka->odeslano_datum;
+
+        [$krok, $nadpis, $popis, $tonalita] = match (true) {
+            $zakazka->stav === 'prijato' => [0, 'Přijato do servisu', 'Zařízení máme převzaté, brzy se do něj podíváme.', 'info'],
+            $zakazka->stav === 'diagnostika' => [1, 'Probíhá diagnostika', 'Zjišťujeme závadu a rozsah opravy.', 'info'],
+            $zakazka->stav === 'ceka_na_dil' => [2, 'Čeká na náhradní díl', 'Máme objednaný díl, po dodání pokračujeme v opravě.', 'wait'],
+            $zakazka->stav === 'hotovo' && $jizOdeslano => [4, 'Odesláno zpět', 'Zařízení je na cestě k vám – sledovací číslo najdete níže.', 'ok'],
+            $zakazka->stav === 'hotovo' && $odeslani => [3, 'Hotovo – připravujeme k odeslání', 'Oprava je dokončená, brzy zařízení odešleme zpět.', 'ok'],
+            $zakazka->stav === 'hotovo' => [3, 'Hotovo – připraveno k vyzvednutí', 'Oprava je dokončená, zařízení si můžete vyzvednout.', 'ok'],
+            $zakazka->stav === 'vydano' && $odeslani => [4, 'Odesláno', 'Zakázka byla uzavřena a zařízení odesláno zpět.', 'done'],
+            $zakazka->stav === 'vydano' => [4, 'Vyzvednuto', 'Zakázka byla uzavřena a zařízení předáno.', 'done'],
+            $zakazka->stav === 'nerentabilni' => [1, 'Oprava nerentabilní', 'Oprava se nevyplatí. Ozveme se s dalším postupem.', 'stop'],
+            $zakazka->stav === 'storno' => [0, 'Zakázka stornována', 'Zakázka byla zrušena.', 'stop'],
             default => [0, 'Přijato do servisu', '', 'info'],
         };
 
@@ -34,7 +40,7 @@ class VerejnyController extends Controller
             'nadpis' => $nadpis,
             'popis' => $popis,
             'tonalita' => $tonalita,
-            'kUhrade' => max((float) $zakazka->cena_celkem - (float) $zakazka->zaloha, 0),
+            'kUhrade' => $zakazka->doplatek(),
         ]);
     }
 }

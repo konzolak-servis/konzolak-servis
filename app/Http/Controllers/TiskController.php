@@ -39,7 +39,7 @@ class TiskController extends Controller
         $zakazka->load(['zakaznik', 'zarizeni', 'polozky', 'reklamaceK']);
 
         $firma = Firma::get();
-        $doplatek = max((float) $zakazka->cena_celkem - (float) $zakazka->zaloha, 0);
+        $doplatek = $zakazka->doplatek();
 
         return Tisk::pdf('pdf.servisni-protokol', [
             'firma' => $firma,
@@ -124,7 +124,7 @@ class TiskController extends Controller
         abort_unless(hash_equals(QrPlatba::token('zakazka', $zakazka->id), $token), 404);
 
         $firma = Firma::get();
-        $doplatek = max((float) $zakazka->cena_celkem - (float) $zakazka->zaloha, 0);
+        $doplatek = $zakazka->doplatek();
         $png = $doplatek > 0
             ? QrPlatba::png($firma->cislo_uctu, $doplatek,
                 preg_replace('/\D/', '', $zakazka->cislo), 'Oprava '.$zakazka->cislo)

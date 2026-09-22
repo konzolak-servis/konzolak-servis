@@ -55,18 +55,29 @@
                         <strong>QR Platba</strong> – naskenujte<br>v bankovní aplikaci.
                     </td>
                 </tr></table>
-            @elseif ($z->zpusob_uhrady === 'hotove' && max($z->cena_celkem - $z->zaloha, 0) > 0)
-                <strong>Platba hotově</strong> při vyzvednutí.
+            @elseif ($z->zpusob_uhrady === 'hotove' && $z->doplatek() > 0)
+                <strong>Platba hotově</strong> {{ $z->zpusob_vydani === 'odeslani' ? 'dobírkou' : 'při vyzvednutí' }}.
             @endif
-            @if ($z->zaloha > 0)
+            @if ($z->zaloha > 0 || $z->cena_dopravy > 0)
                 <div style="margin-top:1mm;font-size:8pt;color:#374151">
                     Cena celkem {{ number_format($z->cena_celkem, 0, ',', ' ') }} Kč
-                    &nbsp;−&nbsp; přijatá záloha {{ number_format($z->zaloha, 0, ',', ' ') }} Kč
+                    @if ($z->cena_dopravy > 0)
+                        &nbsp;+&nbsp; doprava {{ number_format($z->cena_dopravy, 0, ',', ' ') }} Kč
+                    @endif
+                    @if ($z->zaloha > 0)
+                        &nbsp;−&nbsp; přijatá záloha {{ number_format($z->zaloha, 0, ',', ' ') }} Kč
+                    @endif
+                </div>
+            @endif
+            @if ($z->zpusob_vydani === 'odeslani' && ($z->dopravce || $z->sledovaci_cislo))
+                <div style="margin-top:1mm;font-size:8pt;color:#374151">
+                    Odesláno{{ $z->dopravce ? ' přes ' . $z->dopravce : '' }}
+                    {{ $z->sledovaci_cislo ? '· sledovací č. ' . $z->sledovaci_cislo : '' }}
                 </div>
             @endif
         </td>
         <td class="tsum">
-            {{ number_format(max($z->cena_celkem - $z->zaloha, 0), 0, ',', ' ') }} Kč
+            {{ number_format($z->doplatek(), 0, ',', ' ') }} Kč
             <div style="font-size:6.5pt;font-weight:normal;color:#9ca3af">K ÚHRADĚ</div>
         </td>
     </tr>

@@ -206,6 +206,24 @@ class ZakazkaForm
                             ->label('Zálohu zapsat do příjmů k tomuto datu')
                             ->helperText('Vhodné u hotovosti přijaté v jiném roce než dokončení.')
                             ->visible(fn (Get $get) => (float) $get('zaloha') > 0),
+
+                        \Filament\Forms\Components\Radio::make('zpusob_vydani')->label('Vyzvednutí')
+                            ->options(Zakazka::ZPUSOBY_VYDANI)
+                            ->default('osobne')
+                            ->inline()
+                            ->live()
+                            ->columnSpanFull(),
+                        DatePicker::make('odeslano_datum')->label('Odesláno dne')->native(false)
+                            ->visible(fn (Get $get) => $get('zpusob_vydani') === 'odeslani'),
+                        TextInput::make('dopravce')->label('Přes koho')
+                            ->placeholder('Zásilkovna, Česká pošta, PPL…')
+                            ->visible(fn (Get $get) => $get('zpusob_vydani') === 'odeslani'),
+                        TextInput::make('sledovaci_cislo')->label('Sledovací číslo')
+                            ->visible(fn (Get $get) => $get('zpusob_vydani') === 'odeslani'),
+                        TextInput::make('cena_dopravy')->label('Cena dopravy / dobírky')
+                            ->numeric()->default(0)->suffix('Kč')
+                            ->helperText('Připočte se k částce k úhradě.')
+                            ->visible(fn (Get $get) => $get('zpusob_vydani') === 'odeslani'),
                     ]),
 
                 Section::make('Fotodokumentace')

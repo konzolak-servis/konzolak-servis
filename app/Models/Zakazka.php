@@ -18,9 +18,11 @@ class Zakazka extends Model
         'datum_prijeti' => 'date',
         'datum_vyrizeni' => 'date',
         'zaloha_datum' => 'date',
+        'odeslano_datum' => 'date',
         'predpokladana_cena' => 'decimal:2',
         'zaloha' => 'decimal:2',
         'cena_celkem' => 'decimal:2',
+        'cena_dopravy' => 'decimal:2',
         'zaruka_mesice' => 'integer',
         'dil_objednany' => 'boolean',
         'zaloha_v_prijmech' => 'boolean',
@@ -29,8 +31,16 @@ class Zakazka extends Model
 
     public const ZPUSOBY_UHRADY = ['hotove' => 'Hotově', 'ucet' => 'Na účet'];
 
+    public const ZPUSOBY_VYDANI = ['osobne' => 'Osobně', 'odeslani' => 'Odeslání'];
+
     /** Stavy, které se počítají jako dokončené. */
     public const STAVY_HOTOVO = ['hotovo', 'vydano'];
+
+    /** Kolik zákazník ještě doplácí (cena opravy + doprava/dobírka − záloha), nikdy záporně. */
+    public function doplatek(): float
+    {
+        return max((float) $this->cena_celkem + (float) $this->cena_dopravy - (float) $this->zaloha, 0);
+    }
 
     public function jeHotovo(): bool
     {
@@ -109,7 +119,8 @@ class Zakazka extends Model
         $klic = ['zdroj' => 'zakazka', 'zdroj_id' => $this->id];
 
         $zalohaZapoctena = $this->zaloha > 0 && $this->zaloha_v_prijmech;
-        $castka = (float) $this->cena_celkem - ($zalohaZapoctena ? (float) $this->zaloha : 0);
+        $castka = (float) $this->cena_celkem + (float) $this->cena_dopravy
+            - ($zalohaZapoctena ? (float) $this->zaloha : 0);
 
         if (in_array($this->stav, self::STAVY_ZAPLACENO, true) && $castka > 0) {
             PenezniDenik::updateOrCreate($klic, [
