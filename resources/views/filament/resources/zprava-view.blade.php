@@ -53,7 +53,7 @@
                     <div class="ks-msg-subj">{{ $m->predmet }}</div>
                 @endif
 
-                <div class="ks-msg-body">{{ $m->telo_text ?: strip_tags((string) $m->telo_html) ?: '(prázdná zpráva)' }}</div>
+                <div class="ks-msg-body">{{ $m->teloCisty() }}</div>
 
                 @if (is_array($m->prilohy) && count($m->prilohy))
                     <div class="ks-msg-att">

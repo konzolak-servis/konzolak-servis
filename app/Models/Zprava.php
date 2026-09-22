@@ -57,9 +57,36 @@ class Zprava extends Model
     /** Krátký náhled těla pro seznam. */
     public function nahled(int $delka = 120): string
     {
-        $text = $this->telo_text ?: strip_tags((string) $this->telo_html);
-        $text = trim(preg_replace('/\s+/', ' ', $text));
+        $text = trim(preg_replace('/\s+/', ' ', $this->teloCisty()));
 
         return mb_strlen($text) > $delka ? mb_substr($text, 0, $delka) . '…' : $text;
+    }
+
+    /**
+     * Tělo zprávy očištěné pro zobrazení: dekóduje HTML entity (některé bulkové
+     * e-maily mají v textové alternativě doslova nedekódované kódy jako "&#847;"
+     * místo neviditelných znaků, co představují – vypadá to jako rozbitý text) a
+     * odstraní neviditelné/mezerové znaky, co se používají jako výplň proti
+     * spamovým filtrům (zero-width mezery, spojovací znaky, figure space…).
+     */
+    public function teloCisty(): string
+    {
+        $text = $this->telo_text ?: strip_tags((string) $this->telo_html);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5);
+
+        // Neviditelné znaky (zero-width space/joiner/non-joiner, soft hyphen,
+        // combining grapheme joiner, word joiner, BOM) – pryč úplně.
+        $text = preg_replace('/[\x{200B}-\x{200F}\x{00AD}\x{034F}\x{2060}\x{FEFF}]/u', '', $text);
+        // Řádky, co po odstranění výplně zbyly jen z mezer (obyčejných i "vzácných"
+        // typu figure space, thin space…) – sjednotit na prázdný řádek.
+        $text = preg_replace('/^[ \t\x{2000}-\x{200A}\x{2007}\x{202F}]+$/mu', '', $text);
+        // Vícenásobné mezery (obyčejné i vzácné) v řádku sjednotit na jednu.
+        $text = preg_replace('/[ \t\x{2000}-\x{200A}\x{2007}\x{202F}]{2,}/u', ' ', $text);
+        // Přemíra prázdných řádků po odstranění výplně.
+        $text = preg_replace('/\n{3,}/', "\n\n", $text);
+
+        $text = trim($text);
+
+        return $text !== '' ? $text : '(prázdná zpráva)';
     }
 }
