@@ -38,6 +38,7 @@ class PolozkyRelationManager extends RelationManager
                     ->label('Typ')
                     ->options(['prace' => 'Práce', 'material' => 'Materiál / díl'])
                     ->default('prace')
+                    ->live()
                     ->required(),
                 Toggle::make('uctovat')
                     ->label('Účtovat zákazníkovi')
@@ -45,7 +46,12 @@ class PolozkyRelationManager extends RelationManager
                     ->helperText('Vypni u dílu, jehož cena je už zahrnutá v ceně opravy, nebo který si nese zákazník sám.'),
                 TextInput::make('nazev')->label('Název')->required()->maxLength(255)->columnSpanFull(),
                 TextInput::make('mnozstvi')->label('Množství')->numeric()->default(1)->required(),
-                TextInput::make('cena_ks')->label('Cena / ks')->numeric()->default(0)->required()->suffix('Kč'),
+                TextInput::make('cena_ks')->label('Cena / ks (účtovaná zákazníkovi)')->numeric()->default(0)->required()->suffix('Kč'),
+                TextInput::make('naklad_interni')->label('Skutečný náklad / ks (skryté, jen pro mě)')
+                    ->numeric()->suffix('Kč')
+                    ->helperText('Nezávislé na ceně výše – změna účtované ceny zisk nezkreslí.')
+                    ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => $get('typ') === 'material')
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -60,6 +66,8 @@ class PolozkyRelationManager extends RelationManager
                 TextColumn::make('nazev')->label('Název')->wrap(),
                 TextColumn::make('mnozstvi')->label('Množ.')->numeric(),
                 TextColumn::make('cena_ks')->label('Cena/ks')->money('CZK'),
+                TextColumn::make('naklad_interni')->label('Náklad/ks')->money('CZK')
+                    ->toggleable()->toggledHiddenByDefault(),
                 ToggleColumn::make('uctovat')
                     ->label('Účtovat')
                     ->tooltip('Zapnuto = přičítá se k ceně a je na protokolu. Vypnuto = jen evidence (sklad).')
@@ -79,8 +87,7 @@ class PolozkyRelationManager extends RelationManager
                             ->label('Náklad na materiál')
                             ->using(fn (Builder $query) => (float) (clone $query)
                                 ->where('typ', 'material')
-                                ->whereNotNull('sklad_polozka_id')
-                                ->sum(\Illuminate\Support\Facades\DB::raw('mnozstvi * cena_ks')))
+                                ->sum(\Illuminate\Support\Facades\DB::raw('mnozstvi * COALESCE(naklad_interni, 0)')))
                             ->money('CZK'),
                         Summarizer::make('zisk')
                             ->label('Zisk (po odečtení materiálu)')
@@ -88,8 +95,7 @@ class PolozkyRelationManager extends RelationManager
                                 $uctovano = (float) (clone $query)->where('uctovat', true)->sum('cena_celkem');
                                 $naklad = (float) (clone $query)
                                     ->where('typ', 'material')
-                                    ->whereNotNull('sklad_polozka_id')
-                                    ->sum(\Illuminate\Support\Facades\DB::raw('mnozstvi * cena_ks'));
+                                    ->sum(\Illuminate\Support\Facades\DB::raw('mnozstvi * COALESCE(naklad_interni, 0)'));
 
                                 return $uctovano - $naklad;
                             })
@@ -155,6 +161,7 @@ class PolozkyRelationManager extends RelationManager
                             'nazev' => $s->nazev,
                             'mnozstvi' => $mnozstvi,
                             'cena_ks' => $s->cena_ks_prumer,
+                            'naklad_interni' => $s->cena_ks_prumer,
                         ]);
                     }),
 

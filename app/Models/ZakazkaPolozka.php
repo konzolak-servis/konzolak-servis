@@ -14,6 +14,7 @@ class ZakazkaPolozka extends Model
     protected $casts = [
         'mnozstvi' => 'decimal:3',
         'cena_ks' => 'decimal:2',
+        'naklad_interni' => 'decimal:2',
         'cena_celkem' => 'decimal:2',
         'uctovat' => 'boolean',
     ];
