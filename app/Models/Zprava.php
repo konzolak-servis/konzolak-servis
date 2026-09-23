@@ -89,4 +89,26 @@ class Zprava extends Model
 
         return $text !== '' ? $text : '(prázdná zpráva)';
     }
+
+    /** Má smysluplný HTML obsah k zobrazení (ne jen prázdné/whitespace tagy)? */
+    public function maHtml(): bool
+    {
+        $html = (string) $this->telo_html;
+
+        return trim($html) !== '' && trim(strip_tags($html)) !== '';
+    }
+
+    /**
+     * HTML tělo pro vykreslení v izolovaném <iframe sandbox> (bez allow-scripts –
+     * prohlížeč z něj nespustí žádný kód). Pro jistotu navíc odstraní <script>
+     * tagy a on*="" handlery, kdyby snad sandbox v nějakém prohlížeči selhal.
+     */
+    public function teloHtmlBezpecne(): string
+    {
+        $html = (string) $this->telo_html;
+        $html = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $html);
+        $html = preg_replace('/\son\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
+
+        return $html;
+    }
 }

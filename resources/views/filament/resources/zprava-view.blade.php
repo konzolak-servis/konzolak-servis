@@ -53,7 +53,12 @@
                     <div class="ks-msg-subj">{{ $m->predmet }}</div>
                 @endif
 
-                <div class="ks-msg-body">{{ $m->teloCisty() }}</div>
+                @if ($m->maHtml())
+                    <iframe id="ks-mail-frame-{{ $m->id }}" class="ks-msg-frame"
+                        srcdoc="{{ $m->teloHtmlBezpecne() }}" sandbox=""></iframe>
+                @else
+                    <div class="ks-msg-body">{{ $m->teloCisty() }}</div>
+                @endif
 
                 @if (is_array($m->prilohy) && count($m->prilohy))
                     <div class="ks-msg-att">
@@ -117,5 +122,24 @@
         :is(.dark) .ks-att { color:#93c5fd; background:#17202b; border-color:#2b3440; }
         .ks-att:hover { text-decoration:underline; }
         .ks-att-size { color:#9ca3af; font-size:.72rem; }
+
+        .ks-msg-frame { margin-top:.6rem; width:100%; border:1px solid #e5e7eb; border-radius:.5rem;
+            background:#fff; min-height:120px; }
+        :is(.dark) .ks-msg-frame { border-color:#2b3440; }
     </style>
+
+    <script>
+        // HTML e-mail v <iframe sandbox> (bez allow-scripts – žádný kód z e-mailu se nespustí)
+        // se po načtení zvětší přesně na výšku obsahu, ať nezůstává prázdný prostor ani scrollbar.
+        document.querySelectorAll('.ks-msg-frame').forEach(function (frame) {
+            frame.addEventListener('load', function () {
+                try {
+                    var h = frame.contentWindow.document.documentElement.scrollHeight;
+                    frame.style.height = (h + 24) + 'px';
+                } catch (e) {
+                    frame.style.height = '600px';
+                }
+            });
+        });
+    </script>
 </x-filament-panels::page>
