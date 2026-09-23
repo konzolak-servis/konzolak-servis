@@ -20,6 +20,9 @@ class WebGate
     private const VOLNE = [
         'vstup', 'odhlasit', 'up', 'favicon.ico', 'robots.txt',
         'css/*', 'js/*', 'images/*', 'build/*', 'storage/*', '.well-known/*',
+        // Stav zakázky (QR na štítku/dokladu) musí fungovat pro zákazníka i před
+        // spuštěním webu – jinak po naskenování uvidí jen bránu "Spouštíme brzy".
+        'z/*',
     ];
 
     public function handle(Request $request, Closure $next): Response
