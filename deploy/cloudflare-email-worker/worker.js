@@ -81,12 +81,18 @@ function parseEmail(raw, maxAttachB64) {
   return out;
 
   function walkPart(pHead, pBody) {
-    const ct = (getHeader(pHead, "content-type") || "").toLowerCase();
+    const ctRaw = getHeader(pHead, "content-type") || "";
+    const ct = ctRaw.toLowerCase();
     const cte = (getHeader(pHead, "content-transfer-encoding") || "").toLowerCase();
     const cd = getHeader(pHead, "content-disposition") || "";
 
     if (ct.startsWith("multipart/")) {
-      const bm = ct.match(/boundary="?([^"\s;]+)"?/i);
+      // POZOR: boundary se musí brát z ctRaw (originální velikost písmen), ne z ct
+      // (lowercase) – hraniční značky "--boundary" v těle e-mailu jsou case-sensitive.
+      // Mailgun a spol. generují boundary s velkými i malými písmeny (např.
+      // "b1=_qGNguSo4YF8kqekDRoOJYeQw6fw7mszdtjwWgA4Xrw") – lowercase verze se s ničím
+      // v těle neshodovala, split selhal a celá zpráva vyšla jako prázdná.
+      const bm = ctRaw.match(/boundary="?([^"\s;]+)"?/i);
       if (!bm) return;
       for (let part of pBody.split("--" + bm[1])) {
         part = part.replace(/^\r?\n/, "");
