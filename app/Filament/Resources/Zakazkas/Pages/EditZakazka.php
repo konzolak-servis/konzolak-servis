@@ -96,7 +96,8 @@ class EditZakazka extends EditRecord
                     Notification::make()->title('Zakázka znovu otevřena')->success()->send();
                 }),
 
-            // uzavřít zakázku → nastaví „vydáno", zeptá se na způsob platby a otevře protokol
+            // uzavřít zakázku → nastaví „vydáno", zeptá se na způsob platby a zapíše příjem
+            // (protokol e-mailem se posílá už dřív, při přechodu na „hotovo")
             Action::make('uzavrit')
                 ->label('Uzavřít zakázku')
                 ->icon('heroicon-o-lock-closed')
@@ -112,7 +113,8 @@ class EditZakazka extends EditRecord
                         ->required(),
                 ])
                 ->modalHeading('Uzavřít zakázku')
-                ->modalDescription('Nastaví „Vydáno", zapíše příjem do peněžního deníku a pošle zákazníkovi servisní protokol.')
+                ->modalDescription('Nastaví „Vydáno" a zapíše příjem do peněžního deníku. Servisní protokol už zákazník '
+                    . 'dostal e-mailem při přechodu na „Hotovo" – tady se znovu neposílá.')
                 ->modalSubmitActionLabel('Uzavřít zakázku')
                 ->action(function (array $data) {
                     $this->record->update([
@@ -124,8 +126,6 @@ class EditZakazka extends EditRecord
                     // sesynchronizovat formulář s uloženým stavem, ať ho pozdější uložení
                     // formuláře nepřepíše zpět na starou hodnotu
                     $this->fillForm();
-
-                    $this->odesliProtokolEmailem();
 
                     Notification::make()
                         ->title('Zakázka ' . $this->record->cislo . ' uzavřena')
@@ -497,7 +497,8 @@ class EditZakazka extends EditRecord
 
         $zprava = $this->zpravaProZakaznika();
 
-        // E-mail
+        // E-mail „zakázka hotová" + rovnou i servisní protokol v příloze (ať zákazník
+        // nemusí dostávat dva e-maily – jeden při hotovo, druhý znovu při uzavření).
         if ($zk?->email) {
             try {
                 \Illuminate\Support\Facades\Mail::to($zk->email)->send(new \App\Mail\ZakazkaHotova($z));
@@ -507,6 +508,8 @@ class EditZakazka extends EditRecord
                     ->body('Zkontroluj nastavení pošty (MAIL_* v .env). ' . $e->getMessage())
                     ->danger()->send();
             }
+
+            $this->odesliProtokolEmailem($zk->email);
         } else {
             Notification::make()->title('Zákazník nemá e-mail')->warning()->send();
         }
