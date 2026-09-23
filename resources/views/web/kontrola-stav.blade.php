@@ -14,9 +14,9 @@
 </head>
 <body style="min-height:100vh;display:flex;flex-direction:column">
 
-    <header style="padding:1.1rem 0;border-bottom:1px solid var(--line)">
-        <div class="wrap" style="display:flex;align-items:center;gap:.7rem">
-            <img src="/images/konzolak-logo-print.png" alt="{{ $firma->nazev ?? 'Konzolák Zlín' }}" style="height:40px;width:auto">
+    <header style="padding:2.2rem 0 1.6rem;border-bottom:1px solid var(--line)">
+        <div class="wrap" style="display:flex;justify-content:center">
+            <img src="/images/konzolak-logo-print.png" alt="{{ $firma->nazev ?? 'Konzolák Zlín' }}" style="height:110px;width:auto;max-width:80%">
         </div>
     </header>
 
