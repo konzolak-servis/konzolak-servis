@@ -20,7 +20,9 @@ class PenezniDenikForm
                 TextInput::make('popis')->label('Popis')->required()->maxLength(255)->columnSpanFull(),
                 TextInput::make('castka')->label('Částka')->numeric()->required()->suffix('Kč'),
                 TextInput::make('kategorie')->label('Kategorie')
-                    ->datalist(['Servis', 'Materiál', 'Vybavení', 'Ostatní']),
+                    ->datalist(['Servis', 'Materiál', 'Náklady firmy', 'Vybavení', 'Ostatní'])
+                    ->helperText('„Náklady firmy" = předplatné, software, doména, kancelář, spotřební '
+                        . 'materiál, vybavení dílny… vše, co nejde do skladu dílů na opravy.'),
                 TextInput::make('kde')->label('Kde (u výdeje)')->maxLength(255),
             ]);
     }
