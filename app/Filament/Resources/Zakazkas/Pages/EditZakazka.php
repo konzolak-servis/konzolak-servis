@@ -420,44 +420,30 @@ class EditZakazka extends EditRecord
 
         $wa = fn (string $text) => 'https://wa.me/' . $tel . '?text=' . rawurlencode($text);
 
-        // wa.me neumí předvyplnit přílohu (omezení WhatsAppu) – tohle PDF potichu
-        // stáhne (bez otevření nové karty) a hned poté otevře WhatsApp s textem.
-        // Zákazník pak v appce už jen jedním klepnutím sponku → stažený soubor.
-        $waSPrilohou = function (string $text, string $pdfUrl) use ($wa) {
-            $waUrl = $wa($text);
-            $this->js(<<<JS
-                (function () {
-                    var a = document.createElement('a');
-                    a.href = '{$pdfUrl}';
-                    a.download = '';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.open('{$waUrl}', '_blank');
-                })();
-            JS);
-        };
-
+        // wa.me neumí předvyplnit přílohu (omezení WhatsAppu, ne naší appky). Dřív jsem
+        // to zkoušel udělat jedním klikem – $this->js() spustilo synteticky a.click()
+        // (stažení PDF) a hned window.open() (WhatsApp). V praxi to ale prohlížeč
+        // (Chrome) tiše blokoval, protože JS spuštěný po AJAX/Livewire volání nemá
+        // "opravdové" uživatelské gesto, které download/popup vyžaduje. Řešení: dva
+        // samostatné, očíslované odkazy – ->url()->openUrlInNewTab() je skutečný <a>
+        // rovnou v DOM, klik na něj JE opravdové gesto, funguje spolehlivě stejně
+        // jako u ostatních PDF tlačítek.
         $akce = [
+            Action::make('wa_hotovo_doklad_pdf')
+                ->label('1) Stáhnout doklad o převzetí (PDF)')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->url(fn () => route('tisk.zakazka.doklad', $this->record))
+                ->openUrlInNewTab(),
+            Action::make('wa_hotovo_protokol_pdf')
+                ->label('1) Stáhnout servisní protokol (PDF)')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->url(fn () => route('tisk.zakazka.protokol', $this->record))
+                ->openUrlInNewTab(),
             Action::make('wa_hotovo')
-                ->label('Rychlé: hotovo k vyzvednutí')
-                ->icon('heroicon-o-check-circle')
+                ->label('2) Otevřít WhatsApp – hotovo k vyzvednutí')
+                ->icon('heroicon-o-chat-bubble-left-right')
                 ->url(fn () => $wa($this->zpravaProZakaznika()))
                 ->openUrlInNewTab(),
-            Action::make('wa_hotovo_doklad')
-                ->label('Hotovo + přiložit doklad o převzetí')
-                ->icon('heroicon-o-paper-clip')
-                ->action(fn () => $waSPrilohou(
-                    $this->zpravaProZakaznika(),
-                    route('tisk.zakazka.doklad', $this->record),
-                )),
-            Action::make('wa_hotovo_protokol')
-                ->label('Hotovo + přiložit servisní protokol')
-                ->icon('heroicon-o-paper-clip')
-                ->action(fn () => $waSPrilohou(
-                    $this->zpravaProZakaznika(),
-                    route('tisk.zakazka.protokol', $this->record),
-                )),
         ];
 
         foreach (\App\Models\Sablona::query()
