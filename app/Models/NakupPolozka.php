@@ -15,6 +15,7 @@ class NakupPolozka extends Model
         'mnozstvi_ks' => 'decimal:3',
         'castka_celkem' => 'decimal:2',
         'cena_ks' => 'decimal:2',
+        'neskladovat' => 'boolean',
     ];
 
     protected static function booted(): void

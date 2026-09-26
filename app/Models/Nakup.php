@@ -51,7 +51,15 @@ class Nakup extends Model
         }
 
         DB::transaction(function () {
+            $vseNeskladovat = $this->polozky->isNotEmpty() && $this->polozky->every(fn ($p) => $p->neskladovat);
+
             foreach ($this->polozky as $p) {
+                // Obecný provozní náklad (předplatné, kancelář, vybavení…) – nezakládá
+                // ani nemění skladovou položku, jen se počítá do celkové částky níže.
+                if ($p->neskladovat) {
+                    continue;
+                }
+
                 $sklad = $p->skladPolozka ?? SkladPolozka::create([
                     'nazev' => $p->nazev,
                 ]);
@@ -77,7 +85,7 @@ class Nakup extends Model
                 'popis' => 'Nákup ' . $this->cislo . ($this->dodavatel ? ' – ' . $this->dodavatel : '')
                     . ($this->postovne > 0 ? ' (vč. poštovného ' . number_format((float) $this->postovne, 0, ',', ' ') . ' Kč)' : ''),
                 'castka' => $castka,
-                'kategorie' => 'Materiál',
+                'kategorie' => $vseNeskladovat ? 'Náklady firmy' : 'Materiál',
                 'kde' => $this->dodavatel,
                 'zdroj' => 'nakup',
                 'zdroj_id' => $this->id,
