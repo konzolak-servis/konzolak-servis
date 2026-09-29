@@ -54,7 +54,7 @@ class ListPenezniDeniks extends ListRecords
                 ->modalSubmitActionLabel('Započítat')
                 ->action(function () {
                     $pocet = 0;
-                    foreach (Obchod::where('vyrizeno', true)->get() as $o) {
+                    foreach (Obchod::all() as $o) {
                         if ($o->zapisNakupDoDeniku()) {
                             $pocet++;
                         }

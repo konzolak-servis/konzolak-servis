@@ -58,7 +58,7 @@ class ObchodsTable
                         DatePicker::make('prodej_datum')->label('Datum prodeje')->default(now())->native(false)->required(),
                         TextInput::make('prodej_komu')->label('Komu (nepovinné)'),
                     ])
-                    ->modalDescription(fn (Obchod $record) => 'Investováno celkem: '.number_format($record->naklady_celkem, 0, ',', ' ').' Kč (nákup '.number_format((float) $record->cena, 0, ',', ' ').' + díly '.number_format($record->naklady_dilu, 0, ',', ' ').'). Bazar je interní – do peněžního deníku se nic nezapisuje.')
+                    ->modalDescription(fn (Obchod $record) => 'Investováno celkem: '.number_format($record->naklady_celkem, 0, ',', ' ').' Kč (nákup '.number_format((float) $record->cena, 0, ',', ' ').' + díly '.number_format($record->naklady_dilu, 0, ',', ' ').'). Prodejní cena se zapíše jako příjem do peněžního deníku (kategorie „Bazar").')
                     ->action(function (array $data, Obchod $record) {
                         $record->prodat((float) $data['prodejni_cena'], $data['prodej_datum'], $data['prodej_komu'] ?? null);
 

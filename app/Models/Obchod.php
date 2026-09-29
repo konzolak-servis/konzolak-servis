@@ -36,6 +36,10 @@ class Obchod extends Model
                 ? Cisla::dalsi('vykup', 'VYK')
                 : Cisla::dalsi('prodej', 'PRD');
         });
+
+        // Výkup je hotová věc (peníze reálně vyplacené) hned při založení záznamu –
+        // v UI není žádný samostatný krok „potvrzení"/vyřízení před tímhle okamžikem.
+        static::created(fn (Obchod $o) => $o->zapisNakupDoDeniku());
     }
 
     public function skladPolozka(): BelongsTo
