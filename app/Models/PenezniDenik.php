@@ -24,6 +24,7 @@ class PenezniDenik extends Model
         'opravy' => 'Opravy',
         'faktury' => 'Faktury',
         'material' => 'Nákup dílů',
+        'bazar' => 'Bazar',
         'ostatni' => 'Ostatní',
     ];
 

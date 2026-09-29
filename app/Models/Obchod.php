@@ -75,17 +75,19 @@ class Obchod extends Model
     }
 
     /**
-     * „Vyřídit" výkup – jen potvrdí záznam kvůli dokladu o výkupu.
-     * Bazar je interní: NEzapisuje do peněžního deníku ani do dílenského skladu.
+     * „Vyřídit" výkup – potvrdí záznam (kvůli dokladu o výkupu) a zapíše výdaj
+     * do peněžního deníku, ať je vidět reálný pohyb peněz. Bazar dál NEzapisuje
+     * do dílenského skladu (jde o samostatnou bazarovou evidenci).
      */
     public function vyridit(): void
     {
         if (! $this->vyrizeno) {
             $this->update(['vyrizeno' => true]);
         }
+        $this->zapisNakupDoDeniku();
     }
 
-    /** Prodej zařízení – zapíše prodejní cenu a datum (bez deníku). */
+    /** Prodej zařízení – zapíše prodejní cenu, datum a příjem do peněžního deníku. */
     public function prodat(float $cena, ?string $datum = null, ?string $komu = null): void
     {
         $this->update([
@@ -95,5 +97,70 @@ class Obchod extends Model
             'prodej_komu' => $komu,
             'vyrizeno' => true,
         ]);
+        $this->zapisProdejDoDeniku();
+    }
+
+    /**
+     * Zapíše výdaj za výkup do peněžního deníku (kategorie „Bazar"), pokud tam
+     * ještě není. Bezpečné volat opakovaně – nikdy nevytvoří duplicitní záznam.
+     * Vrací true, pokud právě něco nově zapsal.
+     */
+    public function zapisNakupDoDeniku(): bool
+    {
+        if ((float) $this->cena <= 0) {
+            return false;
+        }
+
+        if (PenezniDenik::where('zdroj', 'obchod')->where('zdroj_id', $this->id)
+            ->where('typ', 'vydej')->exists()) {
+            return false;
+        }
+
+        PenezniDenik::create([
+            'datum' => $this->datum?->toDateString() ?? now()->toDateString(),
+            'typ' => 'vydej',
+            'popis' => 'Bazar – výkup ' . $this->cislo . ($this->nazev ? ' – ' . $this->nazev : ''),
+            'castka' => (float) $this->cena,
+            'kategorie' => 'Bazar',
+            'zpusob' => $this->zpusob_uhrady,
+            'zdroj' => 'obchod',
+            'zdroj_id' => $this->id,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Zapíše příjem z prodeje do peněžního deníku (kategorie „Bazar"), pokud tam
+     * ještě není. Bezpečné volat opakovaně – nikdy nevytvoří duplicitní záznam.
+     * Vrací true, pokud právě něco nově zapsal.
+     *
+     * POZOR: náklady na vložené díly (naklady_dilu) se sem NEzapisují zvlášť –
+     * díl ze skladu se do deníku propsal už při jeho nákupu do skladu, ručně
+     * přidaný náklad zatím nikam propsaný není (řeší se jinde, případ od případu).
+     */
+    public function zapisProdejDoDeniku(): bool
+    {
+        if (! $this->prodano || (float) $this->prodejni_cena <= 0) {
+            return false;
+        }
+
+        if (PenezniDenik::where('zdroj', 'obchod')->where('zdroj_id', $this->id)
+            ->where('typ', 'prijem')->exists()) {
+            return false;
+        }
+
+        PenezniDenik::create([
+            'datum' => $this->prodej_datum?->toDateString() ?? now()->toDateString(),
+            'typ' => 'prijem',
+            'popis' => 'Bazar – prodej ' . $this->cislo . ($this->nazev ? ' – ' . $this->nazev : '')
+                . ($this->prodej_komu ? ' (' . $this->prodej_komu . ')' : ''),
+            'castka' => (float) $this->prodejni_cena,
+            'kategorie' => 'Bazar',
+            'zdroj' => 'obchod',
+            'zdroj_id' => $this->id,
+        ]);
+
+        return true;
     }
 }

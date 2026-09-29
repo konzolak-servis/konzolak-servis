@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\PenezniDeniks\Pages;
 
 use App\Filament\Resources\PenezniDeniks\PenezniDenikResource;
+use App\Models\Obchod;
 use App\Models\PenezniDenik;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,6 +41,35 @@ class ListPenezniDeniks extends ListRecords
             ])->label('Export' . ($this->activeTab && $this->activeTab !== 'vse'
                 ? ' – ' . (PenezniDenik::SKUPINY[$this->activeTab] ?? '')
                 : ''))->icon('heroicon-o-arrow-down-tray')->button(),
+
+            Action::make('zapocitat_bazar')
+                ->label('Započítat bazar')
+                ->icon('heroicon-o-calculator')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->modalHeading('Započítat bazar do peněžního deníku')
+                ->modalDescription('Zapíše všechny dosud nezapočítané výkupy (výdaj) a prodeje (příjem) '
+                    . 'z modulu Bazar do peněžního deníku pod kategorií „Bazar". Bezpečné spustit '
+                    . 'kdykoli znovu – už zapsané položky se nikdy nezdvojí.')
+                ->modalSubmitActionLabel('Započítat')
+                ->action(function () {
+                    $pocet = 0;
+                    foreach (Obchod::where('vyrizeno', true)->get() as $o) {
+                        if ($o->zapisNakupDoDeniku()) {
+                            $pocet++;
+                        }
+                    }
+                    foreach (Obchod::where('prodano', true)->get() as $o) {
+                        if ($o->zapisProdejDoDeniku()) {
+                            $pocet++;
+                        }
+                    }
+
+                    Notification::make()
+                        ->title($pocet > 0 ? "Započítáno $pocet nových záznamů" : 'Nic nového k započítání – vše je už zapsané')
+                        ->success()
+                        ->send();
+                }),
 
             CreateAction::make(),
         ];
