@@ -50,7 +50,7 @@
         <td class="tlabel" style="vertical-align:bottom">
             @if (! empty($qrPlatba))
                 <table><tr>
-                    <td style="width:24mm"><img src="{{ $qrPlatba }}" style="width:22mm;height:22mm"></td>
+                    <td style="width:32mm"><img src="{{ $qrPlatba }}" style="width:30mm;height:30mm"></td>
                     <td style="vertical-align:middle;font-size:7.5pt;color:#374151">
                         <strong>QR Platba</strong> – naskenujte<br>v bankovní aplikaci.
                     </td>
@@ -58,9 +58,12 @@
             @elseif ($z->zpusob_uhrady === 'hotove' && $z->doplatek() > 0)
                 <strong>Platba hotově</strong> {{ $z->zpusob_vydani === 'odeslani' ? 'dobírkou' : 'při vyzvednutí' }}.
             @endif
-            @if ($z->zaloha > 0 || $z->cena_dopravy > 0)
+            @if ($z->zaloha > 0 || $z->cena_dopravy > 0 || $z->sleva_procent > 0)
                 <div style="margin-top:1mm;font-size:8pt;color:#374151">
                     Cena celkem {{ number_format($z->cena_celkem, 0, ',', ' ') }} Kč
+                    @if ($z->sleva_procent > 0)
+                        &nbsp;−&nbsp; sleva {{ $z->sleva_procent }} % ({{ number_format($z->slevaCastka(), 0, ',', ' ') }} Kč){{ $z->sleva_kod ? ', ' . $z->sleva_kod : '' }}
+                    @endif
                     @if ($z->cena_dopravy > 0)
                         &nbsp;+&nbsp; doprava {{ number_format($z->cena_dopravy, 0, ',', ' ') }} Kč
                     @endif

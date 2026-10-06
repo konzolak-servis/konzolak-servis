@@ -207,6 +207,13 @@ class ZakazkaForm
                             ->helperText('Vhodné u hotovosti přijaté v jiném roce než dokončení.')
                             ->visible(fn (Get $get) => (float) $get('zaloha') > 0),
 
+                        TextInput::make('sleva_kod')->label('Slevový kód / kupon')
+                            ->placeholder('např. UPLATNĚN KUPON ABC123')
+                            ->maxLength(120),
+                        \Filament\Forms\Components\Select::make('sleva_procent')->label('Sleva')
+                            ->options(Zakazka::SLEVY)->default(0)->native(false)
+                            ->helperText('Odečte se automaticky od ceny opravy (bez dopravy).'),
+
                         \Filament\Forms\Components\Radio::make('zpusob_vydani')->label('Vyzvednutí')
                             ->options(Zakazka::ZPUSOBY_VYDANI)
                             ->default('osobne')

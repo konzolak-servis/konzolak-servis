@@ -36,10 +36,24 @@ class Zakazka extends Model
     /** Stavy, které se počítají jako dokončené. */
     public const STAVY_HOTOVO = ['hotovo', 'vydano'];
 
-    /** Kolik zákazník ještě doplácí (cena opravy + doprava/dobírka − záloha), nikdy záporně. */
+    public const SLEVY = [0 => 'Bez slevy', 5 => '5 %', 10 => '10 %', 15 => '15 %', 20 => '20 %'];
+
+    /** Částka slevy v Kč (procenta z ceny opravy; doprava se neslevňuje). */
+    public function slevaCastka(): float
+    {
+        return round((float) $this->cena_celkem * (int) $this->sleva_procent / 100, 2);
+    }
+
+    /** Cena opravy po slevě (bez dopravy). */
+    public function cenaPoSleve(): float
+    {
+        return round((float) $this->cena_celkem - $this->slevaCastka(), 2);
+    }
+
+    /** Kolik zákazník ještě doplácí (cena po slevě + doprava/dobírka − záloha), nikdy záporně. */
     public function doplatek(): float
     {
-        return max((float) $this->cena_celkem + (float) $this->cena_dopravy - (float) $this->zaloha, 0);
+        return max($this->cenaPoSleve() + (float) $this->cena_dopravy - (float) $this->zaloha, 0);
     }
 
     public function jeHotovo(): bool
@@ -119,7 +133,7 @@ class Zakazka extends Model
         $klic = ['zdroj' => 'zakazka', 'zdroj_id' => $this->id];
 
         $zalohaZapoctena = $this->zaloha > 0 && $this->zaloha_v_prijmech;
-        $castka = (float) $this->cena_celkem + (float) $this->cena_dopravy
+        $castka = $this->cenaPoSleve() + (float) $this->cena_dopravy
             - ($zalohaZapoctena ? (float) $this->zaloha : 0);
 
         if (in_array($this->stav, self::STAVY_ZAPLACENO, true) && $castka > 0) {

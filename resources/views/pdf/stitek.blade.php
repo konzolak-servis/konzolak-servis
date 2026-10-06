@@ -8,8 +8,8 @@
     .cislo { font-size: 15pt; font-weight: bold; letter-spacing: .02em; }
     .radek { font-size: 8pt; margin-top: .6mm; }
     .radek b { color: #9a7420; }
-    .qr { width: 22mm; text-align: right; vertical-align: top; }
-    .qr img { width: 21mm; height: 21mm; }
+    .qr { width: 31mm; text-align: right; vertical-align: top; }
+    .qr img { width: 30mm; height: 30mm; }
 </style>
 </head>
 <body>

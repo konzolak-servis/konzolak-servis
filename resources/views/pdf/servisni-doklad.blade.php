@@ -16,8 +16,8 @@
             </div>
         </td>
         @if (! empty($qr))
-            <td width="28mm" style="text-align:right; vertical-align:middle">
-                <img src="{{ $qr }}" style="width:24mm; height:24mm">
+            <td width="36mm" style="text-align:right; vertical-align:middle">
+                <img src="{{ $qr }}" style="width:32mm; height:32mm">
                 <div style="font-size:6pt; color:#6b7280; text-align:center; margin-top:.5mm; line-height:1.25">
                     Sledování stavu opravy<br>{{ $z->cislo }}
                 </div>

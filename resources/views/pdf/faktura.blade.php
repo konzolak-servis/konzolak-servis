@@ -63,7 +63,7 @@
         <td class="tlabel" style="vertical-align:bottom">
             @if (! empty($qrPlatba))
                 <table><tr>
-                    <td style="width:26mm"><img src="{{ $qrPlatba }}" style="width:24mm;height:24mm"></td>
+                    <td style="width:32mm"><img src="{{ $qrPlatba }}" style="width:30mm;height:30mm"></td>
                     <td style="vertical-align:middle;font-size:8pt;color:#374151">
                         <strong>QR Platba</strong><br>
                         Naskenujte v bankovní aplikaci –<br>částka i variabilní symbol se vyplní samy.
