@@ -35,7 +35,7 @@ class FakturasTable
                 Action::make('pdf')
                     ->label('PDF')
                     ->icon('heroicon-o-printer')
-                    ->url(fn ($record) => route('tisk.faktura', $record))
+                    ->url(fn ($record) => $record->tiskUrl())
                     ->openUrlInNewTab(),
             ])
             ->toolbarActions([

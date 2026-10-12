@@ -18,12 +18,18 @@
         <h2>2. Cena a její odsouhlasení</h2>
         <p>Ceny uvedené v ceníku jsou orientační a mohou se během servisního zásahu upřesnit.
             Přesná cena je sdělena po diagnostice; oprava je provedena až po odsouhlasení
-            zákazníkem. Je-li oprava provedena, diagnostika se neúčtuje.</p>
+            zákazníkem. Je-li oprava provedena, diagnostika se neúčtuje; odmítne-li zákazník opravu,
+            může být diagnostika vyúčtována dle ceníku.</p>
+        <p>Objeví-li se během opravy další závada nebo je nutné použít další díly, budu zákazníka
+            předem kontaktovat. Bez jeho souhlasu nebude cena navýšena.</p>
+        <p>Vyměněné díly zůstávají v servisu. Požaduje-li je zákazník zpět, oznámí to nejpozději
+            při odsouhlasení opravy.</p>
 
         <h2>3. Odpovědnost za vady provedené opravy</h2>
         <p><strong>Spotřebitel:</strong> práva z vadného plnění lze uplatnit ve lhůtě 24 měsíců
             od převzetí opravené věci; u oprav použitých nebo starších zařízení činí tato lhůta
-            12 měsíců. V prvních 12 měsících se má za to, že vada existovala již při převzetí.</p>
+            12 měsíců. Projeví-li se vada v zákonem stanovené době po převzetí, platí domněnka, že
+            existovala již při převzetí, pokud tomu neodporuje povaha věci nebo vady.</p>
         <p><strong>Podnikatel:</strong> lhůta pro uplatnění vad provedené práce činí 3 měsíce
             od převzetí; vady je nutné oznámit bez zbytečného odkladu po jejich zjištění.</p>
         <p>Odpovědnost se vztahuje na vady samotné provedené práce. Nevztahuje se na:</p>
@@ -37,11 +43,17 @@
         <h2>4. Uplatnění reklamace</h2>
         <p>Reklamaci uplatněte bez zbytečného odkladu po zjištění vady, osobně nebo na
             @if($firma->email){{ $firma->email }}@endif, s uvedením čísla zakázky a popisu vady.
-            Reklamace se vyřizuje nejpozději do 30 dnů.</p>
+            O uplatnění reklamace zákazníkovi vystavím potvrzení s datem uplatnění, popisem vady
+            a požadovaným způsobem vyřízení. Reklamace včetně odstranění vady se vyřizuje nejpozději
+            do 30 dnů od uplatnění, pokud se strany nedohodnou na delší lhůtě; o výsledku vyřízení
+            zákazníka písemně informuji. Účelně vynaložené náklady spojené s uplatněním oprávněné
+            reklamace (např. poštovné) hradí servis.</p>
 
         <h2>5. Data v zařízení</h2>
         <p>Servis nepřebírá odpovědnost za data uložená na discích a paměťových médiích.
-            Zálohování dat je v plné odpovědnosti zákazníka.</p>
+            Zálohování dat je v plné odpovědnosti zákazníka. U některých oprav může být nezbytné
+            aktualizovat firmware, přeinstalovat systém nebo obnovit tovární nastavení; ke ztrátě
+            dat způsobené takovým nezbytným úkonem se odpovědnost nevztahuje.</p>
 
         <h2>6. Vydání zařízení a zádržné právo</h2>
         <p>Opravené zařízení se vydává proti předložení originálu dokladu o převzetí. Do úplného
@@ -58,8 +70,10 @@
             oprava provedena, právo na odstoupení zaniká (§ 1837 obč. zák.).</p>
 
         <h2>9. Mimosoudní řešení sporů</h2>
-        <p>K mimosoudnímu řešení spotřebitelských sporů je příslušná Česká obchodní inspekce
-            (adr.coi.cz).</p>
+        <p>K mimosoudnímu řešení spotřebitelských sporů je příslušná Česká obchodní inspekce,
+            Štěpánská 567/15, 120 00 Praha 2, IČO 00020869, <a href="https://adr.coi.cz" rel="noopener">adr.coi.cz</a>.
+            Spotřebitel se může obrátit také na tuto instituci s žádostí o řešení sporu, nepodaří-li se
+            jej vyřešit přímo s námi.</p>
     </div>
 </section>
 @endsection

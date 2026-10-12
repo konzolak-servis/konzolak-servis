@@ -23,6 +23,8 @@ class Zakazka extends Model
         'zaloha' => 'decimal:2',
         'cena_celkem' => 'decimal:2',
         'cena_dopravy' => 'decimal:2',
+        'postovne_naklad' => 'decimal:2',
+        'dobirka' => 'boolean',
         'zaruka_mesice' => 'integer',
         'dil_objednany' => 'boolean',
         'zaloha_v_prijmech' => 'boolean',
@@ -54,6 +56,26 @@ class Zakazka extends Model
     public function doplatek(): float
     {
         return max($this->cenaPoSleve() + (float) $this->cena_dopravy - (float) $this->zaloha, 0);
+    }
+
+    /** Zásilka jde na dobírku – zákazník platí dopravci, nic se předem nehradí (bez QR platby). */
+    /**
+     * URL tisku (doklad | protokol | stitek). Poslední část cesty je název souboru s číslem zakázky,
+     * takže „Uložit jako" v prohlížeči nabídne např. Servisni-protokol-SL-2026-0034.pdf.
+     */
+    public function tiskUrl(string $co, array $query = []): string
+    {
+        $nazvy = ['doklad' => 'Doklad-o-prevzeti', 'protokol' => 'Servisni-protokol', 'stitek' => 'Stitek'];
+
+        return route('tisk.zakazka.' . $co, array_merge(
+            ['zakazka' => $this, 'soubor' => ($nazvy[$co] ?? $co) . '-' . $this->cislo . '.pdf'],
+            $query,
+        ));
+    }
+
+    public function jeDobirka(): bool
+    {
+        return (bool) $this->dobirka && $this->zpusob_vydani === 'odeslani';
     }
 
     public function jeHotovo(): bool
@@ -96,11 +118,12 @@ class Zakazka extends Model
 
         static::saved(function (Zakazka $z) {
             $z->synchronizujZalohu();
+            $z->synchronizujPostovne();
             $z->synchronizujPrijem();
         });
         static::deleted(function (Zakazka $z) {
             PenezniDenik::where('zdroj_id', $z->id)
-                ->whereIn('zdroj', ['zakazka', 'zakazka_zaloha'])->delete();
+                ->whereIn('zdroj', ['zakazka', 'zakazka_zaloha', 'zakazka_postovne'])->delete();
         });
     }
 
@@ -121,6 +144,25 @@ class Zakazka extends Model
                 'castka' => (float) $this->zaloha,
                 'kategorie' => 'Servis – záloha',
                 'zpusob' => $this->zpusob_uhrady,
+            ]);
+        } else {
+            PenezniDenik::where($klic)->delete();
+        }
+    }
+
+    /** Poštovné, které za odeslání zaplatil servis = výdaj v peněžním deníku (zákazníkovi se účtuje zvlášť přes cenu dopravy). */
+    public function synchronizujPostovne(): void
+    {
+        $klic = ['zdroj' => 'zakazka_postovne', 'zdroj_id' => $this->id];
+
+        if ((float) $this->postovne_naklad > 0) {
+            PenezniDenik::updateOrCreate($klic, [
+                'datum' => ($this->odeslano_datum ?? $this->datum_vyrizeni ?? now())->toDateString(),
+                'typ' => 'vydej',
+                'popis' => 'Poštovné ' . $this->cislo . ($this->dopravce ? ' – ' . $this->dopravce : ''),
+                'castka' => (float) $this->postovne_naklad,
+                'kategorie' => 'Poštovné',
+                'zpusob' => 'hotove',
             ]);
         } else {
             PenezniDenik::where($klic)->delete();
@@ -182,6 +224,45 @@ class Zakazka extends Model
     public function zarizeni(): BelongsTo
     {
         return $this->belongsTo(Zarizeni::class, 'zarizeni_id');
+    }
+
+    /** Další zařízení v téže zakázce (hlavní je `zarizeni`). */
+    public function dalsiZarizeni(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Zarizeni::class, 'zakazka_zarizeni', 'zakazka_id', 'zarizeni_id')
+            ->withPivot('zavada', 'pozadovane', 'prace')->orderBy('zakazka_zarizeni.id');
+    }
+
+    /** Názvy všech zařízení zakázky v jednom řádku (pro přehledy, kalendář, faktury, zprávy). */
+    public function zarizeniText(): string
+    {
+        return $this->vsechnaZarizeni()->pluck('oznaceni')->filter()->implode(', ');
+    }
+
+    /** Je v zakázce víc než jedno zařízení? (závady se pak vypisují u zařízení) */
+    public function maVicZarizeni(): bool
+    {
+        return $this->dalsiZarizeni->isNotEmpty();
+    }
+
+    /** Hlavní + další zařízení zakázky. */
+    public function vsechnaZarizeni(): \Illuminate\Support\Collection
+    {
+        $hlavni = $this->zarizeni;
+        // Závada a práce hlavního zařízení jsou ve společných polích zakázky (popis_zavady, navrh_reseni_prace);
+        // u více zařízení se vypisují přímo u zařízení, u jednoho zůstávají v samostatných boxech dokladu.
+        $vice = $this->dalsiZarizeni->isNotEmpty();
+        $hlavni?->setAttribute('_zavada', $vice ? $this->popis_zavady : null);
+        $hlavni?->setAttribute('_pozadovane', $vice ? $this->pozadovane_reseni : null);
+        $hlavni?->setAttribute('_prace', $vice ? $this->navrh_reseni_prace : null);
+
+        $dalsi = $this->dalsiZarizeni->each(function ($zar) {
+            $zar->setAttribute('_zavada', $zar->pivot->zavada);
+            $zar->setAttribute('_pozadovane', $zar->pivot->pozadovane);
+            $zar->setAttribute('_prace', $zar->pivot->prace);
+        });
+
+        return collect([$hlavni])->merge($dalsi)->filter()->unique('id')->values();
     }
 
     public function polozky(): HasMany

@@ -36,7 +36,7 @@ class NabidkasTable
                 Action::make('pdf')
                     ->label('PDF')
                     ->icon('heroicon-o-printer')
-                    ->url(fn ($record) => route('tisk.nabidka', $record))
+                    ->url(fn ($record) => $record->tiskUrl())
                     ->openUrlInNewTab(),
             ])
             ->toolbarActions([

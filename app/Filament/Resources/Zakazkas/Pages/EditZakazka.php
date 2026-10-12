@@ -21,8 +21,15 @@ class EditZakazka extends EditRecord
         $this->stavPredUlozenim = $this->record->getOriginal('stav');
     }
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        return \App\Filament\Resources\Zakazkas\Schemas\ZakazkaForm::naplnDalsi($data, $this->record);
+    }
+
     protected function afterSave(): void
     {
+        \App\Filament\Resources\Zakazkas\Schemas\ZakazkaForm::ulozDalsi($this->record, $this->form->getRawState());
+
         // Když se stav ve formuláři přepne na „Hotovo" (ne přes tlačítko
         // „Opraveno + oznámit"), stejně pošli zákazníkovi oznámení o vyzvednutí.
         if ($this->record->wasChanged('stav')
@@ -43,6 +50,21 @@ class EditZakazka extends EditRecord
                 ->color('primary')
                 ->button()
                 ->action(fn () => $this->save()),
+
+            // Servisní list (doklad o převzetí) zákazníkovi – jen ručně, nic se neposílá automaticky
+            Action::make('mail_doklad')
+                ->label('Odeslat servisní list')
+                ->icon('heroicon-o-envelope')
+                ->color('info')
+                ->button()
+                ->requiresConfirmation(fn () => $this->maEmailZakaznika())
+                ->modalHeading('Odeslat servisní list zákazníkovi')
+                ->modalDescription(fn () => $this->maEmailZakaznika()
+                    ? 'Pošle doklad o převzetí v PDF na ' . $this->record->zakaznik?->email . '.'
+                    : null)
+                ->modalSubmitActionLabel('Odeslat')
+                ->schema(fn () => $this->maEmailZakaznika() ? [] : [$this->polePriEmailu()])
+                ->action(fn (array $data) => $this->odesliDokladEmailem($data['email'] ?? null)),
 
             // rychlá změna stavu – sbaleno do jednoho tlačítka
             ActionGroup::make([
@@ -154,7 +176,7 @@ class EditZakazka extends EditRecord
                     ]);
 
                     $uctovane = $this->record->polozky()->where('uctovat', true)->get();
-                    $zarizeni = $this->record->zarizeni?->oznaceni ?? '';
+                    $zarizeni = $this->record->zarizeniText();
 
                     if ($uctovane->isEmpty()) {
                         $f->polozky()->create([
@@ -172,6 +194,23 @@ class EditZakazka extends EditRecord
                                 'cena' => $p->cena_ks,
                             ]);
                         }
+                    }
+
+                    if ($this->record->sleva_procent > 0) {
+                        $f->polozky()->create([
+                            'popis' => 'Sleva ' . $this->record->sleva_procent . ' %'
+                                . ($this->record->sleva_kod ? ' (' . $this->record->sleva_kod . ')' : ''),
+                            'mnozstvi' => 1,
+                            'cena' => -1 * $this->record->slevaCastka(),
+                        ]);
+                    }
+
+                    if ($this->record->cena_dopravy > 0) {
+                        $f->polozky()->create([
+                            'popis' => $this->record->jeDobirka() ? 'Doprava – dobírka' : 'Doprava',
+                            'mnozstvi' => 1,
+                            'cena' => (float) $this->record->cena_dopravy,
+                        ]);
                     }
 
                     if ($this->record->zaloha > 0) {
@@ -200,35 +239,29 @@ class EditZakazka extends EditRecord
                 Action::make('servisni_doklad')
                     ->label('Doklad o převzetí (PDF)')
                     ->icon('heroicon-o-document-text')
-                    ->url(fn () => route('tisk.zakazka.doklad', $this->record))
+                    ->url(fn () => $this->record->tiskUrl('doklad'))
                     ->openUrlInNewTab(),
                 Action::make('servisni_doklad_cb')
                     ->label('Doklad o převzetí – tisk ČB (PDF)')
                     ->icon('heroicon-o-printer')
-                    ->url(fn () => route('tisk.zakazka.doklad', ['zakazka' => $this->record, 'cb' => 1]))
+                    ->url(fn () => $this->record->tiskUrl('doklad', ['cb' => 1]))
                     ->openUrlInNewTab(),
                 Action::make('servisni_protokol')
                     ->label('Servisní protokol (PDF)')
                     ->icon('heroicon-o-document-check')
-                    ->url(fn () => route('tisk.zakazka.protokol', $this->record))
+                    ->url(fn () => $this->record->tiskUrl('protokol'))
                     ->openUrlInNewTab(),
                 Action::make('servisni_protokol_cb')
                     ->label('Servisní protokol – tisk ČB (PDF)')
                     ->icon('heroicon-o-printer')
-                    ->url(fn () => route('tisk.zakazka.protokol', ['zakazka' => $this->record, 'cb' => 1]))
+                    ->url(fn () => $this->record->tiskUrl('protokol', ['cb' => 1]))
                     ->openUrlInNewTab(),
                 Action::make('stitek')
                     ->label('Štítek na zařízení (PDF)')
                     ->icon('heroicon-o-tag')
-                    ->url(fn () => route('tisk.zakazka.stitek', $this->record))
+                    ->url(fn () => $this->record->tiskUrl('stitek'))
                     ->openUrlInNewTab(),
 
-                Action::make('mail_doklad')
-                    ->label('Poslat doklad e-mailem')
-                    ->icon('heroicon-o-envelope')
-                    ->color('info')
-                    ->schema(fn () => $this->maEmailZakaznika() ? [] : [$this->polePriEmailu()])
-                    ->action(fn (array $data) => $this->odesliDokladEmailem($data['email'] ?? null)),
                 Action::make('mail_protokol')
                     ->label('Poslat protokol e-mailem')
                     ->icon('heroicon-o-envelope')
@@ -260,6 +293,8 @@ class EditZakazka extends EditRecord
                                 . "\nPůvodní práce: " . ($this->record->navrh_reseni_prace ?: '—'),
                             'zaruka_mesice' => $this->record->zaruka_mesice,
                         ]);
+
+                        $r->dalsiZarizeni()->attach($this->record->dalsiZarizeni->pluck('id')->all());
 
                         return redirect(\App\Filament\Resources\Zakazkas\ZakazkaResource::getUrl('edit', ['record' => $r]));
                     }),
@@ -377,13 +412,28 @@ class EditZakazka extends EditRecord
     }
 
     /** Krátká zpráva pro zákazníka (SMS / WhatsApp) – „zakázka je hotová". */
+    /** WhatsApp zpráva při převzetí zařízení – doklad o převzetí se přikládá ručně (stažené PDF). */
+    private function zpravaPrevzeti(): string
+    {
+        $z = $this->record;
+        $odkaz = route('verejne.stav', [
+            'zakazka' => $z->id,
+            'token' => \App\Support\QrPlatba::token('stav', $z->id),
+        ]);
+
+        return 'Konzolák Zlín: Převzali jsme vaše zařízení' . ($z->zarizeniText() ? ' (' . $z->zarizeniText() . ')' : '')
+            . ' do opravy, číslo zakázky ' . $z->cislo . '. Doklad o převzetí posílám v příloze – při vyzvednutí ho prosím předložte. '
+            . 'Stav opravy můžete sledovat zde: ' . $odkaz . ' '
+            . 'Tel. ' . (\App\Models\Firma::get()->telefon ?: '');
+    }
+
     private function zpravaProZakaznika(): string
     {
         $z = $this->record;
 
         return 'Konzolák Zlín: Vaše zakázka ' . $z->cislo
             . ($z->zpusob_vydani === 'odeslani' ? ' je hotová, brzy ji odešleme zpět. ' : ' je hotová a připravená k vyzvednutí. ')
-            . ($z->cena_celkem > 0 ? 'K úhradě ' . number_format($z->doplatek(), 0, ' ', ' ') . ' Kč. ' : '')
+            . ($z->cena_celkem > 0 ? ($z->jeDobirka() ? 'Zásilka jde na dobírku (' . number_format($z->doplatek(), 0, ' ', ' ') . ' Kč), předem nic neplaťte. ' : 'K úhradě ' . number_format($z->doplatek(), 0, ' ', ' ') . ' Kč. ') : '')
             . 'Tel. ' . (\App\Models\Firma::get()->telefon ?: '');
     }
 
@@ -401,7 +451,7 @@ class EditZakazka extends EditRecord
 
         return strtr($text, [
             '{cislo}' => $z->cislo,
-            '{zarizeni}' => $z->zarizeni?->oznaceni ?? '',
+            '{zarizeni}' => $z->zarizeniText(),
             '{zakaznik}' => $z->zakaznik?->nazev ?? '',
             '{cena}' => number_format((float) $z->cena_celkem, 0, ',', ' '),
             '{doplatek}' => number_format($doplatek, 0, ',', ' '),
@@ -429,15 +479,23 @@ class EditZakazka extends EditRecord
         // rovnou v DOM, klik na něj JE opravdové gesto, funguje spolehlivě stejně
         // jako u ostatních PDF tlačítek.
         $akce = [
-            Action::make('wa_hotovo_doklad_pdf')
+            // přijetí zařízení: doklad o převzetí + zpráva
+            Action::make('wa_prevzeti_doklad_pdf')
                 ->label('1) Stáhnout doklad o převzetí (PDF)')
                 ->icon('heroicon-o-arrow-down-tray')
-                ->url(fn () => route('tisk.zakazka.doklad', $this->record))
+                ->url(fn () => $this->record->tiskUrl('doklad'))
                 ->openUrlInNewTab(),
+            Action::make('wa_prevzeti')
+                ->label('2) Otevřít WhatsApp – zařízení převzato (doklad)')
+                ->icon('heroicon-o-chat-bubble-left-right')
+                ->url(fn () => $wa($this->zpravaPrevzeti()))
+                ->openUrlInNewTab(),
+
+            // hotovo: servisní protokol + zpráva
             Action::make('wa_hotovo_protokol_pdf')
                 ->label('1) Stáhnout servisní protokol (PDF)')
                 ->icon('heroicon-o-arrow-down-tray')
-                ->url(fn () => route('tisk.zakazka.protokol', $this->record))
+                ->url(fn () => $this->record->tiskUrl('protokol'))
                 ->openUrlInNewTab(),
             Action::make('wa_hotovo')
                 ->label('2) Otevřít WhatsApp – hotovo k vyzvednutí')

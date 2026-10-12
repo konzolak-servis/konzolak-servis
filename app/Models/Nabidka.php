@@ -36,6 +36,18 @@ class Nabidka extends Model
         });
     }
 
+    /**
+     * URL tisku PDF. Poslední část cesty je název souboru s číslem dokladu,
+     * takže „Uložit jako" v prohlížeči nabídne správný název.
+     */
+    public function tiskUrl(array $query = []): string
+    {
+        return route('tisk.nabidka', array_merge(
+            ['nabidka' => $this, 'soubor' => 'Nabidka-' . $this->cislo . '.pdf'],
+            $query,
+        ));
+    }
+
     public function zakaznik(): BelongsTo
     {
         return $this->belongsTo(Zakaznik::class, 'zakaznik_id');

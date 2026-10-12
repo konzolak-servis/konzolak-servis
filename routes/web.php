@@ -49,9 +49,12 @@ Route::name('web.')->group(function () {
     Route::get('/jak-to-funguje', [WebController::class, 'jakToFunguje'])->name('jak-to-funguje');
     Route::get('/o-nas', [WebController::class, 'oNas'])->name('o-nas');
     Route::get('/reference', [WebController::class, 'reference'])->name('reference');
+    Route::get('/zaslani-zarizeni', [WebController::class, 'zasilani'])->name('zasilani');
+    Route::get('/vykup-zarizeni', [WebController::class, 'vykup'])->name('vykup');
     Route::get('/caste-dotazy', [WebController::class, 'faq'])->name('faq');
     Route::get('/kontakt', [WebController::class, 'kontakt'])->name('kontakt');
     Route::post('/kontakt', [PoptavkaController::class, 'odeslat'])->name('poptavka');
+    Route::post('/chat', [\App\Http\Controllers\Web\ChatController::class, 'zprava'])->name('chat');
 
     Route::get('/kontrola-zakazky', [KontrolaController::class, 'form'])->name('kontrola');
     Route::post('/kontrola-zakazky', [KontrolaController::class, 'najdi'])->name('kontrola.najdi');
@@ -77,14 +80,17 @@ Route::middleware('auth')->group(function () {
     Route::post('passkey/register', [WebAuthnRegisterController::class, 'register'])->name('webauthn.register');
 });
 
+// Nepřihlášený návštěvník chráněných adres (např. odkaz na PDF) → přihlášení do administrace.
+Route::get('login', fn () => redirect('/admin/login'))->name('login');
+
 Route::middleware(['web', 'auth'])->group(function () {
     Route::prefix('tisk')->name('tisk.')->group(function () {
-        Route::get('zakazka/{zakazka}/servisni-doklad', [TiskController::class, 'servisniDoklad'])->name('zakazka.doklad');
-        Route::get('zakazka/{zakazka}/servisni-protokol', [TiskController::class, 'servisniProtokol'])->name('zakazka.protokol');
-        Route::get('zakazka/{zakazka}/stitek', [TiskController::class, 'stitek'])->name('zakazka.stitek');
-        Route::get('faktura/{faktura}', [TiskController::class, 'faktura'])->name('faktura');
-        Route::get('nabidka/{nabidka}', [TiskController::class, 'nabidka'])->name('nabidka');
-        Route::get('obchod/{obchod}', [TiskController::class, 'obchod'])->name('obchod');
+        Route::get('zakazka/{zakazka}/servisni-doklad/{soubor?}', [TiskController::class, 'servisniDoklad'])->name('zakazka.doklad');
+        Route::get('zakazka/{zakazka}/servisni-protokol/{soubor?}', [TiskController::class, 'servisniProtokol'])->name('zakazka.protokol');
+        Route::get('zakazka/{zakazka}/stitek/{soubor?}', [TiskController::class, 'stitek'])->name('zakazka.stitek');
+        Route::get('faktura/{faktura}/{soubor?}', [TiskController::class, 'faktura'])->name('faktura');
+        Route::get('nabidka/{nabidka}/{soubor?}', [TiskController::class, 'nabidka'])->name('nabidka');
+        Route::get('obchod/{obchod}/{soubor?}', [TiskController::class, 'obchod'])->name('obchod');
 
         // náhledy z rozpracovaného formuláře (data se předávají přes session)
         Route::get('nahled/nabidka', [TiskController::class, 'nahledNabidka'])->name('nahled.nabidka');

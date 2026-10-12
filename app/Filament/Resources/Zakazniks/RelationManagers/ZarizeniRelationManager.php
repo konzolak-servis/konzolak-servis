@@ -30,6 +30,7 @@ class ZarizeniRelationManager extends RelationManager
                 Select::make('_katalog')
                     ->label('Vybrat z katalogu')
                     ->options(\App\Models\KatalogZarizeni::volby())
+                                    ->getSearchResultsUsing(fn (string $search) => \App\Models\KatalogZarizeni::hledej($search))
                     ->searchable()
                     ->dehydrated(false)
                     ->live()

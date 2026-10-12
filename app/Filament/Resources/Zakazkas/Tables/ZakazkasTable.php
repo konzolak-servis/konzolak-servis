@@ -27,7 +27,7 @@ class ZakazkasTable
                     ->label('Zákazník')
                     ->getStateUsing(fn ($record) => $record->zakaznik?->nazev)
                     ->searchable(['zakaznici.jmeno', 'zakaznici.firma_nazev']),
-                TextColumn::make('zarizeni.oznaceni')->label('Zařízení')->searchable()->toggleable(),
+                TextColumn::make('zarizeni.oznaceni')->label('Zařízení')->state(fn ($record) => $record->zarizeniText())->searchable()->toggleable(),
                 TextColumn::make('stav')
                     ->label('Stav')
                     ->badge()
@@ -101,12 +101,12 @@ class ZakazkasTable
                     Action::make('servisni_doklad')
                         ->label('Doklad o převzetí (PDF)')
                         ->icon('heroicon-o-document-text')
-                        ->url(fn ($record) => route('tisk.zakazka.doklad', $record))
+                        ->url(fn ($record) => $record->tiskUrl('doklad'))
                         ->openUrlInNewTab(),
                     Action::make('servisni_protokol')
                         ->label('Servisní protokol (PDF)')
                         ->icon('heroicon-o-document-check')
-                        ->url(fn ($record) => route('tisk.zakazka.protokol', $record))
+                        ->url(fn ($record) => $record->tiskUrl('protokol'))
                         ->openUrlInNewTab(),
                 ])->label('Tisk')->icon('heroicon-o-printer'),
             ])

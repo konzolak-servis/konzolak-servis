@@ -45,19 +45,56 @@ class Web
         ];
     }
 
-    /** 4 kroky „Jak to funguje". */
+    /** 6 kroků „Jak probíhá servis". */
     public static function kroky(): array
     {
         return [
             ['cislo' => 1, 'titulek' => 'Popíšete závadu',
-                'text' => 'Vyplňte formulář, zavolejte nebo napište na WhatsApp. Čím víc detailů, tím lépe.'],
-            ['cislo' => 2, 'titulek' => 'Předáte zařízení',
-                'text' => 'Osobně ve Zlíně (vždy po domluvě), nebo poštou / Zásilkovnou. Přibalte popis závady a kontakt.'],
-            ['cislo' => 3, 'titulek' => 'Diagnostika a cena',
-                'text' => 'Ozvu se s výsledkem diagnostiky a cenou. Opravuji až po vašem odsouhlasení.'],
-            ['cislo' => 4, 'titulek' => 'Vrácení a doklad',
-                'text' => 'Opravené zařízení vydám osobně nebo pošlu zpět. Na práci se vztahuje odpovědnost za vady dle zákona.'],
+                'text' => 'Zavolejte, napište na WhatsApp nebo vyplňte formulář. Čím přesnější popis, tím přesnější odhad ceny.'],
+            ['cislo' => 2, 'titulek' => 'Domluvíme předání',
+                'text' => 'Zařízení přinesete osobně do Zlína, nebo ho pošlete poštou či Zásilkovnou. Vždy po předchozí domluvě.'],
+            ['cislo' => 3, 'titulek' => 'Diagnostika',
+                'text' => 'Zjistím, co zařízení přesně trápí, a ozvu se s návrhem řešení a cenou.'],
+            ['cislo' => 4, 'titulek' => 'Schválíte cenu',
+                'text' => 'Opravuji až po vašem souhlasu. Objeví-li se jiná závada, nejdřív se zeptám.'],
+            ['cislo' => 5, 'titulek' => 'Oprava',
+                'text' => 'Běžné závady zpravidla zvládnu během několika dnů. Průběh sledujete online přes Kontrolu zakázky.'],
+            ['cislo' => 6, 'titulek' => 'Vrácení a doklad',
+                'text' => 'Opravené zařízení vydám osobně, nebo ho zabalím a pošlu zpět. Dostanete servisní protokol se zárukou.'],
         ];
+    }
+
+    /** „Nejčastější problémy" na úvodní stránce; `q` = hledaný výraz v ceníku. */
+    public static function problemy(): array
+    {
+        return [
+            ['titulek' => 'Přehřívá se a hučí', 'q' => 'čištění',
+                'text' => 'Důkladné čištění, nová teplovodivá pasta nebo tekutý kov.'],
+            ['titulek' => 'Žádný obraz / HDMI', 'q' => 'HDMI',
+                'text' => 'Výměna HDMI konektoru, případně obrazového čipu.'],
+            ['titulek' => 'Drift ovladače', 'q' => 'drift',
+                'text' => 'Oprava nebo výměna páček, magnetické Hall / TMR páčky, kalibrace.'],
+            ['titulek' => 'Nečte disk, nejde zapnout', 'q' => 'mechanik',
+                'text' => 'Oprava optické mechaniky nebo napájecího zdroje.'],
+        ];
+    }
+
+    /** Rychlé kontakty (odkazy pro tlačítka Zavolat / WhatsApp / Messenger). */
+    public static function kontakty(): array
+    {
+        $tel = self::telMezinarodne();
+
+        return [
+            'tel' => $tel ? 'tel:+' . $tel : null,
+            'whatsapp' => $tel ? 'https://wa.me/' . $tel : null,
+            'messenger' => 'https://m.me/Konzolak.Zlin',
+        ];
+    }
+
+    /** Otevírací doba (stejná jako ve strukturovaných datech pro Google). */
+    public static function oteviraciDoba(): string
+    {
+        return 'Po–Pá 9:00–17:00';
     }
 
     /**

@@ -7,9 +7,7 @@
     <meta name="robots" content="noindex,nofollow">
     <meta name="theme-color" content="#0b1a30">
     <link rel="icon" type="image/png" sizes="512x512" href="/images/konzolak-icon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="{{ asset('css/fonts.css') }}?v=1">
     <style>
         :root{
             --navy-900:#0b1a30; --navy-800:#0f2038; --navy-700:#16294a;

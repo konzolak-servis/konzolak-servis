@@ -46,7 +46,7 @@ class TiskController extends Controller
             'z' => $zakazka,
             'jeProtokol' => true,
             'qr' => Qr::dataUri($this->stavUrl($zakazka), 180),
-            'qrPlatba' => $zakazka->zpusob_uhrady === 'ucet' && $doplatek > 0
+            'qrPlatba' => $zakazka->zpusob_uhrady === 'ucet' && $doplatek > 0 && ! $zakazka->jeDobirka()
                 ? QrPlatba::dataUri($firma->cislo_uctu, $doplatek,
                     preg_replace('/\D/', '', $zakazka->cislo), 'Oprava '.$zakazka->cislo, 200)
                 : '',
@@ -125,7 +125,7 @@ class TiskController extends Controller
 
         $firma = Firma::get();
         $doplatek = $zakazka->doplatek();
-        $png = $doplatek > 0
+        $png = $doplatek > 0 && ! $zakazka->jeDobirka()
             ? QrPlatba::png($firma->cislo_uctu, $doplatek,
                 preg_replace('/\D/', '', $zakazka->cislo), 'Oprava '.$zakazka->cislo)
             : null;

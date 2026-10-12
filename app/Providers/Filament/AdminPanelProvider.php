@@ -179,6 +179,9 @@ class AdminPanelProvider extends PanelProvider
                         @media (max-width:767px){
                             .fi-ta-cell .fi-ta-text{ white-space:nowrap; }
                         }
+                        /* rozbalovací menu akcí (Další, stav…): celé popisky, bez ořezu „…" */
+                        .fi-dropdown-list-item-label{ white-space:normal !important; overflow:visible !important; text-overflow:clip !important; line-height:1.25; }
+                        .fi-dropdown-panel:has(.fi-dropdown-list-item){ min-width:min(19rem, calc(100vw - 1.5rem)); }
                     </style>
                 HTML)
             )

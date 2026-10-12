@@ -33,28 +33,9 @@ class KontrolaController extends Controller
         }
         RateLimiter::hit($klic, 60);
 
-        $cislo = strtoupper(trim($data['cislo']));
-        if (! Str::startsWith($cislo, 'SL-') && preg_match('/^\d{4}-\d+$/', $cislo)) {
-            $cislo = 'SL-' . $cislo;
-        }
+        $zakazka = \App\Support\StavZakazky::najdi($data['cislo'], $data['overeni']);
 
-        // porovnání bez ohledu na velikost písmen a diakritiku
-        $norm = fn (?string $s) => Str::lower(Str::ascii((string) $s));
-        $vstup = $norm(trim($data['overeni']));
-        $vstupTel = preg_replace('/\D+/', '', $data['overeni']);
-
-        $zakazka = Zakazka::query()->where('cislo', $cislo)->with('zakaznik')->first();
-        $k = $zakazka?->zakaznik;
-
-        $sedi = $k && (
-            ($vstup !== '' && str_contains($norm($k->jmeno), $vstup))
-            || ($vstup !== '' && str_contains($norm($k->firma_nazev), $vstup))
-            || (filled($k->email) && $norm($k->email) === $vstup)
-            || (strlen($vstupTel) >= 6 && filled($k->telefon)
-                && str_contains(preg_replace('/\D+/', '', $k->telefon), $vstupTel))
-        );
-
-        if (! $sedi) {
+        if (! $zakazka) {
             return back()->withInput()->with('chyba',
                 'Zakázku se nepodařilo najít. Zkontrolujte číslo zakázky a druhý údaj (příjmení, e-mail nebo telefon) podle dokladu o převzetí.');
         }

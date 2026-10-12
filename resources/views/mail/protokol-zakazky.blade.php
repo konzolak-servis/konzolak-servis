@@ -3,7 +3,7 @@
 
     <p style="margin:0 0 14px;">
         v příloze zasíláme <strong>servisní protokol</strong> k zakázce
-        <strong>{{ $z->cislo }}</strong>@if ($z->zarizeni) – {{ $z->zarizeni->oznaceni }}@endif.
+        <strong>{{ $z->cislo }}</strong>@if ($z->vsechnaZarizeni()->isNotEmpty()) – {{ $z->vsechnaZarizeni()->pluck('oznaceni')->implode(', ') }}@endif.
     </p>
 
     @if ($z->doplatek() > 0)
@@ -11,13 +11,14 @@
             K úhradě:
             <strong style="color:#0F2038;">{{ number_format($z->doplatek(), 0, ',', ' ') }} Kč</strong>
             @if ($z->cena_dopravy > 0) (vč. dopravy {{ number_format($z->cena_dopravy, 0, ',', ' ') }} Kč)@endif
-            @if ($z->zpusob_uhrady === 'ucet') – platba na účet.
-            @elseif ($z->zpusob_uhrady === 'hotove' && $z->zpusob_vydani === 'odeslani') – hotově dobírkou.
+            @if ($z->jeDobirka()) – hrazeno dobírkou při převzetí zásilky, nic není třeba platit předem.
+            @elseif ($z->zpusob_uhrady === 'ucet') – platba na účet.
+            @elseif ($z->jeDobirka() || ($z->zpusob_uhrady === 'hotove' && $z->zpusob_vydani === 'odeslani')) – hrazeno dobírkou při převzetí zásilky, nic není třeba platit předem.
             @elseif ($z->zpusob_uhrady === 'hotove') – hotově při vyzvednutí.
             @endif
         </p>
 
-        @if ($z->zpusob_uhrady === 'ucet' && $firma->cislo_uctu)
+        @if ($z->zpusob_uhrady === 'ucet' && $firma->cislo_uctu && ! $z->jeDobirka())
             <table role="presentation" cellpadding="0" cellspacing="0" style="margin:4px 0 14px;">
                 <tr>
                     <td style="padding-right:16px; vertical-align:middle;">

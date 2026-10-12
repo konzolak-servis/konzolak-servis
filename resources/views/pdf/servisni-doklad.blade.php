@@ -16,7 +16,7 @@
             </div>
         </td>
         @if (! empty($qr))
-            <td width="36mm" style="text-align:right; vertical-align:middle">
+            <td width="36mm" style="text-align:center; vertical-align:middle">
                 <img src="{{ $qr }}" style="width:32mm; height:32mm">
                 <div style="font-size:6pt; color:#6b7280; text-align:center; margin-top:.5mm; line-height:1.25">
                     Sledování stavu opravy<br>{{ $z->cislo }}
@@ -28,10 +28,12 @@
 
 @include('pdf.partials.zarizeni')
 
-<div class="sekce">Popis závady (dle zákazníka)</div>
-<div class="box">{!! nl2br(e($z->popis_zavady ?: '—')) !!}</div>
+@unless ($z->maVicZarizeni())
+    <div class="sekce">Popis závady (dle zákazníka)</div>
+    <div class="box">{!! nl2br(e($z->popis_zavady ?: '—')) !!}</div>
+@endunless
 
-@if ($z->pozadovane_reseni)
+@if ($z->pozadovane_reseni && ! $z->maVicZarizeni())
     <div class="sekce">Požadované řešení</div>
     <div class="box">{!! nl2br(e($z->pozadovane_reseni)) !!}</div>
 @endif

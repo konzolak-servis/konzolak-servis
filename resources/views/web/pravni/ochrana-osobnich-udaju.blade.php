@@ -47,7 +47,15 @@
             a právo vznést námitku. Žádost zašlete na @if($firma->email){{ $firma->email }}@endif.
             Máte také právo podat stížnost u Úřadu pro ochranu osobních údajů (uoou.gov.cz).</p>
 
-        <h2>7. Cookies</h2>
+        <h2>7. Chat s AI asistentem</h2>
+        <p>Na webu je k dispozici chat s virtuálním asistentem (umělá inteligence). Text, který do chatu napíšete,
+            se odesílá k vyřízení odpovědi poskytovateli modelu Anthropic (USA) na základě standardních smluvních doložek.
+            Obsah konverzace u nás neukládáme. Pokud prostřednictvím chatu odešlete poptávku, údaje, které v ní uvedete
+            (jméno, kontakt, zařízení, popis), uložíme jako běžnou poptávku podle bodů 2–4. Zjištění stavu zakázky přes chat
+            vyžaduje stejné ověření jako formulář „Kontrola zakázky“. Do chatu prosím nezadávejte hesla, čísla karet ani jiné
+            citlivé údaje.</p>
+
+        <h2>8. Cookies</h2>
         <p>Web používá pouze technicky nezbytné cookies potřebné pro jeho fungování (relace,
             zabezpečení formulářů). Nepoužíváme analytické ani reklamní cookies. Více na stránce
             <a href="{{ route('web.pravni', 'cookies') }}">Cookies</a>.</p>

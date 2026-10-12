@@ -2,6 +2,7 @@
 @section('title', ($firma->nazev ?? 'Konzolák Zlín') . ' – servis herních konzolí a PC ve Zlíně')
 
 @section('body')
+@php $K = \App\Support\Web::kontakty(); @endphp
 <section class="hero hero--home">
     <div class="wrap hero__in">
         <h1>Servis herních konzolí a <span class="accent">PC ve Zlíně</span></h1>
@@ -10,6 +11,12 @@
         <div class="hero__cta">
             <a class="btn btn--primary" href="{{ route('web.kontakt') }}#poptavka">Objednat opravu</a>
             <a class="btn btn--ghost" href="{{ route('web.kontrola') }}">Zkontrolovat stav zakázky</a>
+        </div>
+        <div class="quick">
+            @if($K['tel'])<a class="quick__b" href="{{ $K['tel'] }}">Zavolat</a>@endif
+            @if($K['whatsapp'])<a class="quick__b" href="{{ $K['whatsapp'] }}" target="_blank" rel="noopener">WhatsApp</a>@endif
+            <a class="quick__b" href="{{ $K['messenger'] }}" target="_blank" rel="noopener">Messenger</a>
+            <a class="quick__b" href="{{ route('web.kontakt') }}#poptavka">Formulář</a>
         </div>
         @if($firma->telefon)
             <div class="hero__note">Nejrychleji telefonicky:
@@ -29,6 +36,22 @@
 <section class="section">
     <div class="wrap">
         @include('web.partials.duvera')
+    </div>
+</section>
+
+<section class="section">
+    <div class="wrap">
+        <h2>Nejčastější problémy</h2>
+        <p class="lead">Poznáváte svůj případ? Klikněte a uvidíte odpovídající opravy v ceníku.</p>
+        <div class="grid grid--4" style="margin-top:1.6rem">
+            @foreach($problemy as $p)
+                <a class="card card--link" href="{{ route('web.cenik', ['q' => $p['q']]) }}" style="text-decoration:none;color:inherit;display:block">
+                    <h3>{{ $p['titulek'] }}</h3>
+                    <p>{{ $p['text'] }}</p>
+                    <span class="more">Zobrazit ceny</span>
+                </a>
+            @endforeach
+        </div>
     </div>
 </section>
 
@@ -52,7 +75,7 @@
 
 <section class="section">
     <div class="wrap">
-        <h2>Jak to funguje</h2>
+        <h2>Jak probíhá servis</h2>
         <div style="margin-top:1.5rem">@include('web.partials.kroky')</div>
     </div>
 </section>
@@ -87,6 +110,23 @@
         <div class="card">
             <h3>Kde mě zastihnete</h3>
             @include('web.partials.mista')
+        </div>
+    </div>
+</section>
+<section class="section section--tint">
+    <div class="wrap">
+        <div class="cta-box">
+            <div>
+                <h2>Nejste si jistí, co zařízení je?</h2>
+                <p class="lead">Napište nebo zavolejte, co přesně dělá nebo nedělá. Podle popisu poradím další postup
+                    a orientační cenu opravy – nezávazně.</p>
+            </div>
+            <div class="cta-box__btns">
+                @if($K['tel'])<a class="btn btn--primary" href="{{ $K['tel'] }}">Zavolat</a>@endif
+                @if($K['whatsapp'])<a class="btn btn--ghost" href="{{ $K['whatsapp'] }}" target="_blank" rel="noopener">WhatsApp</a>@endif
+                <a class="btn btn--ghost" href="{{ $K['messenger'] }}" target="_blank" rel="noopener">Messenger</a>
+                <a class="btn btn--dark" href="{{ route('web.kontakt') }}#poptavka">Formulář</a>
+            </div>
         </div>
     </div>
 </section>

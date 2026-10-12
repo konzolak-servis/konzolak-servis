@@ -18,10 +18,10 @@
         <td style="vertical-align:top">
             <div class="cislo">{{ $z->cislo }}</div>
             <div class="radek"><b>Zákazník:</b> {{ $z->zakaznik?->nazev }}</div>
-            <div class="radek"><b>Zařízení:</b> {{ $z->zarizeni?->oznaceni ?: '—' }}</div>
-            @if ($z->zarizeni?->seriove_cislo)
-                <div class="radek"><b>SN:</b> {{ $z->zarizeni->seriove_cislo }}</div>
-            @endif
+            @foreach ($z->vsechnaZarizeni() as $zar)
+                <div class="radek"><b>Zařízení:</b> {{ $zar->oznaceni }}@if ($zar->seriove_cislo) (SN {{ $zar->seriove_cislo }})@endif</div>
+                @if ($zar->_zavada)<div class="radek"><b>Závada:</b> {{ $zar->_zavada }}</div>@endif
+            @endforeach
             <div class="radek"><b>Přijato:</b> {{ optional($z->datum_prijeti)->format('d.m.Y') }}</div>
             @if ($z->predpokladana_cena)
                 <div class="radek"><b>Odhad:</b> {{ number_format($z->predpokladana_cena, 0, ',', ' ') }} Kč</div>

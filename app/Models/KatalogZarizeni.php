@@ -31,6 +31,22 @@ class KatalogZarizeni extends Model
             ->all();
     }
 
+    /** Hledání v katalogu: shoduje se název modelu i název skupiny (např. „ovladač" najde všechny ovladače). */
+    public static function hledej(?string $dotaz): array
+    {
+        $q = mb_strtolower(trim((string) $dotaz));
+        $out = [];
+        foreach (static::volby() as $skupina => $modely) {
+            $skupinaShoda = $q === '' || str_contains(mb_strtolower($skupina), $q);
+            $nalezene = array_filter($modely, fn ($n) => $skupinaShoda || str_contains(mb_strtolower($n), $q));
+            if ($nalezene) {
+                $out[$skupina] = $nalezene;
+            }
+        }
+
+        return $out;
+    }
+
     /** Odhad kategorie zařízení podle názvu modelu. */
     public static function kategorieZNazvu(string $nazev): string
     {

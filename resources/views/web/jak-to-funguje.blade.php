@@ -26,6 +26,7 @@
         </div>
         <div>
             <h2>Zaslání poštou</h2>
+            <p><a href="{{ route('web.zasilani') }}">Podrobný návod k zaslání zařízení →</a></p>
             <ul class="prose">
                 <li>Zařízení zabalte do dostatečné výplně (bublinková fólie, polystyren).</li>
                 <li>Přiložte lístek s popisem závady a kontaktem (telefon, e-mail).</li>

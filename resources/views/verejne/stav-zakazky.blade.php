@@ -96,9 +96,9 @@
         <div class="card">
             <div class="zc">Zakázka</div>
             <div class="cislo">{{ $z->cislo }}</div>
-            @if ($z->zarizeni)
-                <div class="zar">{{ $z->zarizeni->oznaceni }}</div>
-            @endif
+            @foreach ($z->vsechnaZarizeni() as $zar)
+                <div class="zar">{{ $zar->oznaceni }}</div>
+            @endforeach
 
             <div class="stav t-{{ $tonalita }}">
                 <h2>{{ $nadpis }}</h2>
@@ -126,7 +126,7 @@
                 @endif
                 @if (in_array($z->stav, ['hotovo', 'vydano'], true) && $z->cena_celkem > 0)
                     <div class="row">
-                        <span class="k">{{ $z->stav === 'vydano' ? 'Zaplaceno' : 'K úhradě' }}</span>
+                        <span class="k">{{ $z->stav === 'vydano' ? 'Zaplaceno' : ($z->jeDobirka() ? 'Hrazeno dobírkou' : 'K úhradě') }}</span>
                         <span class="v big">{{ number_format($kUhrade, 0, ',', ' ') }} Kč</span>
                     </div>
                 @elseif ($z->predpokladana_cena > 0)

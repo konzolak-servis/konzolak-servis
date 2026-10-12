@@ -69,7 +69,7 @@ class Kalendar extends Page
         $od = $zacatekMesice->copy()->startOfWeek(Carbon::MONDAY);
         $do = $konecMesice->copy()->endOfWeek(Carbon::SUNDAY);
 
-        $zakazky = Zakazka::with(['zakaznik', 'zarizeni'])
+        $zakazky = Zakazka::with(['zakaznik', 'zarizeni', 'dalsiZarizeni'])
             ->whereBetween('datum_prijeti', [$od->toDateString(), $do->toDateString()])
             ->get()
             ->groupBy(fn (Zakazka $z) => $z->datum_prijeti->toDateString());
@@ -88,7 +88,7 @@ class Kalendar extends Page
                     'zakazky' => collect($zakazky->get($klic, []))->map(fn (Zakazka $z) => [
                         'cislo' => $z->cislo,
                         'kdo' => $z->zakaznik?->nazev,
-                        'co' => $z->zarizeni?->oznaceni ?? $z->popis_zavady,
+                        'co' => ($z->zarizeniText() ?: $z->popis_zavady),
                         'stav' => $z->stav_nazev,
                         'barva' => $z->stavBarva(),
                         'hotovo' => $z->jeHotovo(),

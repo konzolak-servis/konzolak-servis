@@ -18,6 +18,9 @@
         <p>Tyto cookies nevyžadují váš souhlas a nelze je vypnout bez omezení funkčnosti webu.
             Web <strong>nepoužívá</strong> analytické, marketingové ani cookies třetích stran a
             nesleduje vaše chování napříč weby.</p>
+        <p>Písma webu jsou hostována přímo na našem serveru. Při návštěvě se nenačítají žádné
+            soubory z cizích serverů (např. z Google), takže vaše IP adresa není předávána třetím stranám.
+            Odkazy na Facebook, WhatsApp či Messenger vás přesměrují na tyto služby až po vašem kliknutí.</p>
         <p>Pokud v budoucnu přidáme např. mapu, vložený obsah ze sociálních sítí nebo měření
             návštěvnosti, zobrazí se lišta pro udělení souhlasu a tato stránka bude doplněna.</p>
     </div>

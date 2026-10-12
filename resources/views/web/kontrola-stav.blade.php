@@ -25,9 +25,9 @@
             <div class="stav-card">
                 <div class="stav-eyebrow">Zakázka</div>
                 <div class="stav-cislo">{{ $z->cislo }}</div>
-                @if($z->zarizeni)
-                    <div class="stav-zar">{{ $z->zarizeni->oznaceni }}</div>
-                @endif
+                @foreach($z->vsechnaZarizeni() as $zar)
+                    <div class="stav-zar">{{ $zar->oznaceni }}</div>
+                @endforeach
 
                 <div class="stav-hl t-{{ $tonalita }}">
                     <h2>{{ $nadpis }}</h2>
@@ -55,7 +55,7 @@
                     @endif
                     @if(in_array($z->stav, ['hotovo', 'vydano'], true) && $z->cena_celkem > 0)
                         <div class="stav-row">
-                            <span class="k">{{ $z->stav === 'vydano' ? 'Zaplaceno' : 'K úhradě' }}</span>
+                            <span class="k">{{ $z->stav === 'vydano' ? 'Zaplaceno' : ($z->jeDobirka() ? 'Hrazeno dobírkou' : 'K úhradě') }}</span>
                             <span class="v big">{{ number_format($kUhrade, 0, ',', ' ') }} Kč</span>
                         </div>
                     @elseif($z->predpokladana_cena > 0)

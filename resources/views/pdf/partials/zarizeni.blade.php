@@ -39,13 +39,18 @@
 <div class="sekce">Zařízení</div>
 <table class="items">
     <tr><th style="width:45%">Označení</th><th style="width:20%">Kategorie</th><th>Sériové číslo</th></tr>
-    @if ($z->zarizeni)
+    @forelse ($z->vsechnaZarizeni() as $zar)
         <tr>
-            <td>{{ $z->zarizeni->oznaceni }}</td>
-            <td>{{ \App\Models\Zarizeni::KATEGORIE[$z->zarizeni->kategorie] ?? ($z->zarizeni->kategorie ?: '—') }}</td>
-            <td>{{ $z->zarizeni->seriove_cislo ?: '—' }}</td>
+            <td>
+                @if ($z->maVicZarizeni())<b>{{ $loop->iteration }}. {{ $zar->oznaceni }}</b>@else{{ $zar->oznaceni }}@endif
+                @if ($zar->_zavada)<div style="font-size:8.5pt;margin-top:1mm"><b>Závada:</b> {{ $zar->_zavada }}</div>@endif
+                @if ($zar->_pozadovane)<div style="font-size:8.5pt;margin-top:1mm"><b>Požadováno:</b> {{ $zar->_pozadovane }}</div>@endif
+                @if ($zar->_prace)<div style="font-size:8.5pt;margin-top:1mm"><b>Provedeno:</b> {{ $zar->_prace }}</div>@endif
+            </td>
+            <td>{{ \App\Models\Zarizeni::KATEGORIE[$zar->kategorie] ?? ($zar->kategorie ?: '—') }}</td>
+            <td>{{ $zar->seriove_cislo ?: '—' }}</td>
         </tr>
-    @else
+    @empty
         <tr><td colspan="3" class="muted">Zařízení neuvedeno</td></tr>
-    @endif
+    @endforelse
 </table>

@@ -18,11 +18,15 @@
     </div>
 @endif
 
-<div class="sekce">Zjištěná závada</div>
-<div class="box">{!! nl2br(e($z->zjistena_zavada ?: $z->popis_zavady ?: '—')) !!}</div>
+@if (! $z->maVicZarizeni() || $z->zjistena_zavada)
+    <div class="sekce">Zjištěná závada</div>
+    <div class="box">{!! nl2br(e($z->zjistena_zavada ?: $z->popis_zavady ?: '—')) !!}</div>
+@endif
 
-<div class="sekce">Provedené práce</div>
-<div class="box">{!! nl2br(e($z->navrh_reseni_prace ?: '—')) !!}</div>
+@unless ($z->maVicZarizeni())
+    <div class="sekce">Provedené práce</div>
+    <div class="box">{!! nl2br(e($z->navrh_reseni_prace ?: '—')) !!}</div>
+@endunless
 
 @php($radky = $z->polozky->where('uctovat', true))
 @if ($radky->count())
@@ -55,6 +59,9 @@
                         <strong>QR Platba</strong> – naskenujte<br>v bankovní aplikaci.
                     </td>
                 </tr></table>
+            @elseif ($z->jeDobirka())
+                <div style="font-size:11pt;font-weight:bold;color:#0F2038">Hrazeno dobírkou</div>
+                <div style="font-size:8.5pt;color:#374151;margin-top:1mm">Částku uhradíte dopravci při převzetí zásilky.<br>Není třeba nic platit předem.</div>
             @elseif ($z->zpusob_uhrady === 'hotove' && $z->doplatek() > 0)
                 <strong>Platba hotově</strong> {{ $z->zpusob_vydani === 'odeslani' ? 'dobírkou' : 'při vyzvednutí' }}.
             @endif
@@ -81,7 +88,7 @@
         </td>
         <td class="tsum">
             {{ number_format($z->doplatek(), 0, ',', ' ') }} Kč
-            <div style="font-size:6.5pt;font-weight:normal;color:#9ca3af">K ÚHRADĚ</div>
+            <div style="font-size:6.5pt;font-weight:normal;color:#9ca3af">{{ $z->jeDobirka() ? 'DOBÍRKA' : 'K ÚHRADĚ' }}</div>
         </td>
     </tr>
 </table>

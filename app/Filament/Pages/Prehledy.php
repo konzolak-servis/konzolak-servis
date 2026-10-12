@@ -84,7 +84,7 @@ class Prehledy extends Page
         foreach ($zk as $kat => $skupina) {
             $radky[] = [
                 'nazev' => 'Servis – '.(Zarizeni::KATEGORIE[$kat] ?? 'ostatní'),
-                'castka' => (float) $skupina->sum('cena_celkem'),
+                'castka' => (float) $skupina->sum(fn ($z) => $z->cenaPoSleve() + (float) $z->cena_dopravy),
                 'pocet' => $skupina->count(),
             ];
         }
@@ -133,7 +133,8 @@ class Prehledy extends Page
 
         for ($m = 1; $m <= 12; $m++) {
             $servis = (float) Zakazka::whereIn('stav', ['vydano', 'nerentabilni'])
-                ->whereYear('datum_vyrizeni', $rok)->whereMonth('datum_vyrizeni', $m)->sum('cena_celkem');
+                ->whereYear('datum_vyrizeni', $rok)->whereMonth('datum_vyrizeni', $m)
+                ->sum(\Illuminate\Support\Facades\DB::raw('cena_celkem - cena_celkem * sleva_procent / 100 + cena_dopravy'));
             $fakt = (float) PenezniDenik::where('zdroj', 'faktura')->whereYear('datum', $rok)->whereMonth('datum', $m)->sum('castka');
 
             $out[] = [

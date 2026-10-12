@@ -3,7 +3,7 @@
 
     <p style="margin:0 0 14px;">
         potvrzujeme převzetí zařízení do opravy. V příloze zasíláme <strong>doklad o převzetí</strong>
-        k zakázce <strong>{{ $z->cislo }}</strong>@if ($z->zarizeni) – {{ $z->zarizeni->oznaceni }}@endif.
+        k zakázce <strong>{{ $z->cislo }}</strong>@if ($z->vsechnaZarizeni()->isNotEmpty()) – {{ $z->vsechnaZarizeni()->pluck('oznaceni')->implode(', ') }}@endif.
     </p>
 
     <p style="margin:0 0 14px; font-size:13px; color:#6b7280;">

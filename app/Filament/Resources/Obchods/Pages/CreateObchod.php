@@ -26,7 +26,7 @@ class CreateObchod extends CreateRecord
                 Action::make('doklad_vykup')
                     ->label('Otevřít doklad o výkupu (PDF)')
                     ->icon('heroicon-o-document-text')
-                    ->url(route('tisk.obchod', $this->record), shouldOpenInNewTab: true)
+                    ->url($this->record->tiskUrl(), shouldOpenInNewTab: true)
                     ->button(),
             ])
             ->persistent()

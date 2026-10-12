@@ -20,6 +20,7 @@ class PoptavkaController extends Controller
             'email' => ['required', 'email', 'max:180'],
             'telefon' => ['nullable', 'string', 'max:40'],
             'platforma' => ['nullable', 'string', 'max:40'],
+            'typ' => ['nullable', 'in:oprava,vykup'],
             'zprava' => ['required', 'string', 'max:5000'],
             'web' => ['nullable', 'size:0'], // honeypot
         ], [], [
@@ -47,7 +48,8 @@ class PoptavkaController extends Controller
             'from' => Str::lower($data['email']),
             'fromName' => $data['jmeno'],
             'to' => Web::firma()->email,
-            'subject' => 'Web – poptávka opravy' . ($platformaLabel ? ' (' . $platformaLabel . ')' : ''),
+            'subject' => (($data['typ'] ?? 'oprava') === 'vykup' ? 'Web – výkup zařízení' : 'Web – poptávka opravy')
+                . ($platformaLabel ? ' (' . $platformaLabel . ')' : ''),
             'text' => $telo,
             'messageId' => 'web-' . Str::uuid() . '@konzolak.com',
             'date' => now()->toRfc2822String(),

@@ -31,7 +31,7 @@ class PenezniDenik extends Model
     public function scopeSkupina($query, ?string $skupina)
     {
         return match ($skupina) {
-            'opravy' => $query->whereIn('zdroj', ['zakazka', 'zakazka_zaloha']),
+            'opravy' => $query->whereIn('zdroj', ['zakazka', 'zakazka_zaloha', 'zakazka_postovne']),
             'faktury' => $query->where('zdroj', 'faktura'),
             'bazar' => $query->where('zdroj', 'obchod'),
             'material' => $query->where('zdroj', 'nakup'),
@@ -44,7 +44,7 @@ class PenezniDenik extends Model
     public function doklad(): array
     {
         return match ($this->zdroj) {
-            'zakazka', 'zakazka_zaloha' => $this->odkaz(Zakazka::class,
+            'zakazka', 'zakazka_zaloha', 'zakazka_postovne' => $this->odkaz(Zakazka::class,
                 ZakazkaResource::class),
             'faktura' => $this->odkaz(Faktura::class,
                 FakturaResource::class),

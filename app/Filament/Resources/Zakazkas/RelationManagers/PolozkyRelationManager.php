@@ -89,15 +89,25 @@ class PolozkyRelationManager extends RelationManager
                                 ->where('typ', 'material')
                                 ->sum(\Illuminate\Support\Facades\DB::raw('mnozstvi * COALESCE(naklad_interni, 0)')))
                             ->money('CZK'),
+                        Summarizer::make('postovne')
+                            ->label('Poštovné (platím já)')
+                            ->using(fn (Builder $query) => $this->postovneNaklad())
+                            ->visible(fn () => $this->postovneNaklad() > 0)
+                            ->money('CZK'),
                         Summarizer::make('zisk')
-                            ->label('Zisk (po odečtení materiálu)')
+                            ->label('Zisk (po odečtení nákladů)')
                             ->using(function (Builder $query) {
                                 $uctovano = (float) (clone $query)->where('uctovat', true)->sum('cena_celkem');
                                 $naklad = (float) (clone $query)
                                     ->where('typ', 'material')
                                     ->sum(\Illuminate\Support\Facades\DB::raw('mnozstvi * COALESCE(naklad_interni, 0)'));
 
-                                return $uctovano - $naklad;
+                                // Sleva snižuje příjem, zákazníkovi naúčtovaná doprava ho zvyšuje,
+                                // poštovné zaplacené servisem je náklad.
+                                $z = $this->getOwnerRecord()->fresh();
+
+                                return $uctovano - $z->slevaCastka() + (float) $z->cena_dopravy
+                                    - $naklad - $this->postovneNaklad();
                             })
                             ->money('CZK'),
                     ]),
@@ -109,8 +119,7 @@ class PolozkyRelationManager extends RelationManager
                     ->schema([
                         Select::make('cenik_polozka_id')
                             ->label('Úkon z ceníku')
-                            ->options(CenikPolozka::where('aktivni', true)->orderBy('kategorie')->orderBy('poradi')
-                                ->get()->mapWithKeys(fn ($c) => [$c->id => "{$c->nazev}  –  {$c->cena} Kč"]))
+                            ->options(fn () => $this->cenikPodlePouziti())
                             ->searchable()
                             ->required(),
                         TextInput::make('mnozstvi')->label('Množství')->numeric()->default(1)->required(),
@@ -133,10 +142,7 @@ class PolozkyRelationManager extends RelationManager
                     ->schema([
                         Select::make('sklad_polozka_id')
                             ->label('Skladová položka')
-                            ->options(SkladPolozka::where('aktivni', true)->orderBy('nazev')
-                                ->get()->mapWithKeys(fn ($s) => [
-                                    $s->id => "{$s->nazev}  (skladem {$s->mnozstvi_skladem}, {$s->cena_ks_prumer} Kč/ks)",
-                                ]))
+                            ->options(fn () => $this->skladPodlePouziti())
                             ->searchable()
                             ->required(),
                         TextInput::make('mnozstvi')->label('Počet ks')->numeric()->default(1)->required(),
@@ -202,5 +208,44 @@ class PolozkyRelationManager extends RelationManager
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /** Poštovné zaplacené servisem (aktuální hodnota ze zakázky). */
+    private function postovneNaklad(): float
+    {
+        return (float) \App\Models\Zakazka::whereKey($this->getOwnerRecord()->getKey())->value('postovne_naklad');
+    }
+
+    /** Ceník seřazený podle toho, jak často se úkon v zakázkách účtuje (nejčastější nahoře). */
+    private function cenikPodlePouziti(): array
+    {
+        $pocty = \Illuminate\Support\Facades\DB::table('zakazka_polozky')
+            ->where('typ', 'prace')
+            ->selectRaw('nazev, COUNT(*) as pocet')
+            ->groupBy('nazev')
+            ->pluck('pocet', 'nazev');
+
+        return CenikPolozka::where('aktivni', true)->orderBy('kategorie')->orderBy('poradi')->get()
+            ->sortByDesc(fn ($c) => (int) ($pocty[$c->nazev] ?? 0))
+            ->mapWithKeys(fn ($c) => [
+                $c->id => "{$c->nazev}  –  {$c->cena} Kč" . (($pocty[$c->nazev] ?? 0) > 0 ? "  ·  {$pocty[$c->nazev]}×" : ''),
+            ])->all();
+    }
+
+    /** Sklad seřazený podle toho, jak často se položka v zakázkách používá (nejčastější nahoře, pak abecedně). */
+    private function skladPodlePouziti(): array
+    {
+        $pocty = \Illuminate\Support\Facades\DB::table('zakazka_polozky')
+            ->whereNotNull('sklad_polozka_id')
+            ->selectRaw('sklad_polozka_id, COUNT(*) as pocet')
+            ->groupBy('sklad_polozka_id')
+            ->pluck('pocet', 'sklad_polozka_id');
+
+        return SkladPolozka::where('aktivni', true)->orderBy('nazev')->get()
+            ->sortByDesc(fn ($s) => (int) ($pocty[$s->id] ?? 0))
+            ->mapWithKeys(fn ($s) => [
+                $s->id => "{$s->nazev}  (skladem {$s->mnozstvi_skladem}, {$s->cena_ks_prumer} Kč/ks)"
+                    . (($pocty[$s->id] ?? 0) > 0 ? "  ·  {$pocty[$s->id]}×" : ''),
+            ])->all();
     }
 }

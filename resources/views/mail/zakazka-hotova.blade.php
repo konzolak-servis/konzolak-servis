@@ -2,7 +2,7 @@
     <p style="margin:0 0 14px;">Dobrý den,</p>
 
     <p style="margin:0 0 14px;">
-        vaše zakázka <strong>{{ $z->cislo }}</strong>@if ($z->zarizeni) – {{ $z->zarizeni->oznaceni }}@endif
+        vaše zakázka <strong>{{ $z->cislo }}</strong>@if ($z->vsechnaZarizeni()->isNotEmpty()) – {{ $z->vsechnaZarizeni()->pluck('oznaceni')->implode(', ') }}@endif
         je <strong style="color:#0F2038;">hotová</strong>
         {{ $z->zpusob_vydani === 'odeslani' ? '– brzy vám ji odešleme zpět.' : 'a připravená k vyzvednutí.' }}
     </p>
@@ -12,7 +12,7 @@
                style="margin:18px 0; background:#faf8f2; border:1px solid #ece6d6; border-radius:8px;">
             <tr>
                 <td style="padding:14px 18px; font-size:14px; color:#5f5a4e;">
-                    {{ $z->zpusob_vydani === 'odeslani' ? 'K úhradě' : 'K úhradě při vyzvednutí' }}
+                    {{ $z->jeDobirka() ? 'Hrazeno dobírkou při převzetí zásilky' : ($z->zpusob_vydani === 'odeslani' ? 'K úhradě' : 'K úhradě při vyzvednutí') }}
                     @if ($z->zaloha > 0)<br><span style="font-size:12px;">(záloha {{ number_format($z->zaloha, 0, ',', ' ') }} Kč již uhrazena)</span>@endif
                     @if ($z->cena_dopravy > 0)<br><span style="font-size:12px;">(vč. dopravy {{ number_format($z->cena_dopravy, 0, ',', ' ') }} Kč)</span>@endif
                 </td>

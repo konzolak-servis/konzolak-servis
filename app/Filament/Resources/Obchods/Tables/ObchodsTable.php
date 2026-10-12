@@ -72,7 +72,7 @@ class ObchodsTable
                                 Action::make('doklad_prodej')
                                     ->label('Otevřít doklad o prodeji (PDF)')
                                     ->icon('heroicon-o-document-check')
-                                    ->url(route('tisk.obchod', ['obchod' => $record, 'typ' => 'prodej']), shouldOpenInNewTab: true)
+                                    ->url($record->tiskUrl(['typ' => 'prodej']), shouldOpenInNewTab: true)
                                     ->button(),
                             ])
                             ->persistent()
@@ -83,13 +83,13 @@ class ObchodsTable
                     Action::make('doklad_vykup')
                         ->label('Doklad o výkupu (PDF)')
                         ->icon('heroicon-o-document-text')
-                        ->url(fn (Obchod $record) => route('tisk.obchod', $record))
+                        ->url(fn (Obchod $record) => $record->tiskUrl())
                         ->openUrlInNewTab(),
                     Action::make('doklad_prodej')
                         ->label('Doklad o prodeji (PDF)')
                         ->icon('heroicon-o-document-check')
                         ->visible(fn (Obchod $record) => $record->prodano)
-                        ->url(fn (Obchod $record) => route('tisk.obchod', ['obchod' => $record, 'typ' => 'prodej']))
+                        ->url(fn (Obchod $record) => $record->tiskUrl(['typ' => 'prodej']))
                         ->openUrlInNewTab(),
                 ]),
             ])

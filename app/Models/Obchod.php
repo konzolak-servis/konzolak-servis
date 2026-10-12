@@ -42,6 +42,18 @@ class Obchod extends Model
         static::created(fn (Obchod $o) => $o->zapisNakupDoDeniku());
     }
 
+    /**
+     * URL tisku PDF. Poslední část cesty je název souboru s číslem dokladu,
+     * takže „Uložit jako" v prohlížeči nabídne správný název.
+     */
+    public function tiskUrl(array $query = []): string
+    {
+        return route('tisk.obchod', array_merge(
+            ['obchod' => $this, 'soubor' => (($query['typ'] ?? null) === 'prodej' ? 'Doklad-o-prodeji-' : 'Doklad-o-vykupu-') . $this->cislo . '.pdf'],
+            $query,
+        ));
+    }
+
     public function skladPolozka(): BelongsTo
     {
         return $this->belongsTo(SkladPolozka::class, 'sklad_polozka_id');

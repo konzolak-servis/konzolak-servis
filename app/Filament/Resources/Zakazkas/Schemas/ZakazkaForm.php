@@ -15,28 +15,135 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 class ZakazkaForm
 {
-    /** Rozbalovací výběr, který vloží text šablony do daného pole. */
-    private static function sablona(string $typ, string $cilovePole): Select
+    /** Počet zařízení v jedné zakázce (záložky Zařízení 1–5). */
+    public const MAX_ZARIZENI = 5;
+
+    /**
+     * Záložky Zařízení 1–5, v každé šablona + textové pole. Zařízení 1 používá společné pole zakázky
+     * ($pole1), zařízení 2–5 se ukládají k zařízení (pivot).
+     */
+    private static function zarizeniTabs(string $typ, string $label, string $sablonaTyp, string $pole1): Tabs
     {
-        return Select::make('_sablona_' . $typ)
+        $tab = function (int $n) use ($typ, $label, $sablonaTyp, $pole1) {
+            $pole = $n === 1 ? $pole1 : 'zarizeni_' . $n . '_' . $typ;
+
+            return Tab::make('Zařízení ' . $n)->key('tab-' . $typ . '-' . $n)->schema([
+                self::sablona($sablonaTyp, $pole, $typ . '_' . $n),
+                Textarea::make($pole)
+                    ->label($label . ' – zařízení ' . $n)
+                    ->rows(3)
+                    ->dehydrated($n === 1)
+                    ->hintAction(self::ulozSablonu($sablonaTyp, $pole))
+                    ->columnSpanFull(),
+            ]);
+        };
+
+        return Tabs::make('zarizeni_tabs_' . $typ)->tabs(array_map($tab, range(1, self::MAX_ZARIZENI)));
+    }
+
+    /** Pole záložky dalšího zařízení: výběr zařízení + závada + provedená práce. */
+    private static function dalsiZarizeniPole(int $n): array
+    {
+        return [
+            self::dalsiZarizeniSelect($n),
+        ];
+    }
+
+    /** Select dalšího zařízení (záložky 2–5); ukládá se do pivotu `zakazka_zarizeni`. */
+    private static function dalsiZarizeniSelect(int $n): Select
+    {
+        return Select::make('zarizeni_' . $n)
+            ->label('Zařízení ' . $n)
+            ->options(fn (Get $get) => $get('zakaznik_id')
+                ? Zarizeni::where('zakaznik_id', $get('zakaznik_id'))
+                    ->get()->mapWithKeys(fn ($z) => [$z->id => $z->oznaceni . ($z->seriove_cislo ? " ({$z->seriove_cislo})" : '')])
+                : [])
+            ->getOptionLabelUsing(fn ($value) => ($z = Zarizeni::find($value)) ? $z->oznaceni . ($z->seriove_cislo ? " ({$z->seriove_cislo})" : '') : null)
+            ->searchable()->preload()
+            ->dehydrated(false)
+            ->createOptionForm([
+                Select::make('model')->label('Model')
+                    ->options(\App\Models\KatalogZarizeni::volby())
+                    ->getSearchResultsUsing(fn (string $search) => \App\Models\KatalogZarizeni::hledej($search))
+                    ->searchable()->required(),
+                TextInput::make('oznaceni_doplnek')->label('Upřesnění (nepovinné)')
+                    ->placeholder('barva, revize desky, model. kód…'),
+                TextInput::make('seriove_cislo')->label('Sériové číslo'),
+            ])
+            ->createOptionUsing(function (array $data, Get $get) {
+                $nazev = trim($data['model']
+                    . (! empty($data['oznaceni_doplnek']) ? ' – ' . $data['oznaceni_doplnek'] : ''));
+
+                return Zarizeni::create([
+                    'zakaznik_id' => $get('zakaznik_id'),
+                    'kategorie' => \App\Models\KatalogZarizeni::kategorieZNazvu($data['model']),
+                    'oznaceni' => $nazev,
+                    'seriove_cislo' => $data['seriove_cislo'] ?? null,
+                ])->id;
+            })
+            ->columnSpanFull();
+    }
+
+    /** Do dat formuláře doplní zarizeni_2..5 z pivotu. */
+    public static function naplnDalsi(array $data, Zakazka $z): array
+    {
+        foreach ($z->dalsiZarizeni()->get()->values() as $i => $zar) {
+            $n = $i + 2;
+            $data['zarizeni_' . $n] = $zar->id;
+            $data['zarizeni_' . $n . '_zavada'] = $zar->pivot->zavada;
+            $data['zarizeni_' . $n . '_pozadovane'] = $zar->pivot->pozadovane;
+            $data['zarizeni_' . $n . '_prace'] = $zar->pivot->prace;
+        }
+
+        return $data;
+    }
+
+    /** Uloží zarizeni_2..5 z formuláře do pivotu (v pořadí záložek). */
+    public static function ulozDalsi(Zakazka $z, array $stav): void
+    {
+        $ids = [];
+        for ($n = 2; $n <= self::MAX_ZARIZENI; $n++) {
+            $id = $stav['zarizeni_' . $n] ?? null;
+            if ($id && (int) $id !== (int) $z->zarizeni_id && ! isset($ids[(int) $id])) {
+                $ids[(int) $id] = [
+                    'zavada' => trim((string) ($stav['zarizeni_' . $n . '_zavada'] ?? '')) ?: null,
+                    'pozadovane' => trim((string) ($stav['zarizeni_' . $n . '_pozadovane'] ?? '')) ?: null,
+                    'prace' => trim((string) ($stav['zarizeni_' . $n . '_prace'] ?? '')) ?: null,
+                ];
+            }
+        }
+        $z->dalsiZarizeni()->detach();
+        foreach ($ids as $id => $pivot) {
+            $z->dalsiZarizeni()->attach($id, $pivot);
+        }
+    }
+
+    /** Rozbalovací výběr, který vloží text šablony do daného pole. */
+    private static function sablona(string $typ, string $cilovePole, ?string $klic = null): Select
+    {
+        $nazev = '_sablona_' . ($klic ?? $typ);
+
+        return Select::make($nazev)
             ->label('Vložit šablonu')
             ->options(fn () => Sablona::where('typ', $typ)->aktivni()->pluck('nazev', 'text'))
             ->searchable()
             ->dehydrated(false)
             ->live()
-            ->afterStateUpdated(function ($state, Get $get, Set $set) use ($cilovePole) {
+            ->afterStateUpdated(function ($state, Get $get, Set $set) use ($cilovePole, $nazev) {
                 if (! $state) {
                     return;
                 }
                 $puvodni = trim((string) $get($cilovePole));
                 $set($cilovePole, $puvodni === '' ? $state : $puvodni . "\n" . $state);
-                $set('_sablona_' . explode('_', $cilovePole)[0], null);
+                $set($nazev, null);
             });
     }
 
@@ -115,51 +222,61 @@ class ZakazkaForm
                                 return $casti ? implode('   ·   ', $casti) : 'Bez kontaktních údajů';
                             }),
 
-                        Select::make('zarizeni_id')
-                            ->label('Zařízení')
-                            ->options(fn (Get $get) => $get('zakaznik_id')
-                                ? Zarizeni::where('zakaznik_id', $get('zakaznik_id'))
-                                    ->get()->mapWithKeys(fn ($z) => [$z->id => $z->oznaceni . ($z->seriove_cislo ? " ({$z->seriove_cislo})" : '')])
-                                : [])
-                            ->searchable()
-                            ->createOptionForm([
-                                Select::make('model')->label('Model')
-                                    ->options(\App\Models\KatalogZarizeni::volby())
-                                    ->searchable()->required()
-                                    ->helperText('Nenašel jsi? Zvol „Jiné zařízení" a upřesni níže.'),
-                                TextInput::make('oznaceni_doplnek')->label('Upřesnění (nepovinné)')
-                                    ->placeholder('barva, revize desky, model. kód…'),
-                                TextInput::make('seriove_cislo')->label('Sériové číslo'),
-                            ])
-                            ->createOptionUsing(function (array $data, Get $get) {
-                                $nazev = trim($data['model']
-                                    . (! empty($data['oznaceni_doplnek']) ? ' – ' . $data['oznaceni_doplnek'] : ''));
+                        Tabs::make('zarizeni_tabs')
+                            ->tabs([
+                                Tab::make('Zařízení 1')->key('tab-vyber-1')->schema([
+                                Select::make('zarizeni_id')
+                                    ->label('Zařízení 1')
+                                    ->options(fn (Get $get) => $get('zakaznik_id')
+                                        ? Zarizeni::where('zakaznik_id', $get('zakaznik_id'))
+                                            ->get()->mapWithKeys(fn ($z) => [$z->id => $z->oznaceni . ($z->seriove_cislo ? " ({$z->seriove_cislo})" : '')])
+                                        : [])
+                                    ->searchable()
+                                    ->createOptionForm([
+                                        Select::make('model')->label('Model')
+                                            ->options(\App\Models\KatalogZarizeni::volby())
+                                            ->getSearchResultsUsing(fn (string $search) => \App\Models\KatalogZarizeni::hledej($search))
+                                            ->searchable()->required()
+                                            ->helperText('Nenašel jsi? Zvol „Jiné zařízení" a upřesni níže.'),
+                                        TextInput::make('oznaceni_doplnek')->label('Upřesnění (nepovinné)')
+                                            ->placeholder('barva, revize desky, model. kód…'),
+                                        TextInput::make('seriove_cislo')->label('Sériové číslo'),
+                                    ])
+                                    ->createOptionUsing(function (array $data, Get $get) {
+                                        $nazev = trim($data['model']
+                                            . (! empty($data['oznaceni_doplnek']) ? ' – ' . $data['oznaceni_doplnek'] : ''));
 
-                                return Zarizeni::create([
-                                    'zakaznik_id' => $get('zakaznik_id'),
-                                    'kategorie' => \App\Models\KatalogZarizeni::kategorieZNazvu($data['model']),
-                                    'oznaceni' => $nazev,
-                                    'seriove_cislo' => $data['seriove_cislo'] ?? null,
-                                ])->id;
-                            })
-                            ->getSelectedRecordUsing(fn ($state) => $state ? Zarizeni::find($state) : null)
-                            ->editOptionForm([
-                                Select::make('kategorie')->label('Kategorie')
-                                    ->options(\App\Support\Platformy::HODNOTY)
-                                    ->searchable()->required(),
-                                TextInput::make('oznaceni')->label('Označení zařízení')->required()
-                                    ->placeholder('např. Xbox Series S – Xbox One S – bílá – model 1681'),
-                                TextInput::make('seriove_cislo')->label('Sériové číslo'),
+                                        return Zarizeni::create([
+                                            'zakaznik_id' => $get('zakaznik_id'),
+                                            'kategorie' => \App\Models\KatalogZarizeni::kategorieZNazvu($data['model']),
+                                            'oznaceni' => $nazev,
+                                            'seriove_cislo' => $data['seriove_cislo'] ?? null,
+                                        ])->id;
+                                    })
+                                    ->getSelectedRecordUsing(fn ($state) => $state ? Zarizeni::find($state) : null)
+                                    ->editOptionForm([
+                                        Select::make('kategorie')->label('Kategorie')
+                                            ->options(\App\Support\Platformy::HODNOTY)
+                                            ->searchable()->required(),
+                                        TextInput::make('oznaceni')->label('Označení zařízení')->required()
+                                            ->placeholder('např. Xbox Series S – Xbox One S – bílá – model 1681'),
+                                        TextInput::make('seriove_cislo')->label('Sériové číslo'),
+                                    ])
+                                    ->updateOptionUsing(function (array $data, Get $get) {
+                                        Zarizeni::where('id', $get('zarizeni_id'))->update([
+                                            'kategorie' => $data['kategorie'],
+                                            'oznaceni' => $data['oznaceni'],
+                                            'seriove_cislo' => $data['seriove_cislo'] ?? null,
+                                        ]);
+                                    })
+                                    ->columnSpanFull(),
+                                ]),
+                                ...array_map(
+                                    fn (int $n) => Tab::make('Zařízení ' . $n)->key('tab-vyber-' . $n)->schema(self::dalsiZarizeniPole($n)),
+                                    range(2, 5),
+                                ),
                             ])
-                            ->updateOptionUsing(function (array $data, Get $get) {
-                                Zarizeni::where('id', $get('zarizeni_id'))->update([
-                                    'kategorie' => $data['kategorie'],
-                                    'oznaceni' => $data['oznaceni'],
-                                    'seriove_cislo' => $data['seriove_cislo'] ?? null,
-                                ]);
-                            })
                             ->columnSpan(2),
-
                         DatePicker::make('datum_prijeti')->label('Datum přijetí')->default(now())->native(false),
                         DatePicker::make('datum_vyrizeni')->label('Datum vyřízení')->native(false),
                         TextInput::make('predpokladana_cena')->label('Předpokládaná cena')->numeric()->suffix('Kč'),
@@ -168,10 +285,8 @@ class ZakazkaForm
                 Section::make('Od zákazníka (servisní list)')
                     ->columns(1)
                     ->schema([
-                        self::sablona('zavada', 'popis_zavady'),
-                        Textarea::make('popis_zavady')->label('Popis závady')->rows(2)
-                            ->hintAction(self::ulozSablonu('zavada', 'popis_zavady')),
-                        Textarea::make('pozadovane_reseni')->label('Požadované řešení')->rows(2),
+                        self::zarizeniTabs('zavada', 'Popis závady od zákazníka', 'zavada', 'popis_zavady'),
+                        self::zarizeniTabs('pozadovane', 'Požadované řešení', 'reseni', 'pozadovane_reseni'),
                         Textarea::make('prislusenstvi')->label('Příslušenství')->rows(2),
                     ]),
 
@@ -180,9 +295,7 @@ class ZakazkaForm
                     ->schema([
                         Textarea::make('zjistena_zavada')->label('Zjištěná závada')->rows(3)
                             ->hintAction(self::ulozSablonu('zavada', 'zjistena_zavada')),
-                        self::sablona('reseni', 'navrh_reseni_prace'),
-                        Textarea::make('navrh_reseni_prace')->label('Návrh řešení a provedené práce')->rows(3)
-                            ->hintAction(self::ulozSablonu('reseni', 'navrh_reseni_prace')),
+                        self::zarizeniTabs('prace', 'Návrh řešení a provedené práce', 'reseni', 'navrh_reseni_prace'),
                         self::sablona('poznamka', 'poznamka'),
                         Textarea::make('poznamka')->label('Poznámka')->rows(2)
                             ->hintAction(self::ulozSablonu('poznamka', 'poznamka')),
@@ -227,9 +340,24 @@ class ZakazkaForm
                             ->visible(fn (Get $get) => $get('zpusob_vydani') === 'odeslani'),
                         TextInput::make('sledovaci_cislo')->label('Sledovací číslo')
                             ->visible(fn (Get $get) => $get('zpusob_vydani') === 'odeslani'),
+                        \Filament\Forms\Components\Toggle::make('dobirka')->label('Na dobírku')
+                            ->helperText('Zákazník platí dopravci při převzetí. Na dokladech nebude QR platba, ale „Hrazeno dobírkou".')
+                            ->inline(false)
+                            ->visible(fn (Get $get) => $get('zpusob_vydani') === 'odeslani'),
+                        TextInput::make('postovne_naklad')->label('Poštovné, které platím já')->live(onBlur: true)
+                            ->numeric()->suffix('Kč')
+                            ->helperText('Zapíše se jako výdaj do peněžního deníku. Zákazníkovi se nepočítá, dokud ho nenaúčtuješ vpravo.')
+                            ->visible(fn (Get $get) => $get('zpusob_vydani') === 'odeslani'),
                         TextInput::make('cena_dopravy')->label('Cena dopravy / dobírky')
                             ->numeric()->default(0)->suffix('Kč')
-                            ->helperText('Připočte se k částce k úhradě.')
+                            ->helperText('Připočte se k částce k úhradě zákazníka. 0 = zákazníkovi nic neúčtovat.')
+                            ->hintAction(
+                                PoleAkce::make('naucotovat_postovne')
+                                    ->label('Naúčtovat zákazníkovi')
+                                    ->icon('heroicon-m-arrow-down-on-square')
+                                    ->visible(fn (Get $get) => (float) $get('postovne_naklad') > 0)
+                                    ->action(fn (Get $get, Set $set) => $set('cena_dopravy', $get('postovne_naklad')))
+                            )
                             ->visible(fn (Get $get) => $get('zpusob_vydani') === 'odeslani'),
                     ]),
 

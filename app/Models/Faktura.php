@@ -36,6 +36,18 @@ class Faktura extends Model
     }
 
     /** Uhrazená faktura = příjem v peněžním deníku (jeden záznam na fakturu). */
+    /**
+     * URL tisku PDF. Poslední část cesty je název souboru s číslem dokladu,
+     * takže „Uložit jako" v prohlížeči nabídne správný název.
+     */
+    public function tiskUrl(array $query = []): string
+    {
+        return route('tisk.faktura', array_merge(
+            ['faktura' => $this, 'soubor' => 'Faktura-' . $this->cislo . '.pdf'],
+            $query,
+        ));
+    }
+
     public function synchronizujPrijem(): void
     {
         $klic = ['zdroj' => 'faktura', 'zdroj_id' => $this->id];

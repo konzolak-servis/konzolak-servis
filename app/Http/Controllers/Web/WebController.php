@@ -27,6 +27,7 @@ class WebController extends Controller
             'duvera' => Web::duvera(),
             'kroky' => Web::kroky(),
             'dlazdice' => Web::dlazdice(),
+            'problemy' => Web::problemy(),
             'ukazkaCeniku' => $ukazkaCeniku,
         ]);
     }
@@ -52,6 +53,16 @@ class WebController extends Controller
             'recenze' => Web::recenze(),
             'facebookUrl' => Web::facebookUrl(),
         ]);
+    }
+
+    public function zasilani(): View
+    {
+        return view('web.zasilani', ['firma' => Web::firma()]);
+    }
+
+    public function vykup(): View
+    {
+        return view('web.vykup', ['firma' => Web::firma()]);
     }
 
     public function faq(): View

@@ -80,7 +80,7 @@ class UkolyWidget extends Widget
         $this->pridej($skupiny, 'dil_dorazil', 'Díl dorazil – pokračovat v opravě', 'success', $dilDorazil);
 
         // 3) Hotové k vydání ----------------------------------------------------
-        $kVydani = Zakazka::with(['zakaznik', 'zarizeni'])
+        $kVydani = Zakazka::with(['zakaznik', 'zarizeni', 'dalsiZarizeni'])
             ->where('stav', 'hotovo')
             ->orderBy('datum_vyrizeni')
             ->get()
@@ -103,7 +103,7 @@ class UkolyWidget extends Widget
             ZakazkaResource::getUrl('index', ['tableFilters' => ['stav' => ['value' => 'hotovo']]]));
 
         // 4) Čeká na díl ------------------------------------------------------
-        $cekaNaDil = Zakazka::with(['zakaznik', 'zarizeni'])
+        $cekaNaDil = Zakazka::with(['zakaznik', 'zarizeni', 'dalsiZarizeni'])
             ->where('stav', 'ceka_na_dil')
             ->orderBy('datum_prijeti')
             ->get()
@@ -124,7 +124,7 @@ class UkolyWidget extends Widget
             ZakazkaResource::getUrl('index', ['tableFilters' => ['stav' => ['value' => 'ceka_na_dil']]]));
 
         // 5) Dlouho bez pohybu ---------------------------------------------
-        $stoji = Zakazka::with(['zakaznik', 'zarizeni'])
+        $stoji = Zakazka::with(['zakaznik', 'zarizeni', 'dalsiZarizeni'])
             ->whereIn('stav', ['prijato', 'diagnostika'])
             ->whereDate('updated_at', '<', $dnes->copy()->subDays(14))
             ->when($hotovoIds, fn ($q) => $q->whereNotIn('id', $hotovoIds))
@@ -185,7 +185,7 @@ class UkolyWidget extends Widget
 
     private function popisZakazky(Zakazka $z): string
     {
-        return trim(($z->zakaznik?->nazev ?? '—') . ' · ' . ($z->zarizeni?->oznaceni ?? ''), " ·\t\n");
+        return trim(($z->zakaznik?->nazev ?? '—') . ' · ' . $z->zarizeniText(), " ·\t\n");
     }
 
     /** Přidá sekci do seznamu, pokud má aspoň jednu položku. */
