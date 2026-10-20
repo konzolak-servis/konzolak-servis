@@ -27,6 +27,18 @@ class WebGate
 
     public function handle(Request $request, Closure $next): Response
     {
+        // Servisní subdoména neservíruje veřejný web: úvod → administrace,
+        // ostatní stránky webu → stejná adresa na apexu (tam už platí brána).
+        $host = $request->getHost();
+
+        if (str_starts_with($host, 'servis.') && $request->isMethod('GET') && $request->routeIs('web.*')) {
+            if ($request->is('/')) {
+                return redirect('/admin');
+            }
+
+            return redirect()->away($request->getScheme().'://'.substr($host, 7).$request->getRequestUri(), 301);
+        }
+
         $heslo = (string) config('web.gate_heslo');
 
         if ($heslo === '' || ! in_array($request->getHost(), self::HOSTY, true)) {
