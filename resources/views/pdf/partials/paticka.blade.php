@@ -33,4 +33,4 @@
         @endif
     </div>
 </htmlpagefooter>
-<sethtmlpagefooter name="paticka" value="on" />
+<sethtmlpagefooter name="paticka" value="on" show-this-page="1" />

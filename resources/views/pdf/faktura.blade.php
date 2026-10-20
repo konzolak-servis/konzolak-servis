@@ -4,7 +4,7 @@
 <body>
 @include('pdf.partials.hlavicka', ['nadpis' => 'Faktura', 'cislo' => $f->cislo, 'skrytFirmaRadek' => true])
 
-@php($zk = $f->zakaznik)
+@php $zk = $f->zakaznik; @endphp
 
 <table class="cols" style="margin-bottom:3mm">
     <tr>
@@ -20,6 +20,14 @@
             <div class="val"><strong>{{ $zk?->nazev }}</strong></div>
             @if ($zk?->adresa_radek)<div>{{ $zk->adresa_radek }}</div>@endif
             @if ($zk?->ico)<div>IČO: {{ $zk->ico }}@if ($zk->dic) · DIČ: {{ $zk->dic }}@endif</div>@endif
+            @php
+                // Kontaktní osoba: jméno uložené u firmy, jinak zákazník, kterému patří zakázka (když se liší od odběratele)
+                $osoba = $zk?->typ === 'firma' && filled($zk->jmeno) ? $zk->jmeno : null;
+                if (! $osoba && $f->zakazka?->zakaznik && $f->zakazka->zakaznik->id !== $zk?->id) {
+                    $osoba = $f->zakazka->zakaznik->nazev;
+                }
+            @endphp
+            @if ($osoba)<div class="muted">Kontaktní osoba: {{ $osoba }}</div>@endif
             @if ($zk?->telefon)<div class="muted">tel. {{ $zk->telefon }}</div>@endif
             @if ($zk?->email)<div class="muted">{{ $zk->email }}</div>@endif
         </td>
@@ -40,6 +48,7 @@
     </tr>
 </table>
 
+<div class="drz">
 <table class="items">
     <tr>
         <th style="width:26%">Zařízení</th><th>Popis</th>
@@ -77,6 +86,7 @@
         </td>
     </tr>
 </table>
+</div>
 
 @unless ($firma->platce_dph)
     <div style="font-size:8pt;color:#374151;margin-top:2mm;font-weight:bold">

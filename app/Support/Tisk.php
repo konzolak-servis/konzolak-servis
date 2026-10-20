@@ -27,7 +27,7 @@ class Tisk
             : [
                 'format' => 'A4',
                 'margin_left' => 15, 'margin_right' => 15, 'margin_top' => 16,
-                'margin_bottom' => 18, 'margin_footer' => 8,
+                'margin_bottom' => 18, 'margin_footer' => 8, 'setAutoTopMargin' => 'stretch', 'autoMarginPadding' => 4,
                 'default_font_size' => 9.5,
             ];
 

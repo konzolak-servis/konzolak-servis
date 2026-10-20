@@ -25,6 +25,7 @@ class Zakazka extends Model
         'cena_dopravy' => 'decimal:2',
         'postovne_naklad' => 'decimal:2',
         'dobirka' => 'boolean',
+        'sleva_jen_prace' => 'boolean',
         'zaruka_mesice' => 'integer',
         'dil_objednany' => 'boolean',
         'zaloha_v_prijmech' => 'boolean',
@@ -43,7 +44,22 @@ class Zakazka extends Model
     /** Částka slevy v Kč (procenta z ceny opravy; doprava se neslevňuje). */
     public function slevaCastka(): float
     {
-        return round((float) $this->cena_celkem * (int) $this->sleva_procent / 100, 2);
+        return round($this->slevaZaklad() * (int) $this->sleva_procent / 100, 2);
+    }
+
+    /**
+     * Částka, ze které se sleva počítá: celá cena opravy, nebo – při zapnutém „jen na práci" –
+     * jen účtované práce (bez účtovaných dílů/materiálu). Bez rozpisu položek se počítá z celé ceny.
+     */
+    public function slevaZaklad(): float
+    {
+        $celkem = (float) $this->cena_celkem;
+
+        if (! $this->sleva_jen_prace || ! $this->exists || ! $this->polozky()->exists()) {
+            return $celkem;
+        }
+
+        return (float) $this->polozky()->where('uctovat', true)->where('typ', '!=', 'material')->sum('cena_celkem');
     }
 
     /** Cena opravy po slevě (bez dopravy). */
@@ -114,6 +130,13 @@ class Zakazka extends Model
             $z->cislo ??= Cisla::dalsi('zakazka', 'SL');
             $z->datum_prijeti ??= now()->toDateString();
             $z->zaruka_mesice ??= (int) (Firma::get()->zaruka_mesice ?: 3);
+        });
+
+        // Hotovo / Vydáno = zakázka je vyřízená: doplň datum vyřízení (od něj se počítá záruka a datum příjmu)
+        static::saving(function (Zakazka $z) {
+            if (in_array($z->stav, self::STAVY_HOTOVO, true) && ! $z->datum_vyrizeni) {
+                $z->datum_vyrizeni = now()->toDateString();
+            }
         });
 
         static::saved(function (Zakazka $z) {

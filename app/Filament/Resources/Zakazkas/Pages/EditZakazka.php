@@ -26,8 +26,23 @@ class EditZakazka extends EditRecord
         return \App\Filament\Resources\Zakazkas\Schemas\ZakazkaForm::naplnDalsi($data, $this->record);
     }
 
+    /**
+     * Cena zakázky se při uložení vždy znovu spočítá z účtovaných položek. Otevřený formulář může
+     * držet starou hodnotu (položky se přidávají na záložce pod ním) a ta by jinak přepsala součet.
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        if ($this->record->polozky()->exists()) {
+            $data['cena_celkem'] = (float) $this->record->polozky()->where('uctovat', true)->sum('cena_celkem');
+        }
+
+        return $data;
+    }
+
     protected function afterSave(): void
     {
+        $this->refreshFormData(['cena_celkem']);
+
         \App\Filament\Resources\Zakazkas\Schemas\ZakazkaForm::ulozDalsi($this->record, $this->form->getRawState());
 
         // Když se stav ve formuláři přepne na „Hotovo" (ne přes tlačítko
@@ -163,13 +178,37 @@ class EditZakazka extends EditRecord
                     : 'Vytvořit fakturu')
                 ->icon(fn () => $this->record->faktura ? 'heroicon-o-document-check' : 'heroicon-o-document-currency-dollar')
                 ->color(fn () => $this->record->faktura ? 'success' : 'gray')
-                ->action(function () {
+                ->modalHeading('Vytvořit fakturu')
+                ->modalDescription('Variabilní symbol se vyplní číslem zakázky. Fakturuješ-li na firmu, zadej IČO – odběratel se najde nebo načte z registru ARES.')
+                ->modalSubmitActionLabel('Vytvořit fakturu')
+                ->schema(fn () => $this->record->faktura ? [] : [
+                    \Filament\Forms\Components\TextInput::make('ico')->label('IČO odběratele (nepovinné)')
+                        ->placeholder('nech prázdné = zákazník zakázky')->maxLength(12),
+                ])
+                ->action(function (array $data, \Filament\Actions\Action $action) {
                     if ($this->record->faktura) {
                         return redirect(\App\Filament\Resources\Fakturas\FakturaResource::getUrl('edit', ['record' => $this->record->faktura]));
                     }
 
+                    $zakaznikId = $this->record->zakaznik_id;
+                    if (filled($data['ico'] ?? null)) {
+                        try {
+                            [$firma] = \App\Models\Zakaznik::najdiNeboZalozPodleIco((string) $data['ico']);
+                            $zakaznikId = $firma->id;
+                            // jméno osoby ze zakázky se uloží u firmy jako kontaktní osoba (zobrazí se na faktuře)
+                            if (blank($firma->jmeno) && $this->record->zakaznik && $this->record->zakaznik->id !== $firma->id) {
+                                $firma->update(['jmeno' => $this->record->zakaznik->nazev]);
+                            }
+                        } catch (\RuntimeException $e) {
+                            Notification::make()->title($e->getMessage())->warning()->send();
+                            $action->halt();
+
+                            return;
+                        }
+                    }
+
                     $f = \App\Models\Faktura::create([
-                        'zakaznik_id' => $this->record->zakaznik_id,
+                        'zakaznik_id' => $zakaznikId,
                         'zakazka_id' => $this->record->id,
                         'forma_uhrady' => $this->record->zpusob_uhrady === 'hotove' ? 'hotově' : 'převodem',
                         'datum_vystaveni' => now()->toDateString(),
@@ -198,7 +237,7 @@ class EditZakazka extends EditRecord
 
                     if ($this->record->sleva_procent > 0) {
                         $f->polozky()->create([
-                            'popis' => 'Sleva ' . $this->record->sleva_procent . ' %'
+                            'popis' => 'Sleva ' . $this->record->sleva_procent . ' %' . ($this->record->sleva_jen_prace ? ' z práce' : '')
                                 . ($this->record->sleva_kod ? ' (' . $this->record->sleva_kod . ')' : ''),
                             'mnozstvi' => 1,
                             'cena' => -1 * $this->record->slevaCastka(),

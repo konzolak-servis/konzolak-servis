@@ -21,7 +21,9 @@ class NakupForm
                     ->schema([
                         TextInput::make('cislo')->label('Číslo')->disabled()->dehydrated(false)
                             ->placeholder('přiřadí se automaticky'),
-                        DatePicker::make('datum')->label('Datum')->default(now())->native(false),
+                        DatePicker::make('datum')->label('Datum nákupu')->default(now())->native(false),
+                        DatePicker::make('datum_naskladneni')->label('Naskladněno dne')->native(false)->disabled()->dehydrated(false)
+                            ->helperText('Doplní se samo při naskladnění.'),
                         TextInput::make('dodavatel')->label('Dodavatel')
                             ->datalist(['Alza', 'Allegro', 'Konzoliste', 'Hadex', 'AliExpress', 'GM Electronic']),
                         TextInput::make('postovne')->label('Poštovné / doprava')->numeric()->default(0)->suffix('Kč')

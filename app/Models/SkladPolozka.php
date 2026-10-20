@@ -16,11 +16,52 @@ class SkladPolozka extends Model
         'min_mnozstvi' => 'decimal:3',
         'cena_ks_prumer' => 'decimal:2',
         'aktivni' => 'boolean',
+        'spotrebni' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        // Položka založená rovnou s množstvím = počáteční stav (aby historie pohybů vždy sedla se stavem).
+        static::created(function (SkladPolozka $s) {
+            if (! $s->spotrebni && (float) $s->mnozstvi_skladem > 0 && ! $s->pohyby()->exists()) {
+                $s->pohyby()->create([
+                    'typ' => 'prijem',
+                    'mnozstvi' => (float) $s->mnozstvi_skladem,
+                    'cena_ks' => (float) $s->cena_ks_prumer,
+                    'datum' => now()->toDateString(),
+                    'zdroj' => 'pocatecni',
+                    'poznamka' => 'Počáteční stav',
+                ]);
+            }
+        });
+    }
 
     public function pohyby(): HasMany
     {
         return $this->hasMany(SkladovyPohyb::class, 'sklad_polozka_id');
+    }
+
+    /**
+     * Inventura – nastaví skutečný stav a zaznamená rozdíl jako pohyb (korekce, se znaménkem),
+     * takže historie pohybů vždy sedí se stavem na skladě.
+     */
+    public function inventura(float $novyStav, ?string $poznamka = null): ?SkladovyPohyb
+    {
+        $rozdil = round($novyStav - (float) $this->mnozstvi_skladem, 3);
+        if (abs($rozdil) < 0.0005) {
+            return null;
+        }
+
+        $this->update(['mnozstvi_skladem' => $novyStav]);
+
+        return $this->pohyby()->create([
+            'typ' => 'korekce',
+            'mnozstvi' => $rozdil,
+            'cena_ks' => (float) $this->cena_ks_prumer,
+            'datum' => now()->toDateString(),
+            'zdroj' => 'inventura',
+            'poznamka' => $poznamka ?: 'Inventura',
+        ]);
     }
 
     public function getPodMinimemAttribute(): bool

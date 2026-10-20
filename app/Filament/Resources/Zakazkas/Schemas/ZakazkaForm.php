@@ -23,6 +23,20 @@ use Filament\Schemas\Schema;
 
 class ZakazkaForm
 {
+    /** Nabídka dopravců: běžní + ti, které jsi už u zakázek použil + aktuální hodnota. */
+    private static function dopravci(?string $aktualni = null): array
+    {
+        $vychozi = ['Zásilkovna', 'Balíkovna', 'Česká pošta', 'PPL', 'DPD', 'GLS'];
+        $pouzite = Zakazka::whereNotNull('dopravce')->where('dopravce', '!=', '')->distinct()->pluck('dopravce')->all();
+
+        $out = [];
+        foreach (array_merge($vychozi, $pouzite, array_filter([$aktualni])) as $d) {
+            $out[$d] = $d;
+        }
+
+        return $out;
+    }
+
     /** Počet zařízení v jedné zakázce (záložky Zařízení 1–5). */
     public const MAX_ZARIZENI = 5;
 
@@ -70,9 +84,12 @@ class ZakazkaForm
             ->searchable()->preload()
             ->dehydrated(false)
             ->createOptionForm([
-                Select::make('model')->label('Model')
-                    ->options(\App\Models\KatalogZarizeni::volby())
-                    ->getSearchResultsUsing(fn (string $search) => \App\Models\KatalogZarizeni::hledej($search))
+                Select::make('razeni')->label('Řazení modelů')
+                                    ->options(['caste' => 'Nejčastější', 'poradi' => 'Podle katalogu', 'abeceda' => 'Abecedně'])
+                                    ->default('caste')->native(false)->live()->dehydrated(false),
+                                Select::make('model')->label('Model')
+                    ->options(fn (Get $get) => \App\Models\KatalogZarizeni::volby($get('razeni') ?: 'caste'))
+                    ->getSearchResultsUsing(fn (string $search, Get $get) => \App\Models\KatalogZarizeni::hledej($search, $get('razeni') ?: 'caste'))
                     ->searchable()->required(),
                 TextInput::make('oznaceni_doplnek')->label('Upřesnění (nepovinné)')
                     ->placeholder('barva, revize desky, model. kód…'),
@@ -233,9 +250,12 @@ class ZakazkaForm
                                         : [])
                                     ->searchable()
                                     ->createOptionForm([
-                                        Select::make('model')->label('Model')
-                                            ->options(\App\Models\KatalogZarizeni::volby())
-                                            ->getSearchResultsUsing(fn (string $search) => \App\Models\KatalogZarizeni::hledej($search))
+                                        Select::make('razeni')->label('Řazení modelů')
+                                    ->options(['caste' => 'Nejčastější', 'poradi' => 'Podle katalogu', 'abeceda' => 'Abecedně'])
+                                    ->default('caste')->native(false)->live()->dehydrated(false),
+                                Select::make('model')->label('Model')
+                                            ->options(fn (Get $get) => \App\Models\KatalogZarizeni::volby($get('razeni') ?: 'caste'))
+                                            ->getSearchResultsUsing(fn (string $search, Get $get) => \App\Models\KatalogZarizeni::hledej($search, $get('razeni') ?: 'caste'))
                                             ->searchable()->required()
                                             ->helperText('Nenašel jsi? Zvol „Jiné zařízení" a upřesni níže.'),
                                         TextInput::make('oznaceni_doplnek')->label('Upřesnění (nepovinné)')
@@ -324,19 +344,35 @@ class ZakazkaForm
                             ->placeholder('např. UPLATNĚN KUPON ABC123')
                             ->maxLength(120),
                         \Filament\Forms\Components\Select::make('sleva_procent')->label('Sleva')
-                            ->options(Zakazka::SLEVY)->default(0)->native(false)
+                            ->options(Zakazka::SLEVY)->default(0)->native(false)->live()
                             ->helperText('Odečte se automaticky od ceny opravy (bez dopravy).'),
+                        \Filament\Forms\Components\Toggle::make('sleva_jen_prace')->label('Sleva jen na práci (nepočítat na materiál)')
+                            ->helperText('Sleva se spočítá jen z účtovaných prací. Účtované díly (materiál) se neslevňují.')
+                            ->visible(fn (Get $get) => (int) $get('sleva_procent') > 0),
 
                         \Filament\Forms\Components\Radio::make('zpusob_vydani')->label('Vyzvednutí')
                             ->options(Zakazka::ZPUSOBY_VYDANI)
                             ->default('osobne')
                             ->inline()
                             ->live()
+                            ->afterStateUpdated(function ($state, Get $get, Set $set) {
+                                // Při přepnutí na odeslání předvyplň nejčastějšího dopravce, ať se nemusí vybírat pokaždé.
+                                if ($state === 'odeslani' && blank($get('dopravce'))) {
+                                    $set('dopravce', 'Zásilkovna');
+                                }
+                            })
                             ->columnSpanFull(),
                         DatePicker::make('odeslano_datum')->label('Odesláno dne')->native(false)
                             ->visible(fn (Get $get) => $get('zpusob_vydani') === 'odeslani'),
-                        TextInput::make('dopravce')->label('Přes koho')
-                            ->placeholder('Zásilkovna, Česká pošta, PPL…')
+                        Select::make('dopravce')->label('Přes koho')
+                            ->options(fn (Get $get) => self::dopravci($get('dopravce')))
+                            ->getOptionLabelUsing(fn ($value) => $value)
+                            ->native(false)->searchable()
+                            ->placeholder('Vyber dopravce')
+                            ->createOptionForm([
+                                TextInput::make('nazev')->label('Název dopravce')->required()->maxLength(60),
+                            ])
+                            ->createOptionUsing(fn (array $data) => trim($data['nazev']))
                             ->visible(fn (Get $get) => $get('zpusob_vydani') === 'odeslani'),
                         TextInput::make('sledovaci_cislo')->label('Sledovací číslo')
                             ->visible(fn (Get $get) => $get('zpusob_vydani') === 'odeslani'),

@@ -17,6 +17,7 @@ class Nakup extends Model
         'datum' => 'date',
         'celkem' => 'decimal:2',
         'postovne' => 'decimal:2',
+        'datum_naskladneni' => 'date',
         'naskladneno' => 'boolean',
         'preneseno_do_objednavek' => 'boolean',
     ];
@@ -51,12 +52,15 @@ class Nakup extends Model
         }
 
         DB::transaction(function () {
-            $vseNeskladovat = $this->polozky->isNotEmpty() && $this->polozky->every(fn ($p) => $p->neskladovat);
+            $datumNask = now()->toDateString();
+            // spotřební materiál (pasta, tekutý kov…) se nenaskladňuje – je to náklad firmy
+            $nenaskladnuje = fn ($p) => $p->neskladovat || (bool) $p->skladPolozka?->spotrebni;
+            $vseNeskladovat = $this->polozky->isNotEmpty() && $this->polozky->every($nenaskladnuje);
 
             foreach ($this->polozky as $p) {
-                // Obecný provozní náklad (předplatné, kancelář, vybavení…) – nezakládá
+                // Obecný provozní náklad (předplatné, kancelář, vybavení, spotřební materiál…) – nezakládá
                 // ani nemění skladovou položku, jen se počítá do celkové částky níže.
-                if ($p->neskladovat) {
+                if ($nenaskladnuje($p)) {
                     continue;
                 }
 
@@ -64,10 +68,11 @@ class Nakup extends Model
                     'nazev' => $p->nazev,
                 ]);
 
+                // Pohyb na skladě nese datum NASKLADNĚNÍ (kdy díl dorazil); datum nákupu zůstává u nákupu a v deníku.
                 $sklad->prijem((float) $p->mnozstvi_ks, (float) $p->cena_ks, [
                     'zdroj' => 'nakup',
                     'nakup_id' => $this->id,
-                    'datum' => $this->datum?->toDateString() ?? now()->toDateString(),
+                    'datum' => $datumNask,
                     'poznamka' => $this->dodavatel,
                 ]);
 
@@ -83,6 +88,7 @@ class Nakup extends Model
                 'datum' => $this->datum?->toDateString() ?? now()->toDateString(),
                 'typ' => 'vydej',
                 'popis' => 'Nákup ' . $this->cislo . ($this->dodavatel ? ' – ' . $this->dodavatel : '')
+                    . ($this->datum && $this->datum->toDateString() !== $datumNask ? ' (naskladněno ' . now()->format('d.m.') . ')' : '')
                     . ($this->postovne > 0 ? ' (vč. poštovného ' . number_format((float) $this->postovne, 0, ',', ' ') . ' Kč)' : ''),
                 'castka' => $castka,
                 'kategorie' => $vseNeskladovat ? 'Náklady firmy' : 'Materiál',
@@ -91,7 +97,7 @@ class Nakup extends Model
                 'zdroj_id' => $this->id,
             ]);
 
-            $this->update(['naskladneno' => true, 'celkem' => $castka]);
+            $this->update(['naskladneno' => true, 'celkem' => $castka, 'datum_naskladneni' => $datumNask]);
         });
     }
 }

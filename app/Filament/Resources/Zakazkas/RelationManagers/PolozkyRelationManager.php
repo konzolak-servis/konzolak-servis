@@ -80,8 +80,28 @@ class PolozkyRelationManager extends RelationManager
                         : '(' . number_format($state, 0, ',', ' ') . ' Kč)')
                     ->summarize([
                         Sum::make('uctovano')
-                            ->label('Účtováno celkem')
+                            ->label(fn () => $this->slevaCastka() > 0 ? 'Účtováno celkem (před slevou)' : 'Účtováno celkem')
                             ->query(fn ($query) => $query->where('uctovat', true))
+                            ->money('CZK'),
+                        Summarizer::make('sleva')
+                            ->label(function () {
+                                $z = $this->zakazkaCerstva();
+
+                                return 'Sleva ' . (int) $z->sleva_procent . ' %' . ($z->sleva_jen_prace ? ' (jen z práce)' : '')
+                                    . ($z->sleva_kod ? ' · ' . $z->sleva_kod : '');
+                            })
+                            ->using(fn (Builder $query) => -1 * $this->slevaCastka())
+                            ->visible(fn () => $this->slevaCastka() > 0)
+                            ->money('CZK'),
+                        Summarizer::make('po_sleve')
+                            ->label('Cena po slevě (skutečná)')
+                            ->using(fn (Builder $query) => (float) (clone $query)->where('uctovat', true)->sum('cena_celkem') - $this->slevaCastka())
+                            ->visible(fn () => $this->slevaCastka() > 0)
+                            ->money('CZK'),
+                        Summarizer::make('doprava')
+                            ->label('Doprava naúčtovaná zákazníkovi')
+                            ->using(fn (Builder $query) => (float) $this->zakazkaCerstva()->cena_dopravy)
+                            ->visible(fn () => (float) $this->zakazkaCerstva()->cena_dopravy > 0)
                             ->money('CZK'),
                         Summarizer::make('naklad_materialu')
                             ->label('Náklad na materiál')
@@ -117,9 +137,12 @@ class PolozkyRelationManager extends RelationManager
                     ->label('Práce z ceníku')
                     ->icon('heroicon-o-list-bullet')
                     ->schema([
+                        \Filament\Forms\Components\ToggleButtons::make('razeni')->label('Řazení')
+                            ->options(['caste' => 'Nejčastější', 'abeceda' => 'Abecedně', 'zarizeni' => 'Podle zařízení', 'cena' => 'Podle ceny'])
+                            ->default('caste')->inline()->live()->dehydrated(false),
                         Select::make('cenik_polozka_id')
                             ->label('Úkon z ceníku')
-                            ->options(fn () => $this->cenikPodlePouziti())
+                            ->options(fn (\Filament\Schemas\Components\Utilities\Get $get) => $this->cenikPodlePouziti($get('razeni') ?: 'caste'))
                             ->searchable()
                             ->required(),
                         TextInput::make('mnozstvi')->label('Množství')->numeric()->default(1)->required(),
@@ -140,9 +163,12 @@ class PolozkyRelationManager extends RelationManager
                     ->icon('heroicon-o-cube')
                     ->color('warning')
                     ->schema([
+                        \Filament\Forms\Components\ToggleButtons::make('razeni')->label('Řazení')
+                            ->options(['caste' => 'Nejčastější', 'abeceda' => 'Abecedně', 'skladem' => 'Nejvíc skladem', 'cena' => 'Podle ceny'])
+                            ->default('caste')->inline()->live()->dehydrated(false),
                         Select::make('sklad_polozka_id')
                             ->label('Skladová položka')
-                            ->options(fn () => $this->skladPodlePouziti())
+                            ->options(fn (\Filament\Schemas\Components\Utilities\Get $get) => $this->skladPodlePouziti($get('razeni') ?: 'caste'))
                             ->searchable()
                             ->required(),
                         TextInput::make('mnozstvi')->label('Počet ks')->numeric()->default(1)->required(),
@@ -216,8 +242,8 @@ class PolozkyRelationManager extends RelationManager
         return (float) \App\Models\Zakazka::whereKey($this->getOwnerRecord()->getKey())->value('postovne_naklad');
     }
 
-    /** Ceník seřazený podle toho, jak často se úkon v zakázkách účtuje (nejčastější nahoře). */
-    private function cenikPodlePouziti(): array
+    /** Ceník pro výběr práce. Řazení: caste (nejčastěji účtované) | abeceda | zarizeni (podle zařízení) | cena. */
+    private function cenikPodlePouziti(string $razeni = 'caste'): array
     {
         $pocty = \Illuminate\Support\Facades\DB::table('zakazka_polozky')
             ->where('typ', 'prace')
@@ -225,15 +251,23 @@ class PolozkyRelationManager extends RelationManager
             ->groupBy('nazev')
             ->pluck('pocet', 'nazev');
 
-        return CenikPolozka::where('aktivni', true)->orderBy('kategorie')->orderBy('poradi')->get()
-            ->sortByDesc(fn ($c) => (int) ($pocty[$c->nazev] ?? 0))
-            ->mapWithKeys(fn ($c) => [
-                $c->id => "{$c->nazev}  –  {$c->cena} Kč" . (($pocty[$c->nazev] ?? 0) > 0 ? "  ·  {$pocty[$c->nazev]}×" : ''),
-            ])->all();
+        $polozky = CenikPolozka::where('aktivni', true)->orderBy('kategorie')->orderBy('poradi')->get();
+        $abc = fn ($t) => \Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii((string) $t));
+
+        $polozky = match ($razeni) {
+            'abeceda' => $polozky->sortBy(fn ($c) => $abc($c->nazev)),
+            'cena' => $polozky->sortBy(fn ($c) => (float) $c->cena),
+            'zarizeni' => $polozky,
+            default => $polozky->sortByDesc(fn ($c) => (int) ($pocty[$c->nazev] ?? 0)),
+        };
+
+        return $polozky->mapWithKeys(fn ($c) => [
+            $c->id => "{$c->nazev}  –  {$c->cena} Kč" . (($pocty[$c->nazev] ?? 0) > 0 ? "  ·  {$pocty[$c->nazev]}×" : ''),
+        ])->all();
     }
 
-    /** Sklad seřazený podle toho, jak často se položka v zakázkách používá (nejčastější nahoře, pak abecedně). */
-    private function skladPodlePouziti(): array
+    /** Sklad pro výběr materiálu. Řazení: caste | abeceda | skladem (nejvíc kusů) | cena. */
+    private function skladPodlePouziti(string $razeni = 'caste'): array
     {
         $pocty = \Illuminate\Support\Facades\DB::table('zakazka_polozky')
             ->whereNotNull('sklad_polozka_id')
@@ -241,11 +275,30 @@ class PolozkyRelationManager extends RelationManager
             ->groupBy('sklad_polozka_id')
             ->pluck('pocet', 'sklad_polozka_id');
 
-        return SkladPolozka::where('aktivni', true)->orderBy('nazev')->get()
-            ->sortByDesc(fn ($s) => (int) ($pocty[$s->id] ?? 0))
-            ->mapWithKeys(fn ($s) => [
-                $s->id => "{$s->nazev}  (skladem {$s->mnozstvi_skladem}, {$s->cena_ks_prumer} Kč/ks)"
-                    . (($pocty[$s->id] ?? 0) > 0 ? "  ·  {$pocty[$s->id]}×" : ''),
-            ])->all();
+        $polozky = SkladPolozka::where('aktivni', true)->where('spotrebni', false)->orderBy('nazev')->get();
+        $abc = fn ($t) => \Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii((string) $t));
+
+        $polozky = match ($razeni) {
+            'abeceda' => $polozky->sortBy(fn ($s) => $abc($s->nazev)),
+            'skladem' => $polozky->sortByDesc(fn ($s) => (float) $s->mnozstvi_skladem),
+            'cena' => $polozky->sortBy(fn ($s) => (float) $s->cena_ks_prumer),
+            default => $polozky->sortByDesc(fn ($s) => (int) ($pocty[$s->id] ?? 0)),
+        };
+
+        return $polozky->mapWithKeys(fn ($s) => [
+            $s->id => "{$s->nazev}  (skladem {$s->mnozstvi_skladem}, {$s->cena_ks_prumer} Kč/ks)"
+                . (($pocty[$s->id] ?? 0) > 0 ? "  ·  {$pocty[$s->id]}×" : ''),
+        ])->all();
+    }
+
+    private function zakazkaCerstva(): \App\Models\Zakazka
+    {
+        return \App\Models\Zakazka::findOrFail($this->getOwnerRecord()->getKey());
+    }
+
+    /** Aktuální částka slevy zakázky (Kč). */
+    private function slevaCastka(): float
+    {
+        return $this->zakazkaCerstva()->slevaCastka();
     }
 }

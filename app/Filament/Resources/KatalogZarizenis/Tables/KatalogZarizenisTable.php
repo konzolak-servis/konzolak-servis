@@ -18,6 +18,10 @@ class KatalogZarizenisTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->select('katalog_zarizeni.*')->selectSub(
+                \Illuminate\Support\Facades\DB::table('zarizeni')->selectRaw('count(*)')
+                    ->whereRaw("zarizeni.oznaceni like concat(katalog_zarizeni.nazev, '%')"),
+                'pouzito'))
             ->columns([
                 TextInputColumn::make('poradi')
                     ->label('#')
@@ -32,7 +36,9 @@ class KatalogZarizenisTable
                     ->sortable(),
                 TextColumn::make('nazev')
                     ->label('Model')
-                    ->searchable(),
+                    ->searchable()->sortable(),
+                TextColumn::make('pouzito')->label('Přijato ×')->sortable()->badge()->color('gray')
+                    ->tooltip('Kolik zařízení tohoto modelu už bylo přijato – seřaď podle sloupce pro nejčastější.'),
                 TextColumn::make('model_kod')
                     ->label('Kód modelu')
                     ->searchable(),

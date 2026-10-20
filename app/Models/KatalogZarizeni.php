@@ -20,23 +20,44 @@ class KatalogZarizeni extends Model
         return trim($this->nazev . ($this->model_kod ? '  (' . $this->model_kod . ')' : ''));
     }
 
-    /** Volby pro Select seskupené podle kategorie: [kategorie => [nazev => nazev]]. */
-    public static function volby(): array
+    /**
+     * Volby pro Select seskupené podle kategorie: [kategorie => [nazev => nazev]].
+     * Řazení: poradi (pořadí katalogu) | caste (nejčastěji přijímaná zařízení) | abeceda.
+     */
+    public static function volby(string $razeni = 'poradi'): array
     {
-        return static::where('aktivni', true)
-            ->orderBy('poradi')->orderBy('nazev')
-            ->get()
-            ->groupBy(fn ($m) => Zarizeni::KATEGORIE[$m->kategorie] ?? $m->kategorie)
+        $modely = static::where('aktivni', true)->orderBy('poradi')->orderBy('nazev')->get();
+        $abc = fn ($t) => \Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii((string) $t));
+
+        $pocty = [];
+        if ($razeni === 'caste') {
+            $oznaceni = \Illuminate\Support\Facades\DB::table('zarizeni')->pluck('oznaceni');
+            foreach ($modely as $m) {
+                $pocty[$m->id] = $oznaceni->filter(fn ($o) => str_starts_with((string) $o, $m->nazev))->count();
+            }
+        }
+
+        $skupiny = $modely->groupBy(fn ($m) => Zarizeni::KATEGORIE[$m->kategorie] ?? $m->kategorie);
+
+        if ($razeni === 'caste') {
+            $skupiny = $skupiny->map(fn ($sk) => $sk->sortByDesc(fn ($m) => $pocty[$m->id] ?? 0))
+                ->sortByDesc(fn ($sk) => $sk->sum(fn ($m) => $pocty[$m->id] ?? 0));
+        } elseif ($razeni === 'abeceda') {
+            $skupiny = $skupiny->map(fn ($sk) => $sk->sortBy(fn ($m) => $abc($m->nazev)))
+                ->sortBy(fn ($sk, $nazev) => $abc($nazev));
+        }
+
+        return $skupiny
             ->map(fn ($sk) => $sk->mapWithKeys(fn ($m) => [$m->nazev => $m->nazev])->all())
             ->all();
     }
 
     /** Hledání v katalogu: shoduje se název modelu i název skupiny (např. „ovladač" najde všechny ovladače). */
-    public static function hledej(?string $dotaz): array
+    public static function hledej(?string $dotaz, string $razeni = 'poradi'): array
     {
         $q = mb_strtolower(trim((string) $dotaz));
         $out = [];
-        foreach (static::volby() as $skupina => $modely) {
+        foreach (static::volby($razeni) as $skupina => $modely) {
             $skupinaShoda = $q === '' || str_contains(mb_strtolower($skupina), $q);
             $nalezene = array_filter($modely, fn ($n) => $skupinaShoda || str_contains(mb_strtolower($n), $q));
             if ($nalezene) {

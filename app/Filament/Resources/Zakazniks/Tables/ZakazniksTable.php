@@ -24,10 +24,10 @@ class ZakazniksTable
                     ->label('Typ')
                     ->badge()
                     ->formatStateUsing(fn ($state) => $state === 'firma' ? 'Firma' : 'Osoba'),
-                TextColumn::make('telefon')->label('Telefon')->searchable(),
+                TextColumn::make('telefon')->label('Telefon')->searchable()->sortable(),
                 TextColumn::make('email')->label('E-mail')->searchable()->toggleable(),
                 TextColumn::make('mesto')->label('Město')->searchable()->toggleable(),
-                TextColumn::make('zakazky_count')->label('Zakázek')->counts('zakazky')->badge(),
+                TextColumn::make('zakazky_count')->label('Zakázek')->counts('zakazky')->badge()->sortable(),
                 TextColumn::make('created_at')->label('Vytvořen')->date('d.m.Y')
                     ->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])

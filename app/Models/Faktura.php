@@ -26,7 +26,11 @@ class Faktura extends Model
         static::creating(function (Faktura $f) {
             $rok = (int) date('Y', strtotime($f->datum_vystaveni ?? now()));
             $f->cislo ??= Cisla::dalsi('faktura', 'FA', $rok);
-            $f->variabilni_symbol ??= preg_replace('/\D/', '', $f->cislo);
+            // VS: u faktury k zakázce číslo zakázky (stejné jako na QR platbě protokolu), jinak číslo faktury
+            if (blank($f->variabilni_symbol) && $f->zakazka_id) {
+                $f->variabilni_symbol = preg_replace('/\D/', '', (string) Zakazka::whereKey($f->zakazka_id)->value('cislo')) ?: null;
+            }
+            $f->variabilni_symbol = $f->variabilni_symbol ?: preg_replace('/\D/', '', $f->cislo);
             $f->datum_vystaveni ??= now()->toDateString();
             $f->datum_splatnosti ??= now()->addDays((int) (Firma::get()->splatnost_dni ?: 14))->toDateString();
         });

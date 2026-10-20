@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\PenezniDeniks\Schemas;
 
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -24,6 +25,11 @@ class PenezniDenikForm
                     ->helperText('„Náklady firmy" = předplatné, software, doména, kancelář, spotřební '
                         . 'materiál, vybavení dílny… vše, co nejde do skladu dílů na opravy.'),
                 TextInput::make('kde')->label('Kde (u výdeje)')->maxLength(255),
+                Placeholder::make('zdroj_info')
+                    ->label('Co to je a doklady')
+                    ->columnSpanFull()
+                    ->visible(fn (?\App\Models\PenezniDenik $record) => filled($record?->zdroj))
+                    ->content(fn (?\App\Models\PenezniDenik $record) => new \Illuminate\Support\HtmlString($record?->zdrojHtml() ?? '')),
             ]);
     }
 }

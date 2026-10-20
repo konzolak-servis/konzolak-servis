@@ -45,7 +45,9 @@ class SkladPolozkaResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            RelationManagers\PohybyRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

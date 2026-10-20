@@ -88,7 +88,10 @@ class Kalendar extends Page
                     'zakazky' => collect($zakazky->get($klic, []))->map(fn (Zakazka $z) => [
                         'cislo' => $z->cislo,
                         'kdo' => $z->zakaznik?->nazev,
-                        'co' => ($z->zarizeniText() ?: $z->popis_zavady),
+                        'zarizeni' => $z->vsechnaZarizeni()->pluck('oznaceni')->filter()->values()->all(),
+                        'co' => ($z->vsechnaZarizeni()->first()?->oznaceni ?: $z->popis_zavady)
+                            . ($z->vsechnaZarizeni()->count() > 1 ? ' +' . ($z->vsechnaZarizeni()->count() - 1) : ''),
+                        'zavada' => $z->popis_zavady,
                         'stav' => $z->stav_nazev,
                         'barva' => $z->stavBarva(),
                         'hotovo' => $z->jeHotovo(),

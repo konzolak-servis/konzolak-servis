@@ -28,6 +28,8 @@
     <div class="box">{!! nl2br(e($z->navrh_reseni_prace ?: '—')) !!}</div>
 @endunless
 
+{{-- ceny drž pohromadě: tabulka položek + celková částka se nikdy nerozdělí mezi stránky --}}
+<div class="drz">
 @php($radky = $z->polozky->where('uctovat', true))
 @if ($radky->count())
     <div class="sekce">Práce a účtované položky</div>
@@ -69,7 +71,7 @@
                 <div style="margin-top:1mm;font-size:8pt;color:#374151">
                     Cena celkem {{ number_format($z->cena_celkem, 0, ',', ' ') }} Kč
                     @if ($z->sleva_procent > 0)
-                        &nbsp;−&nbsp; sleva {{ $z->sleva_procent }} % ({{ number_format($z->slevaCastka(), 0, ',', ' ') }} Kč){{ $z->sleva_kod ? ', ' . $z->sleva_kod : '' }}
+                        &nbsp;−&nbsp; sleva {{ $z->sleva_procent }} %{{ $z->sleva_jen_prace ? ' z práce' : '' }} ({{ number_format($z->slevaCastka(), 0, ',', ' ') }} Kč){{ $z->sleva_kod ? ', ' . $z->sleva_kod : '' }}
                     @endif
                     @if ($z->cena_dopravy > 0)
                         &nbsp;+&nbsp; doprava {{ number_format($z->cena_dopravy, 0, ',', ' ') }} Kč
@@ -92,6 +94,7 @@
         </td>
     </tr>
 </table>
+</div>
 
 @if ($z->poznamka && $z->poznamka !== 'UKÁZKA')
     <div class="sekce">Poznámka</div>

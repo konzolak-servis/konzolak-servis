@@ -43,4 +43,34 @@ class Zakaznik extends Model
         return trim(collect([$this->ulice, trim(($this->psc ?? '') . ' ' . ($this->mesto ?? ''))])
             ->filter()->implode(', '));
     }
+
+    /**
+     * Najde zákazníka (firmu) podle IČO; když ještě není, založí ho z údajů v ARES.
+     * Vrací [Zakaznik, bool $novy]. Při chybě registru vyhodí \RuntimeException.
+     */
+    public static function najdiNeboZalozPodleIco(string $ico): array
+    {
+        $norm = \App\Support\Ares::normalizuj($ico);
+        if ($norm && ($existujici = static::where('ico', $norm)->orWhere('ico', ltrim($norm, '0'))->first())) {
+            return [$existujici, false];
+        }
+
+        $a = \App\Support\Ares::najdi($ico);
+
+        // mohl už být uložený s jiným zápisem IČO (mezery apod.)
+        $existujici = static::whereRaw("REPLACE(ico, ' ', '') = ?", [$a['ico']])->first();
+        if ($existujici) {
+            return [$existujici, false];
+        }
+
+        return [static::create([
+            'typ' => 'firma',
+            'firma_nazev' => $a['nazev'],
+            'ico' => $a['ico'],
+            'dic' => $a['dic'],
+            'ulice' => $a['ulice'],
+            'psc' => $a['psc'],
+            'mesto' => $a['mesto'],
+        ]), true];
+    }
 }

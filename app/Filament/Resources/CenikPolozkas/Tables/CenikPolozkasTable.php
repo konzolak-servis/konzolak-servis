@@ -23,6 +23,10 @@ class CenikPolozkasTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->select('cenik.*')->selectSub(
+                \Illuminate\Support\Facades\DB::table('zakazka_polozky')->selectRaw('count(*)')
+                    ->whereColumn('zakazka_polozky.nazev', 'cenik.nazev')->where('zakazka_polozky.typ', 'prace'),
+                'pouzito'))
             ->columns([
                 TextInputColumn::make('poradi')
                     ->label('#')
@@ -32,8 +36,10 @@ class CenikPolozkasTable
                     ->width('1%'),
                 TextColumn::make('kategorie')->label('Platforma / kategorie')->badge()->sortable()
                     ->formatStateUsing(fn ($state) => Platformy::label($state)),
-                TextColumn::make('nazev')->label('Název úkonu')->searchable()->wrap(),
+                TextColumn::make('nazev')->label('Název úkonu')->searchable()->sortable()->wrap(),
                 TextColumn::make('cena')->label('Cena')->money('CZK')->sortable(),
+                TextColumn::make('pouzito')->label('Použito ×')->sortable()->badge()->color('gray')
+                    ->tooltip('Kolikrát byl úkon účtován v zakázkách – seřaď podle sloupce pro nejčastější.'),
                 IconColumn::make('aktivni')->label('Aktivní')->boolean(),
                 IconColumn::make('na_web')->label('Web')->boolean()->toggleable(),
             ])

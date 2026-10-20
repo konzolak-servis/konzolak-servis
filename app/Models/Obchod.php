@@ -40,6 +40,13 @@ class Obchod extends Model
         // Výkup je hotová věc (peníze reálně vyplacené) hned při založení záznamu –
         // v UI není žádný samostatný krok „potvrzení"/vyřízení před tímhle okamžikem.
         static::created(fn (Obchod $o) => $o->zapisNakupDoDeniku());
+
+        // Úprava záznamu (prodáno, cena, datum…) se vždy promítne do peněžního deníku –
+        // dřív se prodej zapsal jen přes tlačítko, takže prodej uložený ve formuláři v deníku chyběl.
+        static::saved(function (Obchod $o) {
+            $o->synchronizujProdej();
+            $o->synchronizujNakup();
+        });
     }
 
     /**
@@ -178,5 +185,44 @@ class Obchod extends Model
         ]);
 
         return true;
+    }
+
+    /** Příjem z prodeje v deníku = přesně jeden záznam, který odpovídá aktuálním údajům (nebo žádný, není-li prodáno). */
+    public function synchronizujProdej(): void
+    {
+        $klic = ['zdroj' => 'obchod', 'zdroj_id' => $this->id, 'typ' => 'prijem'];
+
+        if ($this->prodano && (float) $this->prodejni_cena > 0) {
+            PenezniDenik::updateOrCreate($klic, [
+                'datum' => $this->prodej_datum?->toDateString() ?? now()->toDateString(),
+                'popis' => 'Bazar – prodej ' . $this->cislo . ($this->nazev ? ' – ' . $this->nazev : '')
+                    . ($this->prodej_komu ? ' (' . $this->prodej_komu . ')' : ''),
+                'castka' => (float) $this->prodejni_cena,
+                'kategorie' => 'Bazar',
+                'zpusob' => $this->zpusob_uhrady,
+            ]);
+        } else {
+            PenezniDenik::where($klic)->delete();
+        }
+    }
+
+    /** Výdaj za výkup v deníku odpovídá aktuální ceně a datu výkupu (doplní se, chybí-li; smaže se při nulové ceně). */
+    public function synchronizujNakup(): void
+    {
+        $klic = ['zdroj' => 'obchod', 'zdroj_id' => $this->id, 'typ' => 'vydej'];
+
+        if ((float) $this->cena > 0) {
+            $existujici = PenezniDenik::where($klic)->first();
+            if ($existujici) {
+                $existujici->update([
+                    'castka' => (float) $this->cena,
+                    'datum' => $this->datum?->toDateString() ?? $existujici->datum,
+                ]);
+            } else {
+                $this->zapisNakupDoDeniku();
+            }
+        } else {
+            PenezniDenik::where($klic)->delete();
+        }
     }
 }

@@ -8,6 +8,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 class SkladPolozkaForm
@@ -29,14 +30,25 @@ class SkladPolozkaForm
                             ->datalist(['HDMI IC', 'Laser', 'Ventilátor', 'Potenciometr', 'Konektor', 'SSD', 'HDD', 'Baterie', 'Kabeláž', 'Ostatní']),
                         TextInput::make('umisteni')->label('Umístění')->maxLength(255),
                     ]),
+                Toggle::make('spotrebni')->label('Spotřební materiál (pasta, tekutý kov, ubrousky…)')
+                    ->helperText('Bez evidence kusů: nakupuje se jako náklad firmy a nenaskladňuje se. Nenabízí se v zakázkách jako „Materiál ze skladu".')
+                    ->live()->columnSpanFull(),
                 Section::make('Zásoby a cena')
                     ->columns(3)
+                    ->hidden(fn (Get $get) => (bool) $get('spotrebni'))
                     ->schema([
                         TextInput::make('mnozstvi_skladem')->label('Množství skladem')->numeric()->default(0)
-                            ->helperText('Mění se nákupy a výdejem na zakázky.'),
+                            ->disabled(fn (string $operation) => $operation === 'edit')
+                            ->dehydrated(fn (string $operation) => $operation === 'create')
+                            ->helperText(fn (string $operation) => $operation === 'edit'
+                                ? 'Mění se jen nákupem, výdejem na zakázku nebo inventurou (tlačítko nahoře).'
+                                : 'Počáteční stav – zapíše se do historie pohybů.'),
                         TextInput::make('min_mnozstvi')->label('Minimální množství')->numeric()->default(0),
                         TextInput::make('cena_ks_prumer')->label('Cena/ks (vážený průměr)')->numeric()->default(0)
-                            ->suffix('Kč')->helperText('Přepočítává se automaticky při naskladnění nákupu.'),
+                            ->suffix('Kč')
+                            ->disabled(fn (string $operation) => $operation === 'edit')
+                            ->dehydrated(fn (string $operation) => $operation === 'create')
+                            ->helperText('Přepočítává se automaticky při naskladnění nákupu.'),
                     ]),
                 Textarea::make('poznamka')->label('Poznámka')->rows(2)->columnSpanFull(),
                 Toggle::make('aktivni')->label('Aktivní')->default(true),

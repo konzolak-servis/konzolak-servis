@@ -1,6 +1,8 @@
 <style>
     * { font-family: dejavusans, sans-serif; }
-    @page { margin: 0 0 44mm 0; }
+    /* 1. strana: plný hlavičkový pruh je přímo v obsahu (horní okraj 0); další strany: kompaktní záhlaví */
+    @page { margin: 19mm 0 44mm 0; margin-header: 0; header: html_dalsi; }
+    @page :first { margin: 0 0 44mm 0; header: _blank; }
     body { color: #1f2937; font-size: 9.5pt; line-height: 1.38; }
 
     /* ---- Hlavičkový pruh ---- */
@@ -14,6 +16,8 @@
     .band .band-firma { padding: 0 14mm 4.5mm; color: #c7cfda; font-size: 6.6pt;
         line-height: 1.3; letter-spacing: -.1px; white-space: nowrap; }
     .band .band-firma strong { color: #E8C77C; }
+    .band-mini td { padding: 2.5mm 14mm; }
+    .band-mini .typ-mini { font-size: 9.5pt; font-weight: bold; color: #E8C77C; }
     .goldrule { height: 0.8mm; background-color: #C8992E; font-size: 0; line-height: 0; }
 
     .wrap { padding: 5mm 14mm 0; }
@@ -32,6 +36,7 @@
     .box { border: .5px solid #d9dee5; border-radius: 1.5mm; padding: 2.5mm 3mm; background: #fbfbfc; }
 
     /* ---- Tabulka položek ---- */
+    .drz { page-break-inside: avoid; }
     table.items { width: 100%; border-collapse: collapse; margin: 2mm 0 3mm; }
     table.items th { background-color: #fff; color: #0F2038; font-size: 7.5pt;
         text-transform: uppercase; letter-spacing: .04em; padding: 2mm 2.5mm; text-align: left;
@@ -73,6 +78,7 @@
             /* ---- Černobílá varianta (tisk) – bez plných barevných ploch, šetří toner ---- */
             .band { background-color: #fff; border-bottom: 0.6mm solid #000; }
             .band-doc, .band-doc .num { color: #000; }
+            .band-mini .typ-mini { color: #000; }
             .band .band-firma { color: #444; }
             .band .band-firma strong { color: #000; }
             .band-logo img { filter: grayscale(100%); }

@@ -22,7 +22,8 @@ class NakupsTable
         return $table
             ->columns([
                 TextColumn::make('cislo')->label('Číslo')->searchable()->sortable(),
-                TextColumn::make('datum')->label('Datum')->date('d.m.Y')->sortable(),
+                TextColumn::make('datum')->label('Datum nákupu')->date('d.m.Y')->sortable(),
+                TextColumn::make('datum_naskladneni')->label('Naskladněno dne')->date('d.m.Y')->placeholder('—')->sortable(),
                 TextColumn::make('dodavatel')->label('Dodavatel')->badge()->searchable(),
                 TextColumn::make('polozky_count')->label('Položek')->counts('polozky'),
                 TextColumn::make('postovne')->label('Poštovné')->money('CZK')->placeholder('—')
@@ -102,6 +103,7 @@ class NakupsTable
                 'stav' => 'dorazilo',
                 'zakazka_id' => $p->zakazka_id,
                 'poznamka' => $znacka,
+                'nakup_id' => $nakup->id,
             ]);
             $vytvoreno++;
         }
