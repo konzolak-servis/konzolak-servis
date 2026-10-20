@@ -126,6 +126,7 @@ class PrehledFinanci extends Page
         $vydaje = (float) PenezniDenik::whereBetween('datum', [$od, $do])->where('typ', 'vydej')->sum('castka');
 
         $hodnotaSkladu = (float) SkladPolozka::query()
+            ->where('spotrebni', false)
             ->selectRaw('COALESCE(SUM(mnozstvi_skladem * cena_ks_prumer), 0) AS h')
             ->value('h');
 

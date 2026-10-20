@@ -29,15 +29,24 @@ class ListSkladPolozkas extends ListRecords
         ];
     }
 
-    /** Platformy jako záložky nad seznamem (v pořadí číselníku). */
+    /**
+     * Záložky: díly (všechny + po platformách), pak zvlášť spotřební materiál a nářadí.
+     * Počty bez bazaru – stejně jako tabulka.
+     */
     public function getTabs(): array
     {
-        $pocty = SkladPolozka::query()
+        $zaklad = fn () => SkladPolozka::query()
+            ->where(fn ($q) => $q->where('kategorie', '!=', 'Bazar')->orWhereNull('kategorie'));
+        $jenDily = fn (Builder $query) => $query->where('druh', 'dil');
+
+        $pocty = $zaklad()->where('druh', 'dil')
             ->selectRaw('platforma, COUNT(*) as pocet')
             ->groupBy('platforma')
             ->pluck('pocet', 'platforma');
 
-        $tabs = ['vse' => Tab::make('Vše')->badge(SkladPolozka::count())];
+        $tabs = ['vse' => Tab::make('Díly')
+            ->badge($zaklad()->where('druh', 'dil')->count())
+            ->modifyQueryUsing($jenDily)];
 
         foreach (Platformy::HODNOTY as $klic => $popisek) {
             if (! isset($pocty[$klic])) {
@@ -46,14 +55,21 @@ class ListSkladPolozkas extends ListRecords
 
             $tabs[$klic] = Tab::make($popisek)
                 ->badge($pocty[$klic])
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('platforma', $klic));
+                ->modifyQueryUsing(fn (Builder $query) => $jenDily($query)->where('platforma', $klic));
         }
 
         $bezPlatformy = (int) ($pocty[''] ?? 0) + (int) ($pocty[null] ?? 0);
         if ($bezPlatformy > 0) {
             $tabs['bez'] = Tab::make('Bez platformy')
                 ->badge($bezPlatformy)
-                ->modifyQueryUsing(fn (Builder $query) => $query->where(fn ($q) => $q->whereNull('platforma')->orWhere('platforma', '')));
+                ->modifyQueryUsing(fn (Builder $query) => $jenDily($query)->where(fn ($q) => $q->whereNull('platforma')->orWhere('platforma', '')));
+        }
+
+        foreach (['spotrebni' => 'Spotřební materiál', 'naradi' => 'Nářadí'] as $druh => $popisek) {
+            $tabs[$druh] = Tab::make($popisek)
+                ->icon($druh === 'naradi' ? 'heroicon-o-wrench-screwdriver' : 'heroicon-o-beaker')
+                ->badge($zaklad()->where('druh', $druh)->count())
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('druh', $druh));
         }
 
         return $tabs;

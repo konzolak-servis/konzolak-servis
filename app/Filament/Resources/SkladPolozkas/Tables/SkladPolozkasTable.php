@@ -32,7 +32,9 @@ class SkladPolozkasTable
                     ->numeric()
                     ->sortable()
                     ->badge()
-                    ->formatStateUsing(fn ($state, $record) => $record->spotrebni ? 'spotřební' : $state)
+                    ->formatStateUsing(fn ($state, $record) => $record->spotrebni
+                        ? mb_strtolower(\App\Models\SkladPolozka::DRUHY[$record->druh] ?? 'bez evidence')
+                        : $state)
                     ->color(fn ($record) => $record->spotrebni ? 'gray' : ($record->pod_minimem ? 'danger' : 'success')),
                 TextColumn::make('pouzito')->label('Použito ×')->sortable()->badge()->color('gray')
                     ->tooltip('Kolikrát byl díl použit v zakázkách – seřaď podle sloupce pro nejčastější.'),

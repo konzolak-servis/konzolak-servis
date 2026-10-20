@@ -19,8 +19,21 @@ class SkladPolozka extends Model
         'spotrebni' => 'boolean',
     ];
 
+    /** Druhy položek: jen díly se evidují po kusech a nabízejí v zakázce. */
+    public const DRUHY = [
+        'dil' => 'Díl',
+        'spotrebni' => 'Spotřební materiál',
+        'naradi' => 'Nářadí',
+    ];
+
     protected static function booted(): void
     {
+        // spotrebni = „bez evidence kusů" – odvozeno z druhu (používají ho nákupy i zakázky).
+        static::saving(function (SkladPolozka $s) {
+            $s->druh = array_key_exists((string) $s->druh, self::DRUHY) ? $s->druh : 'dil';
+            $s->spotrebni = $s->druh !== 'dil';
+        });
+
         // Položka založená rovnou s množstvím = počáteční stav (aby historie pohybů vždy sedla se stavem).
         static::created(function (SkladPolozka $s) {
             if (! $s->spotrebni && (float) $s->mnozstvi_skladem > 0 && ! $s->pohyby()->exists()) {

@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\SkladPolozkas\Schemas;
 
+use App\Models\SkladPolozka;
 use App\Support\Platformy;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -30,12 +32,15 @@ class SkladPolozkaForm
                             ->datalist(['HDMI IC', 'Laser', 'Ventilátor', 'Potenciometr', 'Konektor', 'SSD', 'HDD', 'Baterie', 'Kabeláž', 'Ostatní']),
                         TextInput::make('umisteni')->label('Umístění')->maxLength(255),
                     ]),
-                Toggle::make('spotrebni')->label('Spotřební materiál (pasta, tekutý kov, ubrousky…)')
-                    ->helperText('Bez evidence kusů: nakupuje se jako náklad firmy a nenaskladňuje se. Nenabízí se v zakázkách jako „Materiál ze skladu".')
+                ToggleButtons::make('druh')->label('Druh')
+                    ->options(SkladPolozka::DRUHY)
+                    ->icons(['dil' => 'heroicon-o-cpu-chip', 'spotrebni' => 'heroicon-o-beaker', 'naradi' => 'heroicon-o-wrench-screwdriver'])
+                    ->default('dil')->required()->inline()
+                    ->helperText('Spotřební materiál (pasty, tekutý kov, ubrousky…) a nářadí se neevidují po kusech: nakupují se jako náklad firmy, nenaskladňují se a nenabízejí se v zakázkách jako „Materiál ze skladu".')
                     ->live()->columnSpanFull(),
                 Section::make('Zásoby a cena')
                     ->columns(3)
-                    ->hidden(fn (Get $get) => (bool) $get('spotrebni'))
+                    ->hidden(fn (Get $get) => ($get('druh') ?? 'dil') !== 'dil')
                     ->schema([
                         TextInput::make('mnozstvi_skladem')->label('Množství skladem')->numeric()->default(0)
                             ->disabled(fn (string $operation) => $operation === 'edit')
