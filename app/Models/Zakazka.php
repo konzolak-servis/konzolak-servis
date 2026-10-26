@@ -26,6 +26,7 @@ class Zakazka extends Model
         'postovne_naklad' => 'decimal:2',
         'dobirka' => 'boolean',
         'sleva_jen_prace' => 'boolean',
+        'sleva_pevna' => 'decimal:2',
         'zaruka_mesice' => 'integer',
         'dil_objednany' => 'boolean',
         'zaloha_v_prijmech' => 'boolean',
@@ -41,10 +42,41 @@ class Zakazka extends Model
 
     public const SLEVY = [0 => 'Bez slevy', 5 => '5 %', 10 => '10 %', 15 => '15 %', 20 => '20 %'];
 
-    /** Částka slevy v Kč (procenta z ceny opravy; doprava se neslevňuje). */
+    public const SLEVA_TYPY = ['procenta' => 'Procenta', 'castka' => 'Částka v Kč'];
+
+    /** Výchozí text slevy zadané částkou. */
+    public const SLEVA_POPIS_CASTKA = 'Sleva za výkup';
+
+    /**
+     * Částka slevy v Kč – procenta z ceny opravy, nebo pevná částka (nejvýš do výše ceny).
+     * Doprava se neslevňuje.
+     */
     public function slevaCastka(): float
     {
+        if ($this->sleva_typ === 'castka') {
+            return round(min(max((float) $this->sleva_pevna, 0), max((float) $this->cena_celkem, 0)), 2);
+        }
+
         return round($this->slevaZaklad() * (int) $this->sleva_procent / 100, 2);
+    }
+
+    public function maSlevu(): bool
+    {
+        return $this->sleva_typ === 'castka' ? (float) $this->sleva_pevna > 0 : (int) $this->sleva_procent > 0;
+    }
+
+    /** Text slevy na doklady (bez kódu kuponu), např. „Sleva za výkup" nebo „Sleva 10 % z práce". */
+    public function slevaPopis(): string
+    {
+        if (filled($this->sleva_popis)) {
+            return trim($this->sleva_popis);
+        }
+
+        if ($this->sleva_typ === 'castka') {
+            return 'Sleva';
+        }
+
+        return 'Sleva ' . (int) $this->sleva_procent . ' %' . ($this->sleva_jen_prace ? ' z práce' : '');
     }
 
     /**
@@ -136,6 +168,14 @@ class Zakazka extends Model
         static::saving(function (Zakazka $z) {
             if (in_array($z->stav, self::STAVY_HOTOVO, true) && ! $z->datum_vyrizeni) {
                 $z->datum_vyrizeni = now()->toDateString();
+            }
+
+            // Platí vždy jen jeden druh slevy – druhý se vynuluje (součty v přehledech s tím počítají).
+            if ($z->sleva_typ === 'castka') {
+                $z->sleva_procent = 0;
+            } else {
+                $z->sleva_typ = 'procenta';
+                $z->sleva_pevna = 0;
             }
         });
 

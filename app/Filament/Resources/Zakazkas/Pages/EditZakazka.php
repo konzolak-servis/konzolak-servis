@@ -235,9 +235,9 @@ class EditZakazka extends EditRecord
                         }
                     }
 
-                    if ($this->record->sleva_procent > 0) {
+                    if ($this->record->slevaCastka() > 0) {
                         $f->polozky()->create([
-                            'popis' => 'Sleva ' . $this->record->sleva_procent . ' %' . ($this->record->sleva_jen_prace ? ' z práce' : '')
+                            'popis' => $this->record->slevaPopis()
                                 . ($this->record->sleva_kod ? ' (' . $this->record->sleva_kod . ')' : ''),
                             'mnozstvi' => 1,
                             'cena' => -1 * $this->record->slevaCastka(),

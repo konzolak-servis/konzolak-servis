@@ -67,11 +67,11 @@
             @elseif ($z->zpusob_uhrady === 'hotove' && $z->doplatek() > 0)
                 <strong>Platba hotově</strong> {{ $z->zpusob_vydani === 'odeslani' ? 'dobírkou' : 'při vyzvednutí' }}.
             @endif
-            @if ($z->zaloha > 0 || $z->cena_dopravy > 0 || $z->sleva_procent > 0)
+            @if ($z->zaloha > 0 || $z->cena_dopravy > 0 || $z->slevaCastka() > 0)
                 <div style="margin-top:1mm;font-size:8pt;color:#374151">
                     Cena celkem {{ number_format($z->cena_celkem, 0, ',', ' ') }} Kč
-                    @if ($z->sleva_procent > 0)
-                        &nbsp;−&nbsp; sleva {{ $z->sleva_procent }} %{{ $z->sleva_jen_prace ? ' z práce' : '' }} ({{ number_format($z->slevaCastka(), 0, ',', ' ') }} Kč){{ $z->sleva_kod ? ', ' . $z->sleva_kod : '' }}
+                    @if ($z->slevaCastka() > 0)
+                        &nbsp;−&nbsp; {{ mb_strtolower(mb_substr($z->slevaPopis(), 0, 1)) . mb_substr($z->slevaPopis(), 1) }} ({{ number_format($z->slevaCastka(), 0, ',', ' ') }} Kč){{ $z->sleva_kod ? ', ' . $z->sleva_kod : '' }}
                     @endif
                     @if ($z->cena_dopravy > 0)
                         &nbsp;+&nbsp; doprava {{ number_format($z->cena_dopravy, 0, ',', ' ') }} Kč

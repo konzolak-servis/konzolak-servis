@@ -87,8 +87,7 @@ class PolozkyRelationManager extends RelationManager
                             ->label(function () {
                                 $z = $this->zakazkaCerstva();
 
-                                return 'Sleva ' . (int) $z->sleva_procent . ' %' . ($z->sleva_jen_prace ? ' (jen z práce)' : '')
-                                    . ($z->sleva_kod ? ' · ' . $z->sleva_kod : '');
+                                return $z->slevaPopis() . ($z->sleva_kod ? ' · ' . $z->sleva_kod : '');
                             })
                             ->using(fn (Builder $query) => -1 * $this->slevaCastka())
                             ->visible(fn () => $this->slevaCastka() > 0)

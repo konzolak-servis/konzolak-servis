@@ -134,7 +134,7 @@ class Prehledy extends Page
         for ($m = 1; $m <= 12; $m++) {
             $servis = (float) Zakazka::whereIn('stav', ['vydano', 'nerentabilni'])
                 ->whereYear('datum_vyrizeni', $rok)->whereMonth('datum_vyrizeni', $m)
-                ->sum(\Illuminate\Support\Facades\DB::raw('cena_celkem - cena_celkem * sleva_procent / 100 + cena_dopravy'));
+                ->sum(\Illuminate\Support\Facades\DB::raw('cena_celkem - cena_celkem * sleva_procent / 100 - CASE WHEN sleva_pevna > cena_celkem THEN cena_celkem ELSE sleva_pevna END + cena_dopravy'));
             $fakt = (float) PenezniDenik::where('zdroj', 'faktura')->whereYear('datum', $rok)->whereMonth('datum', $m)->sum('castka');
 
             $out[] = [

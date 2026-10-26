@@ -116,8 +116,8 @@ class PenezniDenik extends Model
                 foreach ($z->polozky->where('uctovat', true) as $p) {
                     $radky[] = '• ' . $e($p->nazev) . ' – ' . rtrim(rtrim(number_format((float) $p->mnozstvi, 3, ',', ' '), '0'), ',') . ' × ' . $kc($p->cena_ks) . ' = ' . $kc($p->cena_celkem);
                 }
-                if ($z->sleva_procent > 0) {
-                    $radky[] = '• sleva ' . $z->sleva_procent . ' %' . ($z->sleva_jen_prace ? ' z práce' : '') . ': −' . $kc($z->slevaCastka());
+                if ($z->slevaCastka() > 0) {
+                    $radky[] = '• ' . $e(mb_strtolower(mb_substr($z->slevaPopis(), 0, 1)) . mb_substr($z->slevaPopis(), 1)) . ': −' . $kc($z->slevaCastka());
                 }
                 if ((float) $z->cena_dopravy > 0) {
                     $radky[] = '• doprava ' . $kc($z->cena_dopravy);

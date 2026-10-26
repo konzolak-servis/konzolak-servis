@@ -343,12 +343,29 @@ class ZakazkaForm
                         TextInput::make('sleva_kod')->label('Slevový kód / kupon')
                             ->placeholder('např. UPLATNĚN KUPON ABC123')
                             ->maxLength(120),
+                        \Filament\Forms\Components\ToggleButtons::make('sleva_typ')->label('Druh slevy')
+                            ->options(Zakazka::SLEVA_TYPY)->default('procenta')->inline()->live()
+                            ->afterStateUpdated(function ($state, Get $get, Set $set) {
+                                if ($state === 'castka' && blank($get('sleva_popis'))) {
+                                    $set('sleva_popis', Zakazka::SLEVA_POPIS_CASTKA);
+                                }
+                            }),
                         \Filament\Forms\Components\Select::make('sleva_procent')->label('Sleva')
                             ->options(Zakazka::SLEVY)->default(0)->native(false)->live()
-                            ->helperText('Odečte se automaticky od ceny opravy (bez dopravy).'),
+                            ->helperText('Odečte se automaticky od ceny opravy (bez dopravy).')
+                            ->visible(fn (Get $get) => $get('sleva_typ') !== 'castka'),
+                        TextInput::make('sleva_pevna')->label('Sleva')->numeric()->minValue(0)->default(0)->suffix('Kč')
+                            ->live(onBlur: true)
+                            ->helperText('Libovolná částka – odečte se od ceny opravy (bez dopravy), nejvýš do její výše.')
+                            ->visible(fn (Get $get) => $get('sleva_typ') === 'castka'),
+                        TextInput::make('sleva_popis')->label('Text slevy na dokladech')
+                            ->placeholder(fn (Get $get) => $get('sleva_typ') === 'castka' ? Zakazka::SLEVA_POPIS_CASTKA : 'automaticky, např. Sleva 10 %')
+                            ->datalist([Zakazka::SLEVA_POPIS_CASTKA, 'Věrnostní sleva', 'Sleva za opakovanou opravu'])
+                            ->maxLength(120)
+                            ->visible(fn (Get $get) => $get('sleva_typ') === 'castka' ? (float) $get('sleva_pevna') > 0 : (int) $get('sleva_procent') > 0),
                         \Filament\Forms\Components\Toggle::make('sleva_jen_prace')->label('Sleva jen na práci (nepočítat na materiál)')
                             ->helperText('Sleva se spočítá jen z účtovaných prací. Účtované díly (materiál) se neslevňují.')
-                            ->visible(fn (Get $get) => (int) $get('sleva_procent') > 0),
+                            ->visible(fn (Get $get) => $get('sleva_typ') !== 'castka' && (int) $get('sleva_procent') > 0),
 
                         \Filament\Forms\Components\Radio::make('zpusob_vydani')->label('Vyzvednutí')
                             ->options(Zakazka::ZPUSOBY_VYDANI)
