@@ -27,9 +27,11 @@ class ObjednavkaDiluForm
                     TextInput::make('dodavatel')->label('Dodavatel')
                         ->datalist(['Alza', 'Allegro', 'Konzoliste', 'Hadex', 'AliExpress', 'GM Electronic']),
                     TextInput::make('mnozstvi')->label('Množství')->numeric()->default(1),
-                    TextInput::make('cena_odhad')->label('Odhad ceny')->numeric()->suffix('Kč'),
+                    TextInput::make('cena_odhad')->label('Cena dílu')->numeric()->suffix('Kč'),
+                    TextInput::make('postovne')->label('Poštovné / doprava')->numeric()->default(0)->suffix('Kč')
+                        ->helperText('Při naskladnění se přičte k výdaji v deníku, do skladové ceny dílu se nepočítá.'),
 
-                    Select::make('zakazka_id')->label('K zakázce')
+                    Select::make('zakazka_id')->label('K zakázce')->columnSpanFull()
                         ->options(fn () => Zakazka::whereNotIn('stav', ['vydano', 'storno'])
                             ->with('zakaznik')->get()
                             ->mapWithKeys(fn ($z) => [$z->id => $z->cislo . ' – ' . ($z->zakaznik?->nazev ?? '')]))

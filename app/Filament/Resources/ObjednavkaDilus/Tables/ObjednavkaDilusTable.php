@@ -51,7 +51,10 @@ class ObjednavkaDilusTable
                         : null)
                     ->color(fn (ObjednavkaDilu $r) => $r->stav === 'objednano' && $r->ocekavane_doruceni
                         && $r->ocekavane_doruceni->isPast() ? 'danger' : null),
-                TextColumn::make('cena_odhad')->label('Odhad')->money('CZK')->toggleable(),
+                TextColumn::make('cena_odhad')->label('Cena')->money('CZK')->toggleable()
+                    ->description(fn (ObjednavkaDilu $r) => (float) $r->postovne > 0
+                        ? '+ poštovné ' . number_format((float) $r->postovne, 0, ',', ' ') . ' Kč'
+                        : null),
             ])
             ->filters([
                 SelectFilter::make('stav')->label('Stav')->options(ObjednavkaDilu::STAVY)
@@ -91,7 +94,7 @@ class ObjednavkaDilusTable
                                 : $record->cena_odhad))
                             ->helperText('Skutečně zaplacená cena za ' . rtrim(rtrim(number_format((float) $record->mnozstvi, 3, ',', ' '), '0'), ',') . ' ks (bez poštovného).'),
                         TextInput::make('postovne')->label('Poštovné / doprava')->numeric()->suffix('Kč')
-                            ->default((float) ($record->nakup_id ? \App\Models\Nakup::whereKey($record->nakup_id)->value('postovne') : 0))
+                            ->default((float) ($record->nakup_id ? \App\Models\Nakup::whereKey($record->nakup_id)->value('postovne') : $record->postovne))
                             ->helperText('Přičte se k výdaji v deníku, do skladové ceny dílu se nepočítá.'),
                         DatePicker::make('datum')->label('Datum nákupu')->native(false)
                             ->default($record->nakup_id

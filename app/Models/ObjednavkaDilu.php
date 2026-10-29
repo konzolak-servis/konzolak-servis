@@ -18,6 +18,7 @@ class ObjednavkaDilu extends Model
         'doruceno_datum' => 'date',
         'mnozstvi' => 'decimal:3',
         'cena_odhad' => 'decimal:2',
+        'postovne' => 'decimal:2',
     ];
 
     public const STAVY = [
