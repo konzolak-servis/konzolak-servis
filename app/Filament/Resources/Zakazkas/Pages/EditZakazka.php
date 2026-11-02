@@ -172,12 +172,21 @@ class EditZakazka extends EditRecord
                         ->send();
                 }),
 
+            // Faktura už existuje → rovnou ji otevřít (bez okna „Vytvořit fakturu").
+            Action::make('otevrit_fakturu')
+                ->label(fn () => 'Otevřít fakturu ' . $this->record->faktura?->cislo)
+                ->icon('heroicon-o-document-check')
+                ->color('success')
+                ->visible(fn () => (bool) $this->record->faktura)
+                ->url(fn () => $this->record->faktura
+                    ? \App\Filament\Resources\Fakturas\FakturaResource::getUrl('edit', ['record' => $this->record->faktura])
+                    : null),
+
             Action::make('vytvorit_fakturu')
-                ->label(fn () => $this->record->faktura
-                    ? 'Otevřít fakturu ' . $this->record->faktura->cislo
-                    : 'Vytvořit fakturu')
-                ->icon(fn () => $this->record->faktura ? 'heroicon-o-document-check' : 'heroicon-o-document-currency-dollar')
-                ->color(fn () => $this->record->faktura ? 'success' : 'gray')
+                ->label('Vytvořit fakturu')
+                ->icon('heroicon-o-document-currency-dollar')
+                ->color('gray')
+                ->visible(fn () => ! $this->record->faktura)
                 ->modalHeading('Vytvořit fakturu')
                 ->modalDescription('Variabilní symbol se vyplní číslem zakázky. Fakturuješ-li na firmu, zadej IČO – odběratel se najde nebo načte z registru ARES.')
                 ->modalSubmitActionLabel('Vytvořit fakturu')
