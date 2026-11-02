@@ -37,6 +37,7 @@ class FakturasTable
                     ->icon('heroicon-o-printer')
                     ->url(fn ($record) => $record->tiskUrl())
                     ->openUrlInNewTab(),
+                \App\Support\FakturaMailer::akce()->label('Odeslat'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

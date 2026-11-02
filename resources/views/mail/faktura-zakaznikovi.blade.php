@@ -2,7 +2,7 @@
     <p style="margin:0 0 14px;">Dobrý den,</p>
 
     <p style="margin:0 0 14px;">
-        v příloze zasíláme fakturu <strong>{{ $f->cislo }}</strong>@if ($f->zakazka) k zakázce
+        v příloze zasíláme fakturu <strong>{{ $f->cislo }}</strong>{{ ! empty($sProtokolem) ? ' a servisní protokol' : '' }}@if ($f->zakazka) k zakázce
         <strong>{{ $f->zakazka->cislo }}</strong>@endif.
     </p>
 

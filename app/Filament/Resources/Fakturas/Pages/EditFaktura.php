@@ -25,6 +25,7 @@ class EditFaktura extends EditRecord
                 ->icon('heroicon-o-printer')
                 ->url(fn () => $this->record->tiskUrl(['cb' => 1]))
                 ->openUrlInNewTab(),
+            \App\Support\FakturaMailer::akce()->color('success'),
             DeleteAction::make(),
         ];
     }
