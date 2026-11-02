@@ -420,8 +420,7 @@ class EditZakazka extends EditRecord
         }
 
         try {
-            $pdf = (new \App\Http\Controllers\TiskController)->faktura($f)->getContent();
-            \Illuminate\Support\Facades\Mail::to($email)->send(new \App\Mail\FakturaZakaznikovi($f, $pdf));
+            \App\Support\FakturaMailer::odesli($f, $email);
 
             Notification::make()->title('Faktura ' . $f->cislo . ' vytvořena a odeslána na ' . $email)
                 ->success()->send();

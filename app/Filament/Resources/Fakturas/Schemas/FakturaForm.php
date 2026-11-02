@@ -69,7 +69,8 @@ class FakturaForm
                             }),
 
                         DatePicker::make('datum_vystaveni')->label('Datum vystavení')->default(now())->native(false),
-                        DatePicker::make('datum_splatnosti')->label('Datum splatnosti')->native(false),
+                        DatePicker::make('datum_splatnosti')->label('Datum splatnosti')->native(false)
+                            ->helperText('Při odeslání e-mailem se vystavení nastaví na den odeslání a splatnost od něj (Nastavení firmy).'),
 
                         Toggle::make('uhrazeno')->label('Uhrazeno')
                             ->helperText('Po zaškrtnutí se přidá příjem do peněžního deníku.'),

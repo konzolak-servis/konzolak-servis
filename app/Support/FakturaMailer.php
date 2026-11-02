@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Http\Controllers\TiskController;
 use App\Mail\FakturaZakaznikovi;
 use App\Models\Faktura;
+use App\Models\Firma;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -16,6 +17,15 @@ class FakturaMailer
 {
     public static function odesli(Faktura $f, string $email, bool $sProtokolem = false): void
     {
+        // Datum vystavení = den odeslání, splatnost od něj (Nastavení firmy → Splatnost faktur).
+        // U uhrazené faktury se data nemění (posílá se jen kopie).
+        if (! $f->uhrazeno) {
+            $f->update([
+                'datum_vystaveni' => now()->toDateString(),
+                'datum_splatnosti' => now()->addDays((int) (Firma::get()->splatnost_dni ?: 14))->toDateString(),
+            ]);
+        }
+
         $tisk = new TiskController;
         $pdf = $tisk->faktura($f)->getContent();
 
@@ -43,11 +53,16 @@ class FakturaMailer
                     ->default(true)
                     ->visible((bool) $record->zakazka),
             ])
-            ->action(function (Faktura $record, array $data) {
+            ->action(function (Faktura $record, array $data, $livewire) {
                 $sProtokolem = ! empty($data['protokol']) && $record->zakazka;
 
                 try {
                     self::odesli($record, trim($data['email']), (bool) $sProtokolem);
+
+                    // v detailu faktury promítnout nová data do formuláře (ať je „Uložit" nepřepíše)
+                    if (method_exists($livewire, 'refreshFormData')) {
+                        $livewire->refreshFormData(['datum_vystaveni', 'datum_splatnosti']);
+                    }
 
                     Notification::make()
                         ->title(($sProtokolem ? 'Faktura a protokol odeslány' : 'Faktura odeslána') . ' na ' . trim($data['email']))
