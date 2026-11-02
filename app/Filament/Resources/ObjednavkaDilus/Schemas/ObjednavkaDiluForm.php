@@ -5,6 +5,7 @@ namespace App\Filament\Resources\ObjednavkaDilus\Schemas;
 use App\Models\ObjednavkaDilu;
 use App\Models\Zakazka;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -42,6 +43,17 @@ class ObjednavkaDiluForm
                     DatePicker::make('doruceno_datum')->label('Doručeno dne')->native(false),
 
                     Textarea::make('poznamka')->label('Poznámka')->rows(2)->columnSpanFull(),
+
+                    FileUpload::make('doklad_soubor')->label('Doklad o koupi (účtenka / faktura)')
+                        ->disk('public')
+                        ->directory('nakupy')
+                        ->acceptedFileTypes(['application/pdf', 'image/*'])
+                        ->maxSize(10240)
+                        ->downloadable()
+                        ->openable()
+                        ->previewable()
+                        ->helperText('Při naskladnění se připojí k nákupu (uvidíš ho v Nákupech i u výdaje v deníku).')
+                        ->columnSpanFull(),
                 ]),
         ]);
     }

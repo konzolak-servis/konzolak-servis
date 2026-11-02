@@ -8,6 +8,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -101,6 +102,15 @@ class ObjednavkaDilusTable
                                 ? \App\Models\Nakup::whereKey($record->nakup_id)->value('datum')
                                 : ($record->doruceno_datum ?? now()))
                             ->helperText('Naskladnění se zapíše dnešním dnem (kdy díl dorazil).'),
+                        FileUpload::make('doklad_soubor')->label('Doklad o koupi (účtenka / faktura)')
+                            ->disk('public')
+                            ->directory('nakupy')
+                            ->acceptedFileTypes(['application/pdf', 'image/*'])
+                            ->maxSize(10240)
+                            ->openable()
+                            ->default($record->doklad_soubor ?: ($record->nakup_id
+                                ? \App\Models\Nakup::whereKey($record->nakup_id)->value('doklad_soubor')
+                                : null)),
                         Toggle::make('neskladovat')->label('Nepočítat jako materiál')
                             ->default(false)->live()
                             ->helperText('Díl se nenaskladní a výdaj půjde do peněžního deníku jako „Náklady firmy" (ne jako materiál). Hodí se u nářadí, vybavení apod.'),
@@ -147,6 +157,7 @@ class ObjednavkaDilusTable
                 $nakup->update([
                     'datum' => $data['datum'] ?? $nakup->datum,
                     'postovne' => (float) ($data['postovne'] ?? $nakup->postovne),
+                    'doklad_soubor' => ($data['doklad_soubor'] ?? null) ?: $nakup->doklad_soubor,
                 ]);
                 $polozka = $nakup->polozky->first();
                 $polozka->update([
@@ -158,6 +169,7 @@ class ObjednavkaDilusTable
                     'dodavatel' => $o->dodavatel,
                     'datum' => $data['datum'] ?? now()->toDateString(),
                     'postovne' => (float) ($data['postovne'] ?? 0),
+                    'doklad_soubor' => ($data['doklad_soubor'] ?? null) ?: null,
                 ]);
                 $polozka = $nakup->polozky()->create([
                     'nazev' => $o->nazev_dilu,
@@ -170,7 +182,7 @@ class ObjednavkaDilusTable
             $nakup->load('polozky');
             $nakup->naskladnit();
 
-            $o->update(['nakup_id' => $nakup->id]);
+            $o->update(['nakup_id' => $nakup->id, 'doklad_soubor' => $nakup->doklad_soubor ?: $o->doklad_soubor]);
 
             if (empty($data['neskladovat']) && ! empty($data['do_zakazky']) && $o->zakazka) {
                 $sklad = $polozka->fresh()->skladPolozka;

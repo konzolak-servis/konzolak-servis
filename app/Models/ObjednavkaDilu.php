@@ -35,6 +35,11 @@ class ObjednavkaDilu extends Model
         });
 
         static::saved(function (ObjednavkaDilu $o) {
+            // Doklad nahraný k už naskladněné objednávce → připoj ho i k jejímu nákupu.
+            if ($o->wasChanged('doklad_soubor') && $o->doklad_soubor && $o->nakup_id) {
+                Nakup::whereKey($o->nakup_id)->update(['doklad_soubor' => $o->doklad_soubor]);
+            }
+
             // Když díl dorazil a zakázka čekala na díl, vrať ji do práce (diagnostika)
             // a poznač si to – ať v zakázce nesvítí „čeká na díl".
             if ($o->wasChanged('stav') && $o->stav === 'dorazilo'
