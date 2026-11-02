@@ -17,6 +17,7 @@ class Zakazka extends Model
     protected $casts = [
         'datum_prijeti' => 'date',
         'datum_vyrizeni' => 'date',
+        'datum_vydani' => 'date',
         'zaloha_datum' => 'date',
         'odeslano_datum' => 'date',
         'predpokladana_cena' => 'decimal:2',
@@ -170,6 +171,13 @@ class Zakazka extends Model
                 $z->datum_vyrizeni = now()->toDateString();
             }
 
+            // Vydáno / nerentabilní = zaplaceno: datum vydání určuje datum příjmu v deníku.
+            if (in_array($z->stav, self::STAVY_ZAPLACENO, true)) {
+                $z->datum_vydani ??= now()->toDateString();
+            } elseif ($z->isDirty('stav')) {
+                $z->datum_vydani = null;
+            }
+
             // Platí vždy jen jeden druh slevy – druhý se vynuluje (součty v přehledech s tím počítají).
             if ($z->sleva_typ === 'castka') {
                 $z->sleva_procent = 0;
@@ -243,7 +251,7 @@ class Zakazka extends Model
 
         if (in_array($this->stav, self::STAVY_ZAPLACENO, true) && $castka > 0) {
             PenezniDenik::updateOrCreate($klic, [
-                'datum' => ($this->datum_vyrizeni ?? now())->toDateString(),
+                'datum' => ($this->datum_vydani ?? $this->datum_vyrizeni ?? now())->toDateString(),
                 'typ' => 'prijem',
                 'popis' => ($zalohaZapoctena ? 'Doplatek ' : 'Oprava ') . $this->cislo
                     . ($this->zakaznik ? ' – ' . $this->zakaznik->nazev : ''),

@@ -135,7 +135,7 @@ class PrehledFinanci extends Page
             'vydaje' => $vydaje,
             'cisty' => $prijmy - $vydaje,
             'hodnota_skladu' => $hodnotaSkladu,
-            'pocet_oprav' => Zakazka::where('stav', 'vydano')->whereBetween('datum_vyrizeni', [$od, $do])->count(),
+            'pocet_oprav' => Zakazka::where('stav', 'vydano')->whereRaw('COALESCE(datum_vydani, datum_vyrizeni) BETWEEN ? AND ?', [$od, $do])->count(),
         ];
     }
 

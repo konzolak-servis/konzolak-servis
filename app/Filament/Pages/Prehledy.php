@@ -77,7 +77,7 @@ class Prehledy extends Page
 
         $zk = Zakazka::with('zarizeni')
             ->whereIn('stav', ['vydano', 'nerentabilni'])
-            ->whereYear('datum_vyrizeni', $rok)
+            ->whereRaw('YEAR(COALESCE(datum_vydani, datum_vyrizeni)) = ?', [$rok])
             ->get()
             ->groupBy(fn ($z) => $z->zarizeni?->kategorie ?: 'jine');
 
@@ -111,7 +111,7 @@ class Prehledy extends Page
             ->join('zakazky', 'zakazky.id', '=', 'zakazka_polozky.zakazka_id')
             ->where('zakazka_polozky.typ', 'prace')
             ->whereIn('zakazky.stav', ['vydano', 'nerentabilni'])
-            ->whereYear('zakazky.datum_vyrizeni', $rok)
+            ->whereRaw('YEAR(COALESCE(zakazky.datum_vydani, zakazky.datum_vyrizeni)) = ?', [$rok])
             ->groupBy('zakazka_polozky.nazev')
             ->selectRaw('zakazka_polozky.nazev, COUNT(*) as pocet, SUM(zakazka_polozky.cena_celkem) as castka')
             ->orderByDesc('pocet')
@@ -133,7 +133,7 @@ class Prehledy extends Page
 
         for ($m = 1; $m <= 12; $m++) {
             $servis = (float) Zakazka::whereIn('stav', ['vydano', 'nerentabilni'])
-                ->whereYear('datum_vyrizeni', $rok)->whereMonth('datum_vyrizeni', $m)
+                ->whereRaw('YEAR(COALESCE(datum_vydani, datum_vyrizeni)) = ? AND MONTH(COALESCE(datum_vydani, datum_vyrizeni)) = ?', [$rok, $m])
                 ->sum(\Illuminate\Support\Facades\DB::raw('cena_celkem - cena_celkem * sleva_procent / 100 - CASE WHEN sleva_pevna > cena_celkem THEN cena_celkem ELSE sleva_pevna END + cena_dopravy'));
             $fakt = (float) PenezniDenik::where('zdroj', 'faktura')->whereYear('datum', $rok)->whereMonth('datum', $m)->sum('castka');
 

@@ -199,7 +199,7 @@ class ZakazkaForm
                     ->schema([
                         TextInput::make('cislo')->label('Číslo zakázky')->disabled()->dehydrated(false)
                             ->placeholder('přiřadí se automaticky'),
-                        Select::make('stav')->label('Stav')->options(Zakazka::STAVY)->default('prijato')->required(),
+                        Select::make('stav')->label('Stav')->options(Zakazka::STAVY)->default('prijato')->required()->live(),
                         TextInput::make('zaruka_mesice')->label('Záruka (měsíců)')->numeric()->default(3),
 
                         Placeholder::make('_reklamace')
@@ -299,6 +299,9 @@ class ZakazkaForm
                             ->columnSpan(2),
                         DatePicker::make('datum_prijeti')->label('Datum přijetí')->default(now())->native(false),
                         DatePicker::make('datum_vyrizeni')->label('Datum vyřízení')->native(false),
+                        DatePicker::make('datum_vydani')->label('Datum vydání (platby)')->native(false)
+                            ->helperText('Podle něj se zapisuje příjem do peněžního deníku.')
+                            ->visible(fn (Get $get) => in_array($get('stav'), Zakazka::STAVY_ZAPLACENO, true)),
                         TextInput::make('predpokladana_cena')->label('Předpokládaná cena')->numeric()->suffix('Kč'),
                     ]),
 
