@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Zpravas\Tables;
 
 use App\Models\Zprava;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -12,6 +13,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 class ZpravasTable
 {
@@ -65,6 +67,16 @@ class ZpravasTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('precteno')
+                        ->label('Označit jako přečtené')
+                        ->icon('heroicon-o-envelope-open')
+                        ->action(fn (Collection $records) => Zprava::whereKey($records->modelKeys())->whereNull('precteno_at')->update(['precteno_at' => now()]))
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('neprecteno')
+                        ->label('Označit jako nepřečtené')
+                        ->icon('heroicon-o-envelope')
+                        ->action(fn (Collection $records) => Zprava::whereKey($records->modelKeys())->update(['precteno_at' => null]))
+                        ->deselectRecordsAfterCompletion(),
                     DeleteBulkAction::make(),
                 ]),
             ]);

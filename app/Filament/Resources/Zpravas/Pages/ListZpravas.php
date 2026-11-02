@@ -24,6 +24,21 @@ class ListZpravas extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('vse_precteno')
+                ->label('Označit vše jako přečtené')
+                ->icon('heroicon-o-envelope-open')
+                ->color('gray')
+                ->visible(fn () => Zprava::neprectene()->exists())
+                ->requiresConfirmation()
+                ->modalHeading('Označit vše jako přečtené?')
+                ->modalDescription(fn () => 'Nepřečtených zpráv: ' . Zprava::neprectene()->count() . '. Spam se nemění.')
+                ->modalSubmitActionLabel('Označit')
+                ->action(function () {
+                    $pocet = Zprava::neprectene()->update(['precteno_at' => now()]);
+
+                    Notification::make()->title('Označeno jako přečtené: ' . $pocet)->success()->send();
+                }),
+
             Action::make('napsat')
                 ->label('Napsat e-mail')
                 ->icon('heroicon-o-pencil-square')
