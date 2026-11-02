@@ -180,6 +180,7 @@ class Posta
         string $odesilatel = null,
         ?Zprava $odpovedNa = null,
         ?int $zakazkaId = null,
+        ?int $zakaznikId = null,
     ): bool {
         $klic = config('services.brevo.key');
         $odesilatel ??= config('mail.from.address');
@@ -233,7 +234,7 @@ class Posta
             'datum' => now(),
             'precteno_at' => now(),
             'zakazka_id' => $zakazkaId ?? $odpovedNa?->zakazka_id,
-            'zakaznik_id' => $odpovedNa?->zakaznik_id,
+            'zakaznik_id' => $zakaznikId ?? $odpovedNa?->zakaznik_id,
             'spam' => false,
         ]);
 
