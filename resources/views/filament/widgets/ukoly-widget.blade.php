@@ -78,7 +78,9 @@
         .ks-row__popis{ min-width:0; }
         .ks-row__tag{ display:inline-block; margin-left:.4rem; font-size:.7rem; padding:.05rem .4rem;
             border-radius:.35rem; background:color-mix(in srgb, var(--ac) 15%, transparent); color:var(--ac); white-space:nowrap; }
-        .ks-row__meta{ text-align:right; color:var(--dim); white-space:nowrap; font-size:.8rem; }
+        .ks-row__meta{ text-align:right; color:var(--dim); white-space:nowrap; font-size:.8rem;
+            max-width:9rem; overflow:hidden; text-overflow:ellipsis; }
+        .ks-row__tag{ max-width:100%; overflow:hidden; text-overflow:ellipsis; vertical-align:bottom; }
         .ks-row__castka{ display:block; color:var(--txt); font-weight:600; }
         .ks-grp__vse{ display:inline-block; margin-top:.4rem; font-size:.8rem; color:#C8992E; text-decoration:none; }
         .ks-grp__vse:hover{ text-decoration:underline; }

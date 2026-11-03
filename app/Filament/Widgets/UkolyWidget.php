@@ -56,7 +56,7 @@ class UkolyWidget extends Widget
         // 2) Díl dorazil – vrátit do práce -------------------------------------
         $dilDorazil = ObjednavkaDilu::with(['zakazka.zakaznik', 'zakazka.zarizeni'])
             ->where('stav', 'dorazilo')
-            ->whereHas('zakazka', fn ($q) => $q->whereNotIn('stav', ['vydano', 'storno', 'nerentabilni']))
+            ->whereHas('zakazka', fn ($q) => $q->whereNotIn('stav', ['hotovo', 'vydano', 'storno', 'nerentabilni']))
             ->get()
             ->groupBy('zakazka_id')
             ->map(function ($objednavky) {
@@ -110,12 +110,28 @@ class UkolyWidget extends Widget
             ->map(function (Zakazka $z) use (&$hotovoIds) {
                 $hotovoIds[] = $z->id;
 
+                // Objednávky dílů k zakázce – krátký štítek s dílem a datum místo celé poznámky.
+                $objednane = ObjednavkaDilu::where('zakazka_id', $z->id)->where('stav', 'objednano')
+                    ->orderBy('datum_objednavky')->get();
+                $o = $objednane->first();
+
+                $meta = match (true) {
+                    (bool) $o?->ocekavane_doruceni => 'doručení ' . $o->ocekavane_doruceni->format('d.m.'),
+                    (bool) $o?->datum_objednavky => 'objednáno ' . $o->datum_objednavky->format('d.m.'),
+                    filled($z->dil_info) => Str::limit(trim(preg_replace('/\s+/', ' ', $z->dil_info)), 28),
+                    default => null,
+                };
+
                 return [
                     'cislo' => $z->cislo,
                     'popis' => $this->popisZakazky($z),
-                    'meta' => $z->dil_info ? Str::limit(trim(preg_replace('/\s+/', ' ', $z->dil_info)), 70) : null,
+                    'meta' => $meta,
                     'castka' => null,
-                    'tag' => $z->dil_objednany ? 'díl objednán' : 'díl NEobjednán',
+                    'tag' => match (true) {
+                        $objednane->count() > 1 => $objednane->count() . '× díl',
+                        (bool) $o => Str::limit($o->nazev_dilu, 28),
+                        default => $z->dil_objednany ? 'díl objednán' : 'díl NEobjednán',
+                    },
                     'urgent' => ! $z->dil_objednany,
                     'url' => ZakazkaResource::getUrl('edit', ['record' => $z->id]),
                 ];
