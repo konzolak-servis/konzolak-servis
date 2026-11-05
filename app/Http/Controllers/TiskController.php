@@ -59,7 +59,7 @@ class TiskController extends Controller
 
         return Tisk::pdf('pdf.stitek', [
             'z' => $zakazka,
-            'qr' => Qr::dataUri($this->stavUrl($zakazka), 260),
+            'qr' => Qr::sLogemDataUri($this->stavUrl($zakazka)),
         ], 'Stitek-'.$zakazka->cislo, 'stitek');
     }
 

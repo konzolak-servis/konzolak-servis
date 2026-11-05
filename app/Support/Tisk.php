@@ -23,6 +23,7 @@ class Tisk
                 'format' => [50, 30],
                 'margin_left' => 1.5, 'margin_right' => 1.5, 'margin_top' => 1.5, 'margin_bottom' => 1,
                 'default_font_size' => 6,
+                'autoPageBreak' => false, // dlouhý text se nesmí rozlít na 2. štítek
             ]
             : [
                 'format' => 'A4',
