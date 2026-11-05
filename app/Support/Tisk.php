@@ -9,7 +9,7 @@ class Tisk
 {
     /**
      * Vyrenderuje blade šablonu do PDF a vrátí ji k zobrazení v prohlížeči (k tisku).
-     * $format: 'a4' (výchozí) nebo 'stitek' (malý štítek na zařízení 90 × 50 mm).
+     * $format: 'a4' (výchozí) nebo 'stitek' (malý štítek na zařízení 50 × 30 mm).
      */
     public static function pdf(string $view, array $data, string $filename, string $format = 'a4'): Response
     {
@@ -20,9 +20,9 @@ class Tisk
 
         $config = $format === 'stitek'
             ? [
-                'format' => [90, 50],
-                'margin_left' => 3, 'margin_right' => 3, 'margin_top' => 3, 'margin_bottom' => 3,
-                'default_font_size' => 8,
+                'format' => [50, 30],
+                'margin_left' => 1.5, 'margin_right' => 1.5, 'margin_top' => 1.5, 'margin_bottom' => 1,
+                'default_font_size' => 6,
             ]
             : [
                 'format' => 'A4',
