@@ -114,10 +114,11 @@ class Zakazka extends Model
      */
     public function tiskUrl(string $co, array $query = []): string
     {
-        $nazvy = ['doklad' => 'Doklad-o-prevzeti', 'protokol' => 'Servisni-protokol', 'stitek' => 'Stitek'];
+        $nazvy = ['doklad' => 'Doklad-o-prevzeti', 'protokol' => 'Servisni-protokol', 'stitek' => 'Stitek', 'stitek-png' => 'Stitek'];
+        $pripona = str_ends_with($co, '-png') ? '.png' : '.pdf';
 
         return route('tisk.zakazka.' . $co, array_merge(
-            ['zakazka' => $this, 'soubor' => ($nazvy[$co] ?? $co) . '-' . $this->cislo . '.pdf'],
+            ['zakazka' => $this, 'soubor' => ($nazvy[$co] ?? $co) . '-' . $this->cislo . $pripona],
             $query,
         ));
     }

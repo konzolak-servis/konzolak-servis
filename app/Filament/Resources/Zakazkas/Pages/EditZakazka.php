@@ -309,6 +309,10 @@ class EditZakazka extends EditRecord
                     ->icon('heroicon-o-tag')
                     ->url(fn () => $this->record->tiskUrl('stitek'))
                     ->openUrlInNewTab(),
+                Action::make('stitek_png')
+                    ->label('Štítek – stáhnout PNG')
+                    ->icon('heroicon-o-photo')
+                    ->url(fn () => $this->record->tiskUrl('stitek-png')),
 
                 Action::make('mail_protokol')
                     ->label('Poslat protokol e-mailem')

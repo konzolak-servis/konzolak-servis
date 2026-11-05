@@ -63,6 +63,37 @@ class TiskController extends Controller
         ], 'Stitek-'.$zakazka->cislo, 'stitek');
     }
 
+    /** Štítek jako PNG ke stažení (600 DPI, 50 × 30 mm = 1181 × 709 px) – převod PDF přes Ghostscript. */
+    public function stitekPng(Zakazka $zakazka): Response
+    {
+        $pdf = $this->stitek($zakazka)->getContent();
+
+        $adr = storage_path('app/mpdf');
+        $vstup = tempnam($adr, 'stitek') . '.pdf';
+        $vystup = substr($vstup, 0, -4) . '.png';
+        file_put_contents($vstup, $pdf);
+
+        try {
+            $gs = \Illuminate\Support\Facades\Process::timeout(30)->run([
+                PHP_OS_FAMILY === 'Windows' ? 'gswin64c' : 'gs',
+                '-q', '-dSAFER', '-dBATCH', '-dNOPAUSE',
+                '-sDEVICE=png16m', '-r600', '-dTextAlphaBits=4', '-dGraphicsAlphaBits=4',
+                '-sOutputFile=' . $vystup, $vstup,
+            ]);
+            abort_unless($gs->successful() && is_file($vystup), 500, 'Převod štítku na PNG se nepodařil (chybí Ghostscript?).');
+            $png = file_get_contents($vystup);
+        } finally {
+            @unlink($vstup);
+            @unlink($vystup);
+            @unlink(substr($vstup, 0, -4)); // prázdný soubor z tempnam
+        }
+
+        return response($png, 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'attachment; filename="Stitek-' . $zakazka->cislo . '.png"',
+        ]);
+    }
+
     public function faktura(Faktura $faktura): Response
     {
         $faktura->load(['zakaznik', 'polozky']);
