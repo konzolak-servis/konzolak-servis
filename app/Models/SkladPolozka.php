@@ -115,6 +115,34 @@ class SkladPolozka extends Model
     }
 
     /**
+     * Přepočet váženého průměru z historie pohybů (stejně jako prijem(): výdej a korekce průměr nemění).
+     * $vynechat = id pohybů, které se nezapočítají; $navyseni = [pohyb_id => Kč navíc za kus].
+     */
+    public function prumerZHistorie(array $vynechat = [], array $navyseni = []): float
+    {
+        [$q, $prumer] = [0.0, 0.0];
+
+        foreach ($this->pohyby()->orderBy('id')->get() as $p) {
+            if (in_array($p->id, $vynechat, true)) {
+                continue;
+            }
+            $m = (float) $p->mnozstvi;
+            if ($p->typ === 'prijem') {
+                $c = (float) $p->cena_ks + ($navyseni[$p->id] ?? 0);
+                $nq = $q + $m;
+                $prumer = $nq > 0 ? round(($q * $prumer + $m * $c) / $nq, 2) : $c;
+                $q = $nq;
+            } elseif ($p->typ === 'vydej') {
+                $q -= $m;
+            } else {
+                $q += $m; // korekce se znaménkem
+            }
+        }
+
+        return $prumer;
+    }
+
+    /**
      * Výdej ze skladu (např. materiál na zakázku) v aktuální průměrné ceně.
      */
     public function vydej(float $mnozstvi, array $meta = []): SkladovyPohyb

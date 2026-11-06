@@ -56,22 +56,22 @@ class Nakup extends Model
         $varovani = [];
 
         DB::transaction(function () use (&$varovani) {
-            foreach ($this->pohyby()->where('typ', 'prijem')->with('skladPolozka')->get() as $pohyb) {
-                $s = $pohyb->skladPolozka;
+            foreach ($this->pohyby()->where('typ', 'prijem')->with('skladPolozka')->get()->groupBy('sklad_polozka_id') as $pohyby) {
+                $s = $pohyby->first()->skladPolozka;
                 if ($s) {
-                    $q = (float) $s->mnozstvi_skladem;
-                    $p = (float) $s->cena_ks_prumer;
-                    $dq = (float) $pohyb->mnozstvi;
-                    $nq = round($q - $dq, 3);
-                    $np = $nq > 0 ? max(0, ($q * $p - $dq * (float) $pohyb->cena_ks) / $nq) : $p;
+                    $nq = round((float) $s->mnozstvi_skladem - (float) $pohyby->sum('mnozstvi'), 3);
+
+                    // průměr = aktuální + rozdíl přepočtu historie bez těchto příjmů (zachová ruční úpravy průměru)
+                    $ids = $pohyby->pluck('id')->all();
+                    $np = (float) $s->cena_ks_prumer + ($s->prumerZHistorie($ids) - $s->prumerZHistorie());
 
                     if ($nq < 0) {
                         $varovani[] = $s->nazev . ': už vydáno, stav bude ' . rtrim(rtrim(number_format($nq, 3, ',', ''), '0'), ',') . ' ks';
                     }
 
-                    $s->update(['mnozstvi_skladem' => $nq, 'cena_ks_prumer' => round($np, 2)]);
+                    $s->update(['mnozstvi_skladem' => $nq, 'cena_ks_prumer' => round(max(0, $np), 2)]);
                 }
-                $pohyb->delete();
+                SkladovyPohyb::whereIn('id', $pohyby->pluck('id'))->delete();
             }
 
             PenezniDenik::where('zdroj', 'nakup')->where('zdroj_id', $this->id)->delete();
