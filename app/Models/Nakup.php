@@ -41,6 +41,48 @@ class Nakup extends Model
     }
 
     /**
+     * Vrátí naskladnění zpět, aby šel nákup upravit: odebere kusy ze skladu (a vrátí vážený
+     * průměr do stavu před příjmem), smaže skladové pohyby i výdaj v peněžním deníku.
+     * Skladové položky zůstanou (při novém naskladnění se použijí znovu).
+     *
+     * @return array<string> varování (např. kusy už částečně vydané – stav půjde do mínusu)
+     */
+    public function zrusitNaskladneni(): array
+    {
+        if (! $this->naskladneno) {
+            return [];
+        }
+
+        $varovani = [];
+
+        DB::transaction(function () use (&$varovani) {
+            foreach ($this->pohyby()->where('typ', 'prijem')->with('skladPolozka')->get() as $pohyb) {
+                $s = $pohyb->skladPolozka;
+                if ($s) {
+                    $q = (float) $s->mnozstvi_skladem;
+                    $p = (float) $s->cena_ks_prumer;
+                    $dq = (float) $pohyb->mnozstvi;
+                    $nq = round($q - $dq, 3);
+                    $np = $nq > 0 ? max(0, ($q * $p - $dq * (float) $pohyb->cena_ks) / $nq) : $p;
+
+                    if ($nq < 0) {
+                        $varovani[] = $s->nazev . ': už vydáno, stav bude ' . rtrim(rtrim(number_format($nq, 3, ',', ''), '0'), ',') . ' ks';
+                    }
+
+                    $s->update(['mnozstvi_skladem' => $nq, 'cena_ks_prumer' => round($np, 2)]);
+                }
+                $pohyb->delete();
+            }
+
+            PenezniDenik::where('zdroj', 'nakup')->where('zdroj_id', $this->id)->delete();
+
+            $this->update(['naskladneno' => false, 'datum_naskladneni' => null]);
+        });
+
+        return $varovani;
+    }
+
+    /**
      * Naskladní všechny položky (příjem + přepočet váženého průměru) a zapíše výdaj
      * do peněžního deníku. Poštovné se NEROZPOČÍTÁVÁ do skladové ceny kusů (ta zůstává
      * čistě podle částky u položky) – ale připočte se k celkovému výdaji v deníku.
