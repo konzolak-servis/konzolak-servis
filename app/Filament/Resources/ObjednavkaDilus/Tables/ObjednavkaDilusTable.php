@@ -52,10 +52,7 @@ class ObjednavkaDilusTable
                         : null)
                     ->color(fn (ObjednavkaDilu $r) => $r->stav === 'objednano' && $r->ocekavane_doruceni
                         && $r->ocekavane_doruceni->isPast() ? 'danger' : null),
-                TextColumn::make('cena_odhad')->label('Cena')->money('CZK')->toggleable()
-                    ->description(fn (ObjednavkaDilu $r) => (float) $r->postovne > 0
-                        ? '+ poštovné ' . number_format((float) $r->postovne, 0, ',', ' ') . ' Kč'
-                        : null),
+                TextColumn::make('cena_odhad')->label('Cena vč. poštovného')->money('CZK')->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('stav')->label('Stav')->options(ObjednavkaDilu::STAVY)
@@ -89,14 +86,10 @@ class ObjednavkaDilusTable
                     ->modalDescription('Vytvoří nákup, přidá díl na sklad (aby šel vybrat v zakázce jako „Materiál ze skladu") a zapíše výdaj do peněžního deníku. Nelze vzít zpět.')
                     ->modalSubmitActionLabel('Naskladnit')
                     ->schema(fn (ObjednavkaDilu $record) => [
-                        TextInput::make('castka')->label('Cena dílu celkem')->numeric()->suffix('Kč')->required()
-                            ->default((float) ($record->nakup_id
-                                ? (\App\Models\NakupPolozka::where('nakup_id', $record->nakup_id)->sum('castka_celkem') ?: $record->cena_odhad)
-                                : $record->cena_odhad))
-                            ->helperText('Skutečně zaplacená cena za ' . rtrim(rtrim(number_format((float) $record->mnozstvi, 3, ',', ' '), '0'), ',') . ' ks (bez poštovného).'),
-                        TextInput::make('postovne')->label('Poštovné / doprava')->numeric()->suffix('Kč')
-                            ->default((float) ($record->nakup_id ? \App\Models\Nakup::whereKey($record->nakup_id)->value('postovne') : $record->postovne))
-                            ->helperText('Přičte se k výdaji v deníku, do skladové ceny dílu se nepočítá.'),
+                        TextInput::make('castka')->label('Zaplaceno celkem (vč. poštovného)')->numeric()->suffix('Kč')->required()
+                            ->default(self::vychoziCastka($record))
+                            ->helperText('Celá částka za ' . rtrim(rtrim(number_format((float) $record->mnozstvi, 3, ',', ' '), '0'), ',')
+                                . ' ks i s dopravou – skladová cena za kus = tato částka ÷ počet kusů.'),
                         DatePicker::make('datum')->label('Datum nákupu')->native(false)
                             ->default($record->nakup_id
                                 ? \App\Models\Nakup::whereKey($record->nakup_id)->value('datum')
@@ -142,6 +135,25 @@ class ObjednavkaDilusTable
             ]);
     }
 
+    /** Položka nákupu, která patří k objednávce (podle názvu dílu, jinak první). */
+    private static function polozkaNakupu(ObjednavkaDilu $o, \App\Models\Nakup $nakup): ?\App\Models\NakupPolozka
+    {
+        return $nakup->polozky->firstWhere('nazev', $o->nazev_dilu) ?? $nakup->polozky->first();
+    }
+
+    /** Předvyplněná zaplacená částka vč. poštovného. */
+    private static function vychoziCastka(ObjednavkaDilu $o): float
+    {
+        $nakup = $o->nakup_id ? \App\Models\Nakup::with('polozky')->find($o->nakup_id) : null;
+        if (! $nakup || $nakup->polozky->isEmpty()) {
+            return (float) $o->cena_odhad + (float) $o->postovne;
+        }
+
+        $castka = (float) self::polozkaNakupu($o, $nakup)->castka_celkem;
+
+        return $nakup->polozky->count() <= 1 ? $castka + (float) $nakup->postovne : $castka;
+    }
+
     /** Díl z objednávky → nákup → sklad (+ volitelně rovnou do zakázky). */
     private static function naskladnit(ObjednavkaDilu $o, array $data): void
     {
@@ -154,12 +166,14 @@ class ObjednavkaDilusTable
             if ($existujici) {
                 // k objednávce už byl nákup zadán (zaplaceno, díl ještě nedorazil) – jen se naskladní
                 $nakup = $existujici;
+                $jedina = $nakup->polozky->count() <= 1;
                 $nakup->update([
                     'datum' => $data['datum'] ?? $nakup->datum,
-                    'postovne' => (float) ($data['postovne'] ?? $nakup->postovne),
+                    // jediná položka: zadaná částka už poštovné obsahuje; u balíku víc položek poštovné zůstává
+                    'postovne' => $jedina ? 0 : $nakup->postovne,
                     'doklad_soubor' => ($data['doklad_soubor'] ?? null) ?: $nakup->doklad_soubor,
                 ]);
-                $polozka = $nakup->polozky->first();
+                $polozka = self::polozkaNakupu($o, $nakup);
                 $polozka->update([
                     'castka_celkem' => (float) $data['castka'],
                     'neskladovat' => ! empty($data['neskladovat']),
@@ -168,7 +182,7 @@ class ObjednavkaDilusTable
                 $nakup = \App\Models\Nakup::create([
                     'dodavatel' => $o->dodavatel,
                     'datum' => $data['datum'] ?? now()->toDateString(),
-                    'postovne' => (float) ($data['postovne'] ?? 0),
+                    'postovne' => 0, // částka u dílu je včetně poštovného
                     'doklad_soubor' => ($data['doklad_soubor'] ?? null) ?: null,
                 ]);
                 $polozka = $nakup->polozky()->create([

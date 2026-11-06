@@ -59,8 +59,8 @@ class PolozkyRelationManager extends RelationManager
                     ->columnSpan(fn (Get $get) => $get('neskladovat') ? 2 : 1),
                 TextInput::make('mnozstvi_ks')->label('Počet ks')->numeric()->default(1)->required()
                     ->visible(fn (Get $get) => ! $get('neskladovat')),
-                TextInput::make('castka_celkem')->label('Celková částka')->numeric()->default(0)->required()->suffix('Kč')
-                    ->helperText(fn (Get $get) => $get('neskladovat') ? null : 'Cena za kus se dopočítá.'),
+                TextInput::make('castka_celkem')->label('Zaplaceno celkem')->numeric()->default(0)->required()->suffix('Kč')
+                    ->helperText(fn (Get $get) => $get('neskladovat') ? null : 'Za všechny kusy. Cena za kus se dopočítá (+ podíl z poštovného, pokud je u nákupu vyplněné).'),
                 Select::make('zakazka_id')
                     ->label('Pro zakázku (nepovinné)')
                     ->options(fn () => Zakazka::query()->orderByDesc('id')->limit(300)

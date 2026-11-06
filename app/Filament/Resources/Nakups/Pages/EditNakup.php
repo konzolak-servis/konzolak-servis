@@ -22,7 +22,7 @@ class EditNakup extends EditRecord
                 ->visible(fn () => ! $this->record->naskladneno && $this->record->polozky()->exists())
                 ->requiresConfirmation()
                 ->modalHeading(fn () => 'Naskladnit nákup ' . $this->record->cislo)
-                ->modalDescription('Přidá kusy na sklad v ceně podle položky (bez poštovného), přepočítá vážený průměr a do peněžního deníku zapíše výdaj = položky + poštovné. Nelze vzít zpět.')
+                ->modalDescription('Přidá kusy na sklad (poštovné se rozpočítá do ceny položek), přepočítá vážený průměr a do peněžního deníku zapíše výdaj = položky + poštovné.')
                 ->modalSubmitActionLabel('Naskladnit')
                 ->action(function () {
                     // neuložené změny formuláře (např. poštovné) nejdřív uložit

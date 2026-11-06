@@ -54,7 +54,7 @@ class NakupsTable
                         ->color('success')
                         ->visible(fn ($record) => ! $record->naskladneno && $record->polozky()->exists())
                         ->requiresConfirmation()
-                        ->modalDescription('Přidá kusy na sklad v ceně podle položky (bez poštovného), přepočítá vážený průměr a do peněžního deníku zapíše výdaj = položky + poštovné. Nelze vzít zpět.')
+                        ->modalDescription('Přidá kusy na sklad (poštovné se rozpočítá do ceny položek), přepočítá vážený průměr a do peněžního deníku zapíše výdaj = položky + poštovné. Opravit jde v detailu nákupu tlačítkem „Upravit nákup".')
                         ->action(fn ($record) => $record->naskladnit()),
                     Action::make('do_objednavek')
                         ->label('Vytvořit objednávky dílů')

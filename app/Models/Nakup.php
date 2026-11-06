@@ -84,8 +84,8 @@ class Nakup extends Model
 
     /**
      * Naskladní všechny položky (příjem + přepočet váženého průměru) a zapíše výdaj
-     * do peněžního deníku. Poštovné se NEROZPOČÍTÁVÁ do skladové ceny kusů (ta zůstává
-     * čistě podle částky u položky) – ale připočte se k celkovému výdaji v deníku.
+     * do peněžního deníku. Poštovné se rozpočítá do skladové ceny kusů poměrem cen položek
+     * a připočte se k celkovému výdaji v deníku.
      */
     public function naskladnit(): void
     {
@@ -99,6 +99,13 @@ class Nakup extends Model
             $nenaskladnuje = fn ($p) => $p->neskladovat || (bool) $p->skladPolozka?->spotrebni;
             $vseNeskladovat = $this->polozky->isNotEmpty() && $this->polozky->every($nenaskladnuje);
 
+            // Poštovné za balík se rozpočítá do položek poměrem jejich ceny (bez cen → rovným dílem),
+            // takže skladová cena = skutečně zaplacená cena vč. dopravy.
+            $postovne = (float) $this->postovne;
+            $sumaPolozek = (float) $this->polozky->sum('castka_celkem');
+            $pocet = max(1, $this->polozky->count());
+            $podilPostovneho = fn ($p) => $postovne * ($sumaPolozek > 0 ? (float) $p->castka_celkem / $sumaPolozek : 1 / $pocet);
+
             foreach ($this->polozky as $p) {
                 // Obecný provozní náklad (předplatné, kancelář, vybavení, spotřební materiál…) – nezakládá
                 // ani nemění skladovou položku, jen se počítá do celkové částky níže.
@@ -111,7 +118,10 @@ class Nakup extends Model
                 ]);
 
                 // Pohyb na skladě nese datum NASKLADNĚNÍ (kdy díl dorazil); datum nákupu zůstává u nákupu a v deníku.
-                $sklad->prijem((float) $p->mnozstvi_ks, (float) $p->cena_ks, [
+                $ks = (float) $p->mnozstvi_ks;
+                $cenaKs = $ks > 0 ? ((float) $p->castka_celkem + $podilPostovneho($p)) / $ks : 0;
+
+                $sklad->prijem($ks, $cenaKs, [
                     'zdroj' => 'nakup',
                     'nakup_id' => $this->id,
                     'datum' => $datumNask,
