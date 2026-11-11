@@ -46,12 +46,12 @@ class FakturaForm
                                     self::nastavOdberatele($state, $set);
                                 }
                             }),
-                        Select::make('zakaznik_id')
+                        \App\Filament\Resources\Zakazniks\Schemas\ZakaznikForm::vyber(Select::make('zakaznik_id')
                             ->label('Zákazník')
                             ->relationship('zakaznik', 'jmeno')
-                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->nazev)
-                            ->searchable(['jmeno', 'firma_nazev'])->preload()->required()
-                            ->createOptionForm(fn (Schema $s) => \App\Filament\Resources\Zakazniks\Schemas\ZakaznikForm::configure($s)->getComponents()),
+                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->vyber_label)
+                            ->searchable()->preload()->required()
+                            ),
                         Select::make('zakazka_id')
                             ->label('Zakázka (nepovinné)')
                             ->relationship('zakazka', 'cislo')

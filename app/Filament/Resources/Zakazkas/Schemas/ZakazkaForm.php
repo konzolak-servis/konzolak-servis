@@ -210,16 +210,16 @@ class ZakazkaForm
                                 : '')
                             ->columnSpanFull(),
 
-                        Select::make('zakaznik_id')
+                        \App\Filament\Resources\Zakazniks\Schemas\ZakaznikForm::vyber(Select::make('zakaznik_id')
                             ->label('Zákazník')
                             ->relationship('zakaznik', 'jmeno')
-                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->nazev)
-                            ->searchable(['jmeno', 'firma_nazev'])
+                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->vyber_label)
+                            ->searchable()
                             ->preload()
                             ->required()
                             ->live()
                             ->default(fn () => request()->query('zakaznik_id'))
-                            ->createOptionForm(fn (Schema $s) => \App\Filament\Resources\Zakazniks\Schemas\ZakaznikForm::configure($s)->getComponents()),
+                            ),
 
                         Placeholder::make('kontakt_zakaznika')
                             ->label('Kontakt na zákazníka')

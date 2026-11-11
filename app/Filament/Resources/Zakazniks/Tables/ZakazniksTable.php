@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Zakazniks\Tables;
 
+use App\Models\Zakaznik;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -18,7 +20,7 @@ class ZakazniksTable
                 TextColumn::make('nazev')
                     ->label('Zákazník')
                     ->getStateUsing(fn ($record) => $record->nazev)
-                    ->searchable(['jmeno', 'firma_nazev'])
+                    ->searchable(query: fn ($query, string $search) => $query->whereKey(array_keys(Zakaznik::hledej($search, 500))))
                     ->sortable(query: fn ($query, $direction) => $query->orderBy('jmeno', $direction)),
                 TextColumn::make('typ')
                     ->label('Typ')
@@ -41,6 +43,23 @@ class ZakazniksTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('sloucit')
+                        ->label('Sloučit vybrané')
+                        ->icon('heroicon-o-arrows-pointing-in')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalDescription('Ponechá se zákazník s nejvíc zakázkami, ostatní se do něj sloučí (zakázky, zařízení, faktury, nabídky, zprávy, chybějící údaje) a smažou se.')
+                        ->action(function ($records) {
+                            if ($records->count() < 2) {
+                                \Filament\Notifications\Notification::make()->warning()->title('Vyber aspoň 2 zákazníky')->send();
+
+                                return;
+                            }
+                            $hlavni = $records->sortByDesc(fn ($z) => $z->zakazky()->count())->first();
+                            $hlavni->sloucit($records->except($hlavni->id));
+                            \Filament\Notifications\Notification::make()->success()->title('Sloučeno do: ' . $hlavni->nazev)->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     DeleteBulkAction::make(),
                 ]),
             ]);
