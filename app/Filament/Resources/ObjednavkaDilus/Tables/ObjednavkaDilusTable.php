@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ObjednavkaDilus\Tables;
 
 use App\Models\ObjednavkaDilu;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -37,9 +38,12 @@ class ObjednavkaDilusTable
                         'zruseno' => 'danger',
                         default => 'warning',
                     }),
-                TextColumn::make('nazev_dilu')->label('Díl')->searchable()->wrap()->weight('medium')
+                TextColumn::make('nazev_dilu')->label('Díl')->wrap()->weight('medium')
+                    ->searchable(['nazev_dilu', 'cislo', 'dodavatel', 'poznamka'])
+                    ->extraHeaderAttributes(['style' => 'min-width:16rem'])
+                    ->extraCellAttributes(['style' => 'min-width:16rem'])
                     ->description(fn (ObjednavkaDilu $r) => $r->cislo . ($r->dodavatel ? ' · ' . $r->dodavatel : '')),
-                TextColumn::make('zakazka.cislo')->label('Zakázka')
+                TextColumn::make('zakazka.cislo')->label('Zakázka')->searchable()
                     ->badge()->color('gray')->placeholder('—')
                     ->url(fn ($record) => $record->zakazka
                         ? \App\Filament\Resources\Zakazkas\ZakazkaResource::getUrl('edit', ['record' => $record->zakazka_id])
@@ -55,8 +59,14 @@ class ObjednavkaDilusTable
                 TextColumn::make('cena_odhad')->label('Cena vč. poštovného')->money('CZK')->toggleable(),
             ])
             ->filters([
-                SelectFilter::make('stav')->label('Stav')->options(ObjednavkaDilu::STAVY)
-                    ->default('objednano'),
+                \Filament\Tables\Filters\Filter::make('k_vyrizeni')
+                    ->label('Jen k vyřízení (objednané + dorazilé nenaskladněné)')
+                    ->toggle()
+                    ->default()
+                    ->query(fn ($query) => $query->where(fn ($q) => $q->where('stav', 'objednano')
+                        ->orWhere(fn ($d) => $d->where('stav', 'dorazilo')->where(fn ($n) => $n->whereNull('nakup_id')
+                            ->orWhereIn('nakup_id', \App\Models\Nakup::where('naskladneno', false)->select('id')))))),
+                SelectFilter::make('stav')->label('Stav')->options(ObjednavkaDilu::STAVY),
             ])
             ->defaultSort('datum_objednavky', 'desc')
             ->recordActions([
@@ -77,7 +87,7 @@ class ObjednavkaDilusTable
                         'doruceno_datum' => now()->toDateString(),
                     ])),
                 Action::make('naskladnit')
-                    ->label('Naskladnit a zaúčtovat')
+                    ->label('Naskladnit')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('primary')
                     ->button()
@@ -115,6 +125,7 @@ class ObjednavkaDilusTable
                     ->action(function (ObjednavkaDilu $record, array $data) {
                         self::naskladnit($record, $data);
                     }),
+                ActionGroup::make([
                 Action::make('zpet_objednano')
                     ->label('Zpět na objednáno')
                     ->icon('heroicon-o-arrow-uturn-left')
@@ -127,6 +138,7 @@ class ObjednavkaDilusTable
                         'doruceno_datum' => null,
                     ])),
                 EditAction::make(),
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
