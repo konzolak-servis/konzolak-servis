@@ -223,6 +223,16 @@ class Web
         return [
             [
                 'zdroj' => 'facebook',
+                'jmeno' => 'Pepik Modrei',
+                'datum' => '12. listopadu 2026',
+                'datum_iso' => '2026-11-12',
+                'text' => 'Dnes mi přišel ovladač od tohohle chlapíka. Cítím jako svoji povinnost dát světu '
+                    . 'vědět, jak to dopadlo, protože tenhle pán nejenom ví, co dělá, on má k tomu ještě '
+                    . 'skvělé ceny a slušné jednání. Mohu jen doporučit! …ještě jednou děkuji za vaši '
+                    . 'práci, jsem spokojen!',
+            ],
+            [
+                'zdroj' => 'facebook',
                 'jmeno' => 'Petr Mamica',
                 'datum' => '10. září 2025',
                 'datum_iso' => '2025-09-10',
