@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\Firma;
+use App\Models\NavstevaWebu;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Obsah a pomocné údaje pro veřejný web konzolak.com.
@@ -10,6 +12,12 @@ use App\Models\Firma;
  */
 class Web
 {
+    /** Celkový počet unikátních návštěv webu pro patičku (z cache, obnova po 10 minutách). */
+    public static function pocetNavstev(): int
+    {
+        return (int) Cache::remember('web.pocet_navstev', 600, fn () => NavstevaWebu::count());
+    }
+
     /** Singleton nastavení firmy (kontakt, adresa, IČO…). */
     public static function firma(): Firma
     {

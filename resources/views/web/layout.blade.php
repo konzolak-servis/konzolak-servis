@@ -140,6 +140,7 @@
         Provozovatel: {{ $F->nazev ?? 'Konzolák Zlín' }}{{ $F->ico ? ', IČO ' . $F->ico : '' }}{{ ($F->platce_dph ?? false) ? '' : ', neplátce DPH' }}.
         {{ $F->ulice ? $F->ulice . ', ' . trim(($F->psc ?? '') . ' ' . ($F->mesto ?? '')) . '.' : '' }}
         Podnikatel zapsaný v živnostenském rejstříku. Dozorový orgán: Česká obchodní inspekce (coi.gov.cz).
+        <span class="ftr__navstevy">Návštěv webu: {{ number_format(Web::pocetNavstev(), 0, ',', ' ') }}</span>
     </div>
 </footer>
 

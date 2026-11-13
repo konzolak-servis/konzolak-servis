@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\PocitadloNavstev;
 use App\Http\Middleware\WebGate;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -21,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Přihlašovací brána veřejného webu konzolak.com (dokud web není spuštěn).
         $middleware->web(append: [
             WebGate::class,
+            // Počítadlo návštěv webu – až za bránou, takže se nepočítá stránka „ve výstavbě".
+            PocitadloNavstev::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
