@@ -26,6 +26,20 @@ class ZakazkaPolozka extends Model
             $p->cena_celkem = round((float) $p->mnozstvi * (float) $p->cena_ks, 2);
         });
 
+        // Změna množství materiálu ze skladu: rozdíl se vydá / vrátí na sklad.
+        static::updating(function (ZakazkaPolozka $p) {
+            if ($p->typ !== 'material' || ! $p->sklad_polozka_id || ! $p->isDirty('mnozstvi') || ! $p->skladPolozka) {
+                return;
+            }
+            $rozdil = round((float) $p->mnozstvi - (float) $p->getOriginal('mnozstvi'), 3);
+            $meta = ['zdroj' => 'zakazka', 'zakazka_id' => $p->zakazka_id];
+            if ($rozdil > 0) {
+                $p->skladPolozka->vydej($rozdil, $meta);
+            } elseif ($rozdil < 0) {
+                $p->skladPolozka->vraceni(-$rozdil, $meta + ['poznamka' => 'Snížení množství v zakázce']);
+            }
+        });
+
         static::saved(fn (ZakazkaPolozka $p) => $p->zakazka?->prepocti());
 
         // Smazání řádku materiálu vrátí kusy zpět na sklad.

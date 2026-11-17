@@ -119,8 +119,16 @@ class ObjednavkaDilusTable
                             ->helperText('Díl se nenaskladní a výdaj půjde do peněžního deníku jako „Náklady firmy" (ne jako materiál). Hodí se u nářadí, vybavení apod.'),
                         Toggle::make('do_zakazky')->label('Rovnou použít v zakázce ' . ($record->zakazka?->cislo ?? ''))
                             ->default((bool) $record->zakazka)
+                            ->live()
                             ->visible(fn (Get $get) => (bool) $record->zakazka && ! $get('neskladovat'))
                             ->helperText('Díl se vydá ze skladu do zakázky (jako „Materiál ze skladu", cena dílu se nepřičítá zákazníkovi).'),
+                        TextInput::make('ks_do_zakazky')->label('Kolik kusů použít v zakázce')
+                            ->numeric()->minValue(0.001)->maxValue((float) $record->mnozstvi)->required()
+                            ->default(1)->suffix('ks')
+                            ->visible(fn (Get $get) => (bool) $record->zakazka && ! $get('neskladovat') && $get('do_zakazky')
+                                && (float) $record->mnozstvi > 1)
+                            ->helperText('Objednáno ' . rtrim(rtrim(number_format((float) $record->mnozstvi, 3, ',', ' '), '0'), ',')
+                                . ' ks – zbytek zůstane na skladě.'),
                     ])
                     ->action(function (ObjednavkaDilu $record, array $data) {
                         self::naskladnit($record, $data);
@@ -212,7 +220,7 @@ class ObjednavkaDilusTable
 
             if (empty($data['neskladovat']) && ! empty($data['do_zakazky']) && $o->zakazka) {
                 $sklad = $polozka->fresh()->skladPolozka;
-                $mnozstvi = (float) $o->mnozstvi;
+                $mnozstvi = min((float) $o->mnozstvi, (float) ($data['ks_do_zakazky'] ?? 1));
                 $sklad->vydej($mnozstvi, ['zdroj' => 'zakazka', 'zakazka_id' => $o->zakazka_id]);
                 $o->zakazka->polozky()->create([
                     'typ' => 'material',
