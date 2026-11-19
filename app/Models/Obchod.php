@@ -46,6 +46,11 @@ class Obchod extends Model
         static::saved(function (Obchod $o) {
             $o->synchronizujProdej();
             $o->synchronizujNakup();
+
+            // prodaný kus už nejde zapůjčovat
+            if ($o->prodano && $o->wasChanged('prodano')) {
+                ZapujcniZarizeni::where('obchod_id', $o->id)->update(['aktivni' => false]);
+            }
         });
     }
 
@@ -59,6 +64,17 @@ class Obchod extends Model
             ['obchod' => $this, 'soubor' => (($query['typ'] ?? null) === 'prodej' ? 'Doklad-o-prodeji-' : 'Doklad-o-vykupu-') . $this->cislo . '.pdf'],
             $query,
         ));
+    }
+
+    /** Zařízení vedené na zápůjčním skladu (náhradní zařízení pro zákazníky). */
+    public function zapujcniZarizeni(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ZapujcniZarizeni::class, 'obchod_id');
+    }
+
+    public function jeNaZapujcnimSkladu(): bool
+    {
+        return ! $this->prodano && $this->zapujcniZarizeni()->where('aktivni', true)->exists();
     }
 
     public function skladPolozka(): BelongsTo

@@ -38,16 +38,64 @@ class ObchodsTable
                     ->color(fn (?float $state) => $state === null ? 'gray' : ($state >= 0 ? 'success' : 'danger'))
                     ->weight('bold'),
                 TextColumn::make('prodano')->label('Stav')->badge()
-                    ->formatStateUsing(fn ($state) => $state ? 'Prodáno' : 'Skladem')
-                    ->color(fn ($state) => $state ? 'success' : 'warning'),
+                    ->formatStateUsing(fn ($state, Obchod $record) => $state ? 'Prodáno'
+                        : ($record->jeNaZapujcnimSkladu() ? 'Na zápůjčním skladu' : 'Skladem'))
+                    ->color(fn ($state, Obchod $record) => $state ? 'success' : ($record->jeNaZapujcnimSkladu() ? 'info' : 'warning'))
+                    ->description(function (Obchod $record) {
+                        $p = $record->jeNaZapujcnimSkladu() ? $record->zapujcniZarizeni?->aktualniPolozka() : null;
+
+                        return $p ? 'zapůjčeno: ' . ($p->zapujcka->zakaznik?->nazev ?? $p->zapujcka->cislo) : null;
+                    }),
             ])
             ->filters([
                 TernaryFilter::make('prodano')->label('Stav')
                     ->placeholder('Vše')->trueLabel('Prodané')->falseLabel('Skladem'),
                 SelectFilter::make('kategorie')->label('Platforma')->options(Platformy::HODNOTY),
+                \Filament\Tables\Filters\Filter::make('zapujcni')->label('Na zápůjčním skladu')->toggle()
+                    ->query(fn ($query) => $query->where('prodano', false)
+                        ->whereHas('zapujcniZarizeni', fn ($z) => $z->where('aktivni', true))),
             ])
             ->defaultSort('datum', 'desc')
             ->recordActions([
+                Action::make('na_zapujcni_sklad')
+                    ->label('Na zápůjční sklad')
+                    ->icon('heroicon-o-arrows-right-left')
+                    ->color('info')
+                    ->visible(fn (Obchod $record) => ! $record->prodano && ! $record->jeNaZapujcnimSkladu())
+                    ->requiresConfirmation()
+                    ->modalDescription('Zařízení se přidá do seznamu „Zařízení k zápůjčce" (hodnota = nákup + díly). V bazaru zůstane, jen bude vedené jako na zápůjčním skladu.')
+                    ->action(function (Obchod $record) {
+                        $d = \App\Models\ZapujcniZarizeni::updateOrCreate(
+                            ['obchod_id' => $record->id],
+                            [
+                                'nazev' => $record->nazev,
+                                'seriove_cislo' => $record->seriove_cislo,
+                                'stav_popis' => $record->stav_popis ? \Illuminate\Support\Str::limit($record->stav_popis, 250, '') : null,
+                                'hodnota' => $record->naklady_celkem ?: $record->cena,
+                                'aktivni' => true,
+                            ],
+                        );
+                        Notification::make()->success()->title('Přesunuto na zápůjční sklad')
+                            ->body('Doplň v seznamu zařízení k zápůjčce příslušenství a doporučenou kauci.')
+                            ->actions([Action::make('otevrit')->label('Otevřít')->button()
+                                ->url(\App\Filament\Resources\ZapujcniZarizenis\ZapujcniZarizeniResource::getUrl('edit', ['record' => $d]))])
+                            ->send();
+                    }),
+                Action::make('ze_zapujcniho_skladu')
+                    ->label('Vrátit do prodeje')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('gray')
+                    ->visible(fn (Obchod $record) => $record->jeNaZapujcnimSkladu())
+                    ->requiresConfirmation()
+                    ->modalDescription('Zařízení se přestane nabízet k zápůjčce a v bazaru bude znovu „Skladem".')
+                    ->action(function (Obchod $record) {
+                        if ($record->zapujcniZarizeni?->aktualniPolozka()) {
+                            Notification::make()->warning()->title('Zařízení je právě zapůjčené – nejdřív ukonči zápůjčku.')->send();
+
+                            return;
+                        }
+                        $record->zapujcniZarizeni()->update(['aktivni' => false]);
+                    }),
                 Action::make('prodat')
                     ->label('Prodat')
                     ->icon('heroicon-o-banknotes')

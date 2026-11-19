@@ -46,6 +46,28 @@ class ZapujcniZarizeniResource extends Resource
     {
         return $schema->components([
             Section::make()->columns(3)->schema([
+                \Filament\Forms\Components\Select::make('obchod_id')->label('Kus z bazaru')
+                    ->columnSpanFull()
+                    ->options(fn ($state) => \App\Models\Obchod::query()
+                        ->where(fn ($q) => $q->where('prodano', false)->when($state, fn ($w) => $w->orWhere('id', $state)))
+                        ->orderByDesc('datum')->get()
+                        ->mapWithKeys(fn ($o) => [$o->id => $o->cislo . ' · ' . $o->nazev . ($o->seriove_cislo ? ' · SN ' . $o->seriove_cislo : '')])->all())
+                    ->searchable()
+                    ->live()
+                    ->placeholder('není z bazaru')
+                    ->helperText('Podle sériového čísla se spáruje samo. Kus z bazaru se tam pak vede jako „Na zápůjčním skladu".')
+                    ->afterStateUpdated(function ($state, $set, $get) {
+                        if (! $state || ! ($o = \App\Models\Obchod::find($state))) {
+                            return;
+                        }
+                        foreach (['nazev' => $o->nazev, 'seriove_cislo' => $o->seriove_cislo,
+                            'stav_popis' => $o->stav_popis ? \Illuminate\Support\Str::limit($o->stav_popis, 250, '') : null,
+                            'hodnota' => $o->naklady_celkem ?: $o->cena] as $pole => $hodnota) {
+                            if (blank($get($pole))) {
+                                $set($pole, $hodnota);
+                            }
+                        }
+                    }),
                 TextInput::make('nazev')->label('Zařízení')->required()->columnSpan(2)
                     ->placeholder('např. PS5 Slim digital, DualSense bílý'),
                 TextInput::make('seriove_cislo')->label('Sériové číslo'),
@@ -69,7 +91,8 @@ class ZapujcniZarizeniResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('nazev')->label('Zařízení')->searchable(['nazev', 'seriove_cislo'])->sortable()->weight('medium')
-                    ->description(fn (ZapujcniZarizeni $r) => $r->seriove_cislo ? 'SN ' . $r->seriove_cislo : null),
+                    ->description(fn (ZapujcniZarizeni $r) => trim(($r->seriove_cislo ? 'SN ' . $r->seriove_cislo : '')
+                        . ($r->obchod ? ' · bazar ' . $r->obchod->cislo . ($r->obchod->prodano ? ' (prodáno)' : '') : ''), ' ·') ?: null),
                 TextColumn::make('dostupnost')->label('Dostupnost')->badge()
                     ->getStateUsing(fn (ZapujcniZarizeni $r) => ! $r->aktivni ? 'Vyřazeno'
                         : (($p = $r->aktualniPolozka()) ? 'Zapůjčeno' : 'Volné'))
@@ -97,7 +120,7 @@ class ZapujcniZarizeniResource extends Resource
             ])
             ->filters([
                 Filter::make('volne')->label('Jen volná')->toggle()
-                    ->query(fn ($q) => $q->volne()),
+                    ->query(fn ($query) => $query->volne()),
                 TernaryFilter::make('aktivni')->label('K zapůjčení')->default(true)
                     ->trueLabel('Ano')->falseLabel('Vyřazená')->placeholder('Vše'),
             ])
