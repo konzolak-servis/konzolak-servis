@@ -44,9 +44,11 @@ class EditZapujcka extends EditRecord
                             ->afterStateUpdated(fn ($state, $set) => $state ? $set('poplatek', $this->record->vypocetPoplatku($state)) : null),
                         TextInput::make('poplatek')->label('Poplatek za zapůjčení')->numeric()->suffix('Kč')->minValue(0)
                             ->default(fn () => $this->record->vypocetPoplatku(now()->toDateString()))
-                            ->visible(fn () => ! $this->record->zdarma && (float) $this->record->denni_sazba > 0)
-                            ->helperText(fn ($get) => $this->record->pocetDni($get('datum') ?: null) . ' dní × '
-                                . number_format((float) $this->record->denni_sazba, 0, ',', ' ') . ' Kč. Strhne se z kauce, zapíše se jako příjem. Můžeš upravit.'),
+                            ->visible(fn () => ! $this->record->zdarma && ((float) $this->record->denni_sazba > 0 || $this->record->maVikendovyTarif()))
+                            ->helperText(fn ($get) => $this->record->pocetDni($get('datum') ?: null) . ' ' . \App\Models\Zapujcka::dnu($this->record->pocetDni($get('datum') ?: null)) . ': '
+                                . collect($this->record->rozpisPoplatku($get('datum') ?: null))
+                                    ->map(fn ($r) => $r['popis'] . ' à ' . number_format($r['sazba'], 0, ',', ' ') . ' Kč')->implode(', ')
+                                . '. Strhne se z kauce, zapíše se jako příjem. Můžeš upravit.'),
                     ],
                     $this->record->polozky->map(fn ($p) => TextInput::make('stav_' . $p->id)
                         ->label('Stav: ' . $p->nazev . ($p->seriove_cislo ? ' (SN ' . $p->seriove_cislo . ')' : ''))

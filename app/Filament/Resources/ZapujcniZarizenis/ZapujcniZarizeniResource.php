@@ -79,8 +79,9 @@ class ZapujcniZarizeniResource extends Resource
                     ->helperText('Pro případ ztráty / poškození – uvádí se v protokolu.'),
                 TextInput::make('kauce')->label('Doporučená kauce')->numeric()->suffix('Kč')
                     ->helperText('Předvyplní se do zápůjčky.'),
-                TextInput::make('denni_sazba')->label('Denní sazba')->numeric()->suffix('Kč / den')
-                    ->helperText('Cena za den zapůjčení (mimo zápůjčky zdarma při opravě).'),
+                TextInput::make('denni_sazba')->label('Cena za den (Po–Ne)')->numeric()->suffix('Kč / den'),
+                TextInput::make('vikend_cely')->label('Celý víkend (Pá–Ne)')->numeric()->suffix('Kč')
+                    ->helperText('Použije se, když zápůjčka obsahuje pátek až neděli a vyjde levněji než 3 dny.'),
                 Toggle::make('aktivni')->label('K zapůjčení')->default(true)->inline(false)
                     ->helperText('Vypni u vyřazeného / prodaného zařízení.'),
                 Textarea::make('poznamka')->label('Poznámka')->rows(2)->columnSpanFull(),
@@ -118,7 +119,10 @@ class ZapujcniZarizeniResource extends Resource
                 TextColumn::make('stav_popis')->label('Stav')->wrap()->placeholder('—'),
                 TextColumn::make('hodnota')->label('Hodnota')->money('CZK')->sortable()->toggleable(),
                 TextColumn::make('kauce')->label('Kauce')->money('CZK')->placeholder('—'),
-                TextColumn::make('denni_sazba')->label('Kč / den')->money('CZK')->placeholder('—')->toggleable(),
+                TextColumn::make('denni_sazba')->label('Ceník')->placeholder('—')->toggleable()
+                    ->formatStateUsing(fn ($state, ZapujcniZarizeni $record) => (new \App\Models\Zapujcka([
+                        'denni_sazba' => $record->denni_sazba, 'vikend_sazba' => $record->vikend_sazba, 'vikend_cely' => $record->vikend_cely,
+                    ]))->tarifText())->wrap(),
                 TextColumn::make('polozky_count')->label('Zapůjčeno ×')->counts('polozky')->sortable()->toggleable(),
             ])
             ->filters([

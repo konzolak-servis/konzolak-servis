@@ -26,6 +26,8 @@ class Zapujcka extends Model
         'kauce_srazka' => 'decimal:2',
         'zdarma' => 'boolean',
         'denni_sazba' => 'decimal:2',
+        'vikend_sazba' => 'decimal:2',
+        'vikend_cely' => 'decimal:2',
         'poplatek' => 'decimal:2',
     ];
 
@@ -68,10 +70,92 @@ class Zapujcka extends Model
         return max(1, (int) $od->copy()->startOfDay()->diffInDays($do->copy()->startOfDay()));
     }
 
-    /** Poplatek za zapůjčení: dny × denní sazba (0 při zápůjčce zdarma po dobu opravy). */
+    /** Poplatek za zapůjčení podle tarifu (0 při zápůjčce zdarma po dobu opravy). */
     public function vypocetPoplatku(?string $do = null): float
     {
-        return $this->zdarma ? 0.0 : round($this->pocetDni($do) * (float) $this->denni_sazba, 2);
+        return $this->zdarma ? 0.0 : round(collect($this->rozpisPoplatku($do))->sum('castka'), 2);
+    }
+
+    public function maVikendovyTarif(): bool
+    {
+        return (float) $this->vikend_sazba > 0 || (float) $this->vikend_cely > 0;
+    }
+
+    /** Krátký popis ceníku do dokladů, např. „Po–Čt 350 Kč/den · Pá–Ne 400 Kč/den · víkend Pá–Ne 1 000 Kč". */
+    public function tarifText(): string
+    {
+        $kc = fn ($v) => number_format((float) $v, 0, ',', ' ');
+        if (! $this->maVikendovyTarif()) {
+            return $kc($this->denni_sazba) . ' Kč / den';
+        }
+
+        if ((float) $this->vikend_sazba <= 0 || (float) $this->vikend_sazba === (float) $this->denni_sazba) {
+            return collect([
+                (float) $this->denni_sazba > 0 ? $kc($this->denni_sazba) . ' Kč/den' : null,
+                (float) $this->vikend_cely > 0 ? 'celý víkend Pá–Ne ' . $kc($this->vikend_cely) . ' Kč' : null,
+            ])->filter()->implode(' · ');
+        }
+
+        return collect([
+            (float) $this->denni_sazba > 0 ? 'Po–Čt ' . $kc($this->denni_sazba) . ' Kč/den' : null,
+            (float) $this->vikend_sazba > 0 ? 'Pá–Ne ' . $kc($this->vikend_sazba) . ' Kč/den' : null,
+            (float) $this->vikend_cely > 0 ? 'celý víkend Pá–Ne ' . $kc($this->vikend_cely) . ' Kč' : null,
+        ])->filter()->implode(' · ');
+    }
+
+    /**
+     * Rozpis poplatku po dnech: účtuje se každý den zápůjčky (od data zapůjčení, počet = pocetDni).
+     * Po–Čt = denní sazba, Pá–Ne = víkendová denní sazba, celý víkend Pá+So+Ne = paušál (když je levnější).
+     *
+     * @return array<int, array{popis: string, pocet: int, sazba: float, castka: float}>
+     */
+    public function rozpisPoplatku(?string $do = null): array
+    {
+        $dni = $this->pocetDni($do);
+        $od = ($this->datum_zapujceni ?? now())->copy()->startOfDay();
+        $vsedni = (float) $this->denni_sazba;
+        $vikendDen = (float) $this->vikend_sazba > 0 ? (float) $this->vikend_sazba : $vsedni;
+        $vikendCely = (float) $this->vikend_cely;
+
+        [$nVsedni, $nVikend, $nCely] = [0, 0, 0];
+        for ($i = 0; $i < $dni; $i++) {
+            $den = $od->copy()->addDays($i);
+            $dow = $den->dayOfWeekIso; // 1 = Po … 7 = Ne
+            if ($dow === 5 && $i + 2 < $dni && $vikendCely > 0 && $vikendCely < 3 * $vikendDen) {
+                $nCely++;
+                $i += 2;     // pátek + sobota + neděle jako balíček
+
+                continue;
+            }
+            $dow >= 5 ? $nVikend++ : $nVsedni++;
+        }
+
+        $radky = [];
+        if (! $this->maVikendovyTarif()) {
+            return [['popis' => $dni . ' ' . self::dnu($dni), 'pocet' => $dni, 'sazba' => $vsedni, 'castka' => $dni * $vsedni]];
+        }
+        if ($vikendDen === $vsedni && ($nVsedni + $nVikend)) {
+            // jedna cena za den (Po–Ne) – rozlišuje se jen celý víkend
+            $n = $nVsedni + $nVikend;
+            $radky[] = ['popis' => $n . '× den', 'pocet' => $n, 'sazba' => $vsedni, 'castka' => $n * $vsedni];
+            [$nVsedni, $nVikend] = [0, 0];
+        }
+        if ($nVsedni) {
+            $radky[] = ['popis' => $nVsedni . '× Po–Čt', 'pocet' => $nVsedni, 'sazba' => $vsedni, 'castka' => $nVsedni * $vsedni];
+        }
+        if ($nVikend) {
+            $radky[] = ['popis' => $nVikend . '× den Pá–Ne', 'pocet' => $nVikend, 'sazba' => $vikendDen, 'castka' => $nVikend * $vikendDen];
+        }
+        if ($nCely) {
+            $radky[] = ['popis' => $nCely . '× celý víkend', 'pocet' => $nCely, 'sazba' => $vikendCely, 'castka' => $nCely * $vikendCely];
+        }
+
+        return $radky;
+    }
+
+    public static function dnu(int $n): string
+    {
+        return $n == 1 ? 'den' : ($n < 5 ? 'dny' : 'dní');
     }
 
     /** Kauce vrácená zákazníkovi = kauce − srážka − poplatek za zapůjčení. */

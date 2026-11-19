@@ -20,7 +20,7 @@
             <div class="label">Kauce</div>
             <div class="val"><strong>{{ number_format((float) $z->kauce, 0, ',', ' ') }} Kč</strong></div>
             <div class="label" style="margin-top:2mm">Cena zapůjčení</div>
-            <div class="val">{{ $z->zdarma ? 'zdarma (po dobu opravy)' : ((float) $z->denni_sazba > 0 ? number_format((float) $z->denni_sazba, 0, ',', ' ') . ' Kč / den' : 'zdarma') }}</div>
+            <div class="val">{{ $z->zdarma ? 'zdarma (po dobu opravy)' : ((float) $z->denni_sazba > 0 || $z->maVikendovyTarif() ? $z->tarifText() : 'zdarma') }}</div>
             @if ($z->zakazka)
                 <div class="label" style="margin-top:2mm">K zakázce</div>
                 <div class="val">{{ $z->zakazka->cislo }}</div>

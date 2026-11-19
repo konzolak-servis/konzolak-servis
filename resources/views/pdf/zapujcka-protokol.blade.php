@@ -37,8 +37,8 @@
     @endif
     @if ($z->zdarma)
         Zápůjčka je po dobu opravy{{ $z->zakazka ? ' zakázky ' . $z->zakazka->cislo : '' }} <b>zdarma</b>; po jejím dokončení je vypůjčitel povinen zařízení bez prodlení vrátit.
-    @elseif ((float) $z->denni_sazba > 0)
-        Cena zapůjčení je <b>{{ number_format((float) $z->denni_sazba, 0, ',', ' ') }} Kč za každý započatý den</b> a bude vyúčtována (stržena z kauce) při vrácení.
+    @elseif ((float) $z->denni_sazba > 0 || $z->maVikendovyTarif())
+        Cena zapůjčení: <b>{{ $z->tarifText() }}</b>, účtuje se každý započatý den; vyúčtována (stržena z kauce) bude při vrácení.
     @endif
     Za ztrátu, zničení nebo poškození nad rámec běžného opotřebení odpovídá vypůjčitel do výše hodnoty zařízení.
 </div>

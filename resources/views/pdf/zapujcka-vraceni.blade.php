@@ -34,10 +34,20 @@
         <td class="tsum" width="45mm" style="border-top:.8px solid #d9dee5">{{ number_format((float) $z->kauce, 2, ',', ' ') }} Kč</td>
     </tr>
     @if ((float) $z->poplatek > 0)
-        <tr>
-            <td class="tlabel">Zapůjčení {{ $z->pocet_dni }} {{ $z->pocet_dni == 1 ? 'den' : ($z->pocet_dni < 5 ? 'dny' : 'dní') }} × {{ number_format((float) $z->denni_sazba, 0, ',', ' ') }} Kč</td>
-            <td class="tsum" width="45mm" style="border-top:.8px solid #d9dee5">− {{ number_format((float) $z->poplatek, 2, ',', ' ') }} Kč</td>
-        </tr>
+        @php($rozpis = $z->rozpisPoplatku())
+        @foreach ($rozpis as $r)
+            <tr>
+                <td class="tlabel">Zapůjčení {{ $r['popis'] }} à {{ number_format($r['sazba'], 0, ',', ' ') }} Kč</td>
+                <td class="tsum" width="45mm" style="border-top:.8px solid #d9dee5">− {{ number_format($r['castka'], 2, ',', ' ') }} Kč</td>
+            </tr>
+        @endforeach
+        @php($uprava = round((float) $z->poplatek - collect($rozpis)->sum('castka'), 2))
+        @if (abs($uprava) >= 0.01)
+            <tr>
+                <td class="tlabel">{{ $uprava < 0 ? 'Sleva' : 'Úprava ceny' }}</td>
+                <td class="tsum" width="45mm" style="border-top:.8px solid #d9dee5">{{ $uprava < 0 ? '+' : '−' }} {{ number_format(abs($uprava), 2, ',', ' ') }} Kč</td>
+            </tr>
+        @endif
     @elseif ($z->zdarma)
         <tr>
             <td class="tlabel">Zapůjčení {{ $z->pocet_dni }} {{ $z->pocet_dni == 1 ? 'den' : ($z->pocet_dni < 5 ? 'dny' : 'dní') }} – zdarma po dobu opravy</td>

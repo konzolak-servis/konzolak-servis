@@ -60,9 +60,12 @@ class ZapujckaForm
                         \Filament\Forms\Components\Toggle::make('zdarma')->label('Zdarma po dobu opravy')
                             ->inline(false)->live()
                             ->helperText('Za zapůjčení se nic neúčtuje (zapne se samo při výběru zakázky).'),
-                        TextInput::make('denni_sazba')->label('Denní sazba')->numeric()->default(0)->suffix('Kč / den')
+                        TextInput::make('denni_sazba')->label('Cena za den (Po–Ne)')->numeric()->default(0)->suffix('Kč / den')
                             ->disabled(fn (Get $get) => (bool) $get('zdarma'))
-                            ->helperText('Za všechna zařízení dohromady. Při vrácení se spočítá dny × sazba a strhne z kauce.'),
+                            ->helperText('Za všechna zařízení dohromady. Při vrácení se spočítá podle dnů a strhne z kauce.'),
+                        TextInput::make('vikend_cely')->label('Celý víkend (Pá–Ne)')->numeric()->suffix('Kč')
+                            ->disabled(fn (Get $get) => (bool) $get('zdarma'))
+                            ->helperText('Pá+So+Ne v zápůjčce se účtuje touto cenou, pokud je levnější.'),
 
                         Textarea::make('poznamka')->label('Podmínky / poznámka')->rows(2)->columnSpanFull()
                             ->placeholder('např. zapůjčeno po dobu opravy zakázky, bez her…'),
@@ -102,9 +105,11 @@ class ZapujckaForm
                                         if ($soucet > 0 && (float) $get('../../kauce') < $soucet) {
                                             $set('../../kauce', $soucet);
                                         }
-                                        $sazba = (float) \App\Models\ZapujcniZarizeni::whereKey($ids)->sum('denni_sazba');
-                                        if ($sazba > 0 && (float) $get('../../denni_sazba') < $sazba) {
-                                            $set('../../denni_sazba', $sazba);
+                                        foreach (['denni_sazba', 'vikend_cely'] as $pole) {
+                                            $sazba = (float) \App\Models\ZapujcniZarizeni::whereKey($ids)->sum($pole);
+                                            if ($sazba > 0 && (float) $get('../../' . $pole) < $sazba) {
+                                                $set('../../' . $pole, $sazba);
+                                            }
                                         }
                                     }),
                                 TextInput::make('nazev')->label('Zařízení')->required()->columnSpan(2)
