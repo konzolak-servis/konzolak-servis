@@ -89,6 +89,9 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('zakazka/{zakazka}/servisni-protokol/{soubor?}', [TiskController::class, 'servisniProtokol'])->name('zakazka.protokol');
         Route::get('zakazka/{zakazka}/stitek/{soubor?}', [TiskController::class, 'stitek'])->name('zakazka.stitek');
         Route::get('zakazka/{zakazka}/stitek-png/{soubor?}', [TiskController::class, 'stitekPng'])->name('zakazka.stitek-png');
+        Route::get('zapujcka/{zapujcka}/protokol/{soubor?}', [TiskController::class, 'zapujckaProtokol'])->name('zapujcka.protokol');
+        Route::get('zapujcka/{zapujcka}/kauce/{soubor?}', [TiskController::class, 'zapujckaKauce'])->name('zapujcka.kauce');
+        Route::get('zapujcka/{zapujcka}/vraceni/{soubor?}', [TiskController::class, 'zapujckaVraceni'])->name('zapujcka.vraceni');
         Route::get('faktura/{faktura}/{soubor?}', [TiskController::class, 'faktura'])->name('faktura');
         Route::get('nabidka/{nabidka}/{soubor?}', [TiskController::class, 'nabidka'])->name('nabidka');
         Route::get('obchod/{obchod}/{soubor?}', [TiskController::class, 'obchod'])->name('obchod');

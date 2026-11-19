@@ -52,6 +52,8 @@ class PenezniDenik extends Model
                 NakupResource::class),
             'obchod' => $this->odkaz(Obchod::class,
                 ObchodResource::class),
+            'zapujcka' => $this->odkaz(Zapujcka::class,
+                \App\Filament\Resources\Zapujckas\ZapujckaResource::class),
             default => [$this->kde ?: null, null],
         };
     }

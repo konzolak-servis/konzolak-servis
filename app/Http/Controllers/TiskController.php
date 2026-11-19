@@ -7,6 +7,7 @@ use App\Models\Firma;
 use App\Models\Nabidka;
 use App\Models\Obchod;
 use App\Models\Zakazka;
+use App\Models\Zapujcka;
 use App\Support\Qr;
 use App\Support\QrPlatba;
 use App\Support\Tisk;
@@ -92,6 +93,28 @@ class TiskController extends Controller
             'Content-Type' => 'image/png',
             'Content-Disposition' => 'attachment; filename="Stitek-' . $zakazka->cislo . '.png"',
         ]);
+    }
+
+    public function zapujckaProtokol(Zapujcka $zapujcka): Response
+    {
+        return $this->zapujckaPdf($zapujcka, 'pdf.zapujcka-protokol', 'Predavaci-protokol-');
+    }
+
+    public function zapujckaKauce(Zapujcka $zapujcka): Response
+    {
+        return $this->zapujckaPdf($zapujcka, 'pdf.zapujcka-kauce', 'Prijem-kauce-');
+    }
+
+    public function zapujckaVraceni(Zapujcka $zapujcka): Response
+    {
+        return $this->zapujckaPdf($zapujcka, 'pdf.zapujcka-vraceni', 'Vraceni-zapujcky-');
+    }
+
+    private function zapujckaPdf(Zapujcka $zapujcka, string $view, string $soubor): Response
+    {
+        $zapujcka->load(['zakaznik', 'zakazka', 'polozky']);
+
+        return Tisk::pdf($view, ['firma' => Firma::get(), 'z' => $zapujcka], $soubor . $zapujcka->cislo);
     }
 
     public function faktura(Faktura $faktura): Response
