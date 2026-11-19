@@ -89,6 +89,8 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('zakazka/{zakazka}/servisni-protokol/{soubor?}', [TiskController::class, 'servisniProtokol'])->name('zakazka.protokol');
         Route::get('zakazka/{zakazka}/stitek/{soubor?}', [TiskController::class, 'stitek'])->name('zakazka.stitek');
         Route::get('zakazka/{zakazka}/stitek-png/{soubor?}', [TiskController::class, 'stitekPng'])->name('zakazka.stitek-png');
+        Route::get('zapujcni-stitek/{zarizeni?}', [TiskController::class, 'zapujcniStitek'])->name('zapujcni.stitek');
+        Route::get('zapujcni-stitek-png/{zarizeni}/{soubor?}', [TiskController::class, 'zapujcniStitekPng'])->name('zapujcni.stitek-png');
         Route::get('zapujcka/{zapujcka}/protokol/{soubor?}', [TiskController::class, 'zapujckaProtokol'])->name('zapujcka.protokol');
         Route::get('zapujcka/{zapujcka}/kauce/{soubor?}', [TiskController::class, 'zapujckaKauce'])->name('zapujcka.kauce');
         Route::get('zapujcka/{zapujcka}/vraceni/{soubor?}', [TiskController::class, 'zapujckaVraceni'])->name('zapujcka.vraceni');

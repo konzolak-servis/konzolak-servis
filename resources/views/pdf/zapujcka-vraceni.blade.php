@@ -33,21 +33,43 @@
         <td class="tlabel">Přijatá kauce</td>
         <td class="tsum" width="45mm" style="border-top:.8px solid #d9dee5">{{ number_format((float) $z->kauce, 2, ',', ' ') }} Kč</td>
     </tr>
+    @if ((float) $z->poplatek > 0)
+        <tr>
+            <td class="tlabel">Zapůjčení {{ $z->pocet_dni }} {{ $z->pocet_dni == 1 ? 'den' : ($z->pocet_dni < 5 ? 'dny' : 'dní') }} × {{ number_format((float) $z->denni_sazba, 0, ',', ' ') }} Kč</td>
+            <td class="tsum" width="45mm" style="border-top:.8px solid #d9dee5">− {{ number_format((float) $z->poplatek, 2, ',', ' ') }} Kč</td>
+        </tr>
+    @elseif ($z->zdarma)
+        <tr>
+            <td class="tlabel">Zapůjčení {{ $z->pocet_dni }} {{ $z->pocet_dni == 1 ? 'den' : ($z->pocet_dni < 5 ? 'dny' : 'dní') }} – zdarma po dobu opravy</td>
+            <td class="tsum" width="45mm" style="border-top:.8px solid #d9dee5">0,00 Kč</td>
+        </tr>
+    @endif
     @if ((float) $z->kauce_srazka > 0)
         <tr>
             <td class="tlabel">Sraženo{{ $z->srazka_duvod ? ' – ' . $z->srazka_duvod : '' }}</td>
             <td class="tsum" width="45mm" style="border-top:.8px solid #d9dee5">− {{ number_format((float) $z->kauce_srazka, 2, ',', ' ') }} Kč</td>
         </tr>
     @endif
-    <tr>
-        <td class="tlabel"><b>Vráceno vypůjčiteli</b></td>
-        <td class="tsum" width="45mm">{{ number_format($z->vracenaKauce(), 2, ',', ' ') }} Kč</td>
-    </tr>
+    @if ($z->doplatek() > 0)
+        <tr>
+            <td class="tlabel"><b>Vypůjčitel doplácí</b></td>
+            <td class="tsum" width="45mm">{{ number_format($z->doplatek(), 2, ',', ' ') }} Kč</td>
+        </tr>
+    @else
+        <tr>
+            <td class="tlabel"><b>Vráceno vypůjčiteli</b></td>
+            <td class="tsum" width="45mm">{{ number_format($z->vracenaKauce(), 2, ',', ' ') }} Kč</td>
+        </tr>
+    @endif
 </table>
 
 <div class="upozorneni">
-    Servis potvrzuje převzetí výše uvedených zařízení. Vypůjčitel svým podpisem potvrzuje převzetí
-    vrácené kauce ve výši <b>{{ number_format($z->vracenaKauce(), 0, ',', ' ') }} Kč</b>{{ (float) $z->kauce_srazka > 0 ? ' a souhlas se srážkou ' . number_format((float) $z->kauce_srazka, 0, ',', ' ') . ' Kč' : '' }};
+    Servis potvrzuje převzetí výše uvedených zařízení.
+    @if ($z->doplatek() > 0)
+        Vypůjčitel svým podpisem potvrzuje vyúčtování a úhradu doplatku <b>{{ number_format($z->doplatek(), 0, ',', ' ') }} Kč</b>;
+    @else
+        Vypůjčitel svým podpisem potvrzuje převzetí vrácené kauce ve výši <b>{{ number_format($z->vracenaKauce(), 0, ',', ' ') }} Kč</b>{{ (float) $z->kauce_srazka + (float) $z->poplatek > 0 ? ' a souhlas s vyúčtováním' : '' }};
+    @endif
     tím je zápůjčka vypořádána.
 </div>
 

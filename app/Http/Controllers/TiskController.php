@@ -8,6 +8,7 @@ use App\Models\Nabidka;
 use App\Models\Obchod;
 use App\Models\Zakazka;
 use App\Models\Zapujcka;
+use App\Models\ZapujcniZarizeni;
 use App\Support\Qr;
 use App\Support\QrPlatba;
 use App\Support\Tisk;
@@ -67,8 +68,34 @@ class TiskController extends Controller
     /** Štítek jako PNG ke stažení (600 DPI, 50 × 30 mm = 1181 × 709 px) – převod PDF přes Ghostscript. */
     public function stitekPng(Zakazka $zakazka): Response
     {
-        $pdf = $this->stitek($zakazka)->getContent();
+        return $this->pngZPdf($this->stitek($zakazka)->getContent(), 'Stitek-' . $zakazka->cislo . '.png');
+    }
 
+    /** Štítek(y) 50 × 30 mm na zápůjční zařízení – jedno, nebo víc (?ids=1,2,3 → stránka na štítek). */
+    public function zapujcniStitek(?ZapujcniZarizeni $zarizeni = null): Response
+    {
+        $ids = $zarizeni ? [$zarizeni->id] : array_filter(array_map('intval', explode(',', (string) request()->query('ids'))));
+        $zarizeni = ZapujcniZarizeni::whereKey($ids)->orderBy('nazev')->get();
+        abort_if($zarizeni->isEmpty(), 404);
+
+        return Tisk::pdf('pdf.stitek-zapujcni', [
+            'firma' => Firma::get(),
+            'zarizeni' => $zarizeni->map(fn ($d) => [
+                'd' => $d,
+                'qr' => Qr::sLogemDataUri(\App\Filament\Resources\ZapujcniZarizenis\ZapujcniZarizeniResource::getUrl('edit', ['record' => $d])),
+            ]),
+        ], 'Stitek-zapujcka-' . ($zarizeni->count() === 1 ? $zarizeni->first()->id : 'vice'), 'stitek');
+    }
+
+    public function zapujcniStitekPng(ZapujcniZarizeni $zarizeni): Response
+    {
+        return $this->pngZPdf($this->zapujcniStitek($zarizeni)->getContent(),
+            'Stitek-zapujcka-' . \Illuminate\Support\Str::slug($zarizeni->nazev) . '-' . $zarizeni->id . '.png');
+    }
+
+    /** PDF (1 strana) → PNG 600 DPI ke stažení přes Ghostscript. */
+    private function pngZPdf(string $pdf, string $nazevSouboru): Response
+    {
         $adr = storage_path('app/mpdf');
         $vstup = tempnam($adr, 'stitek') . '.pdf';
         $vystup = substr($vstup, 0, -4) . '.png';
@@ -91,7 +118,7 @@ class TiskController extends Controller
 
         return response($png, 200, [
             'Content-Type' => 'image/png',
-            'Content-Disposition' => 'attachment; filename="Stitek-' . $zakazka->cislo . '.png"',
+            'Content-Disposition' => 'attachment; filename="' . $nazevSouboru . '"',
         ]);
     }
 

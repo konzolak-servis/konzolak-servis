@@ -22,6 +22,7 @@ class CreateZapujcka extends CreateRecord
 
         $this->form->fill(array_merge($this->form->getRawState(), [
             'kauce' => (float) $d->kauce,
+            'denni_sazba' => (float) $d->denni_sazba,
             'polozky' => [[
                 'zapujcni_zarizeni_id' => $d->id,
                 'nazev' => $d->nazev,

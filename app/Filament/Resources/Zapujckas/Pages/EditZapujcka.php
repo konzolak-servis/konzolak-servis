@@ -38,7 +38,16 @@ class EditZapujcka extends EditRecord
                 ->modalHeading(fn () => 'Vrácení zápůjčky ' . $this->record->cislo)
                 ->modalSubmitActionLabel('Potvrdit vrácení')
                 ->schema(fn () => array_merge(
-                    [DatePicker::make('datum')->label('Vráceno dne')->default(now())->native(false)->required()],
+                    [
+                        DatePicker::make('datum')->label('Vráceno dne')->default(now())->native(false)->required()
+                            ->live()
+                            ->afterStateUpdated(fn ($state, $set) => $state ? $set('poplatek', $this->record->vypocetPoplatku($state)) : null),
+                        TextInput::make('poplatek')->label('Poplatek za zapůjčení')->numeric()->suffix('Kč')->minValue(0)
+                            ->default(fn () => $this->record->vypocetPoplatku(now()->toDateString()))
+                            ->visible(fn () => ! $this->record->zdarma && (float) $this->record->denni_sazba > 0)
+                            ->helperText(fn ($get) => $this->record->pocetDni($get('datum') ?: null) . ' dní × '
+                                . number_format((float) $this->record->denni_sazba, 0, ',', ' ') . ' Kč. Strhne se z kauce, zapíše se jako příjem. Můžeš upravit.'),
+                    ],
                     $this->record->polozky->map(fn ($p) => TextInput::make('stav_' . $p->id)
                         ->label('Stav: ' . $p->nazev . ($p->seriove_cislo ? ' (SN ' . $p->seriove_cislo . ')' : ''))
                         ->default('v pořádku, kompletní'))->all(),
@@ -56,10 +65,15 @@ class EditZapujcka extends EditRecord
                     foreach ($this->record->polozky as $p) {
                         $stavy[$p->id] = $data['stav_' . $p->id] ?? null;
                     }
-                    $this->record->vratit($data['datum'], (float) ($data['srazka'] ?? 0), $data['duvod'] ?? null, $data['poznamka'] ?? null, $stavy);
+                    $this->record->vratit($data['datum'], (float) ($data['srazka'] ?? 0), $data['duvod'] ?? null, $data['poznamka'] ?? null, $stavy,
+                        array_key_exists('poplatek', $data) ? (float) $data['poplatek'] : null);
 
+                    $z = $this->record->fresh();
                     Notification::make()->success()->title('Zápůjčka vrácena')
-                        ->body('Vrátit zákazníkovi: ' . number_format($this->record->fresh()->vracenaKauce(), 0, ',', ' ') . ' Kč. Vytiskni protokol o vrácení k podpisu.')
+                        ->body(($z->doplatek() > 0
+                            ? 'Zákazník doplácí: ' . number_format($z->doplatek(), 0, ',', ' ') . ' Kč.'
+                            : 'Vrátit zákazníkovi: ' . number_format($z->vracenaKauce(), 0, ',', ' ') . ' Kč.')
+                            . ' Vytiskni protokol o vrácení k podpisu.')
                         ->persistent()->send();
                     $this->redirect(ZapujckaResource::getUrl('edit', ['record' => $this->record]));
                 }),
@@ -70,7 +84,7 @@ class EditZapujcka extends EditRecord
                 ->color('gray')
                 ->visible(fn () => $this->record->stav === 'vraceno')
                 ->requiresConfirmation()
-                ->modalDescription('Zápůjčka bude znovu vedena jako zapůjčená a případná sražená kauce se odebere z peněžního deníku.')
+                ->modalDescription('Zápůjčka bude znovu vedena jako zapůjčená a případná srážka i poplatek se odeberou z peněžního deníku.')
                 ->action(function () {
                     $this->record->zrusitVraceni();
                     $this->redirect(ZapujckaResource::getUrl('edit', ['record' => $this->record]));

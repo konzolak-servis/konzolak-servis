@@ -79,6 +79,8 @@ class ZapujcniZarizeniResource extends Resource
                     ->helperText('Pro případ ztráty / poškození – uvádí se v protokolu.'),
                 TextInput::make('kauce')->label('Doporučená kauce')->numeric()->suffix('Kč')
                     ->helperText('Předvyplní se do zápůjčky.'),
+                TextInput::make('denni_sazba')->label('Denní sazba')->numeric()->suffix('Kč / den')
+                    ->helperText('Cena za den zapůjčení (mimo zápůjčky zdarma při opravě).'),
                 Toggle::make('aktivni')->label('K zapůjčení')->default(true)->inline(false)
                     ->helperText('Vypni u vyřazeného / prodaného zařízení.'),
                 Textarea::make('poznamka')->label('Poznámka')->rows(2)->columnSpanFull(),
@@ -116,6 +118,7 @@ class ZapujcniZarizeniResource extends Resource
                 TextColumn::make('stav_popis')->label('Stav')->wrap()->placeholder('—'),
                 TextColumn::make('hodnota')->label('Hodnota')->money('CZK')->sortable()->toggleable(),
                 TextColumn::make('kauce')->label('Kauce')->money('CZK')->placeholder('—'),
+                TextColumn::make('denni_sazba')->label('Kč / den')->money('CZK')->placeholder('—')->toggleable(),
                 TextColumn::make('polozky_count')->label('Zapůjčeno ×')->counts('polozky')->sortable()->toggleable(),
             ])
             ->filters([
@@ -130,6 +133,19 @@ class ZapujcniZarizeniResource extends Resource
                     ->visible(fn (ZapujcniZarizeni $r) => $r->aktivni && ! $r->aktualniPolozka())
                     ->url(fn (ZapujcniZarizeni $r) => ZapujckaResource::getUrl('create', ['zarizeni' => $r->id])),
                 EditAction::make(),
+                \Filament\Actions\ActionGroup::make([
+                    Action::make('stitek')->label('Štítek 50×30 (PDF)')->icon('heroicon-o-tag')
+                        ->url(fn (ZapujcniZarizeni $r) => route('tisk.zapujcni.stitek', ['zarizeni' => $r]))->openUrlInNewTab(),
+                    Action::make('stitek_png')->label('Štítek – stáhnout PNG')->icon('heroicon-o-photo')
+                        ->url(fn (ZapujcniZarizeni $r) => route('tisk.zapujcni.stitek-png', ['zarizeni' => $r,
+                            'soubor' => 'Stitek-zapujcka-' . $r->id . '.png'])),
+                ])->icon('heroicon-o-printer')->tooltip('Štítek'),
+            ])
+            ->toolbarActions([
+                \Filament\Actions\BulkAction::make('stitky')->label('Tisk štítků vybraných')->icon('heroicon-o-tag')
+                    ->action(fn ($records, $livewire) => $livewire->js('window.open(' . json_encode(
+                        route('tisk.zapujcni.stitek', ['ids' => $records->pluck('id')->implode(',')])) . ', "_blank")'))
+                    ->deselectRecordsAfterCompletion(),
             ]);
     }
 
