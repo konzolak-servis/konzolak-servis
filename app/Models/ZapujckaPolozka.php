@@ -19,4 +19,9 @@ class ZapujckaPolozka extends Model
     {
         return $this->belongsTo(Zapujcka::class, 'zapujcka_id');
     }
+
+    public function zapujcniZarizeni(): BelongsTo
+    {
+        return $this->belongsTo(ZapujcniZarizeni::class, 'zapujcni_zarizeni_id');
+    }
 }

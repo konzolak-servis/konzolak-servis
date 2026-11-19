@@ -77,6 +77,10 @@ class Zapujcka extends Model
             foreach ($this->polozky as $p) {
                 if (array_key_exists($p->id, $stavyPolozek)) {
                     $p->update(['stav_pri_vraceni' => $stavyPolozek[$p->id]]);
+                    // aktuální stav zařízení v seznamu zařízení k zápůjčce
+                    if ($p->zapujcni_zarizeni_id && filled($stavyPolozek[$p->id])) {
+                        ZapujcniZarizeni::whereKey($p->zapujcni_zarizeni_id)->update(['stav_popis' => $stavyPolozek[$p->id]]);
+                    }
                 }
             }
 

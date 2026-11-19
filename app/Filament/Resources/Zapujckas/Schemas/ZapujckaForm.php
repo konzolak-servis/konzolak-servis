@@ -71,6 +71,29 @@ class ZapujckaForm
                             ->columns(6)
                             ->itemLabel(fn (array $state) => ($state['nazev'] ?? '') ?: 'Zařízení')
                             ->schema([
+                                Select::make('zapujcni_zarizeni_id')->label('Ze seznamu zařízení k zápůjčce')
+                                    ->columnSpanFull()
+                                    ->options(fn ($state) => \App\Models\ZapujcniZarizeni::volne($state ? (int) $state : null)
+                                        ->orderBy('nazev')->get()->mapWithKeys(fn ($d) => [$d->id => $d->popisek])->all())
+                                    ->searchable()
+                                    ->live()
+                                    ->placeholder('vyber volné zařízení, nebo vyplň ručně níže')
+                                    ->afterStateUpdated(function ($state, $set, Get $get) {
+                                        if (! $state || ! ($d = \App\Models\ZapujcniZarizeni::find($state))) {
+                                            return;
+                                        }
+                                        $set('nazev', $d->nazev);
+                                        $set('seriove_cislo', $d->seriove_cislo);
+                                        $set('prislusenstvi', $d->prislusenstvi);
+                                        $set('stav_pri_zapujceni', $d->stav_popis);
+                                        $set('hodnota', $d->hodnota);
+                                        // doporučená kauce = součet kaucí vybraných zařízení (jen když ji ještě nikdo nezměnil ručně)
+                                        $ids = collect($get('../../polozky'))->pluck('zapujcni_zarizeni_id')->filter()->push($state)->unique();
+                                        $soucet = (float) \App\Models\ZapujcniZarizeni::whereKey($ids)->sum('kauce');
+                                        if ($soucet > 0 && (float) $get('../../kauce') < $soucet) {
+                                            $set('../../kauce', $soucet);
+                                        }
+                                    }),
                                 TextInput::make('nazev')->label('Zařízení')->required()->columnSpan(2)
                                     ->datalist(fn () => \App\Models\ZapujckaPolozka::query()->distinct()->orderBy('nazev')->pluck('nazev')->all()),
                                 TextInput::make('seriove_cislo')->label('Sériové číslo'),
