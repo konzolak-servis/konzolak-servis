@@ -23,18 +23,27 @@ class ObchodsTable
     {
         return $table
             ->columns([
-                TextColumn::make('cislo')->label('Číslo')->searchable()->sortable(),
-                TextColumn::make('datum')->label('Nakoupeno')->date('d.m.Y')->sortable(),
+                TextColumn::make('cislo')->label('Číslo')->searchable()->sortable()->weight('medium')
+                    ->extraAttributes(['style' => 'white-space:nowrap'])
+                    ->description(fn (Obchod $r) => $r->datum?->format('d.m.Y')),
+                TextColumn::make('datum')->label('Nakoupeno')->date('d.m.Y')->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('nazev')->label('Zařízení')->searchable(['nazev', 'seriove_cislo'])->wrap()->weight('medium')
+                    ->extraHeaderAttributes(['style' => 'min-width:14rem'])
+                    ->description(fn (Obchod $r) => $r->seriove_cislo ? 'SN ' . $r->seriove_cislo : null),
                 TextColumn::make('kategorie')->label('Platforma')->badge()
                     ->formatStateUsing(fn ($state) => Platformy::label($state))->toggleable(),
-                TextColumn::make('nazev')->label('Zařízení')->searchable()->wrap(),
-                TextColumn::make('cena')->label('Nákup')->money('CZK')->sortable(),
-                TextColumn::make('naklady_dilu')->label('Díly / náklady')->money('CZK')
-                    ->state(fn (Obchod $r) => $r->naklady_dilu)->placeholder('—'),
-                TextColumn::make('prodejni_cena')->label('Prodej')->money('CZK')->placeholder('—')->sortable(),
+                TextColumn::make('cena')->label('Nákup')->money('CZK', decimalPlaces: 0)->sortable()
+                    ->extraAttributes(['style' => 'white-space:nowrap'])
+                    ->description(fn (Obchod $r) => $r->naklady_dilu > 0
+                        ? '+ díly ' . number_format($r->naklady_dilu, 0, ',', ' ') . ' Kč' : null),
+                TextColumn::make('prodejni_cena')->label('Prodej')->money('CZK', decimalPlaces: 0)->placeholder('—')->sortable()
+                    ->extraAttributes(['style' => 'white-space:nowrap'])
+                    ->description(fn (Obchod $r) => $r->prodano && $r->prodej_datum ? $r->prodej_datum->format('d.m.Y') : null),
                 TextColumn::make('zisk')->label('Zisk')
                     ->state(fn (Obchod $r) => $r->zisk)
-                    ->money('CZK')->placeholder('—')
+                    ->money('CZK', decimalPlaces: 0)->placeholder('—')
+                    ->extraAttributes(['style' => 'white-space:nowrap'])
                     ->color(fn (?float $state) => $state === null ? 'gray' : ($state >= 0 ? 'success' : 'danger'))
                     ->weight('bold'),
                 TextColumn::make('prodano')->label('Stav')->badge()
@@ -57,6 +66,7 @@ class ObchodsTable
             ])
             ->defaultSort('datum', 'desc')
             ->recordActions([
+                ActionGroup::make([
                 Action::make('na_zapujcni_sklad')
                     ->label('Na zápůjční sklad')
                     ->icon('heroicon-o-arrows-right-left')
@@ -95,10 +105,12 @@ class ObchodsTable
                             Notification::make()->warning()->title($e->getMessage())->send();
                         }
                     }),
+                ])->label('Zápůjční sklad')->icon('heroicon-o-arrows-right-left')->color('info')->tooltip('Zápůjční sklad'),
                 Action::make('prodat')
                     ->label('Prodat')
                     ->icon('heroicon-o-banknotes')
                     ->color('success')
+                    ->button()
                     ->visible(fn (Obchod $record) => ! $record->prodano && ! $record->jeNaZapujcnimSkladu())
                     ->schema([
                         TextInput::make('prodejni_cena')->label('Prodejní cena')->numeric()->required()->suffix('Kč'),

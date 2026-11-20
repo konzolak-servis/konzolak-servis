@@ -39,6 +39,8 @@ class AdminPanelProvider extends PanelProvider
                 'gray' => Color::Slate,
             ])
             ->font('Inter')
+            // tabulky přes celou šířku obrazovky (víc sloupců bez lámání textu)
+            ->maxContentWidth(\Filament\Support\Enums\Width::Full)
             ->navigationGroups([
                 'Servis',
                 'Zápůjčky',
