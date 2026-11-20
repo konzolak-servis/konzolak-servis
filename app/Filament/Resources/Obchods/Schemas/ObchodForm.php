@@ -68,6 +68,14 @@ class ObchodForm
                             ->visible(fn (Get $get) => (bool) $get('prodano')),
                         TextInput::make('prodej_komu')->label('Komu')
                             ->visible(fn (Get $get) => (bool) $get('prodano')),
+                        TextInput::make('prodej_kontakt')->label('Kontakt na kupujícího')
+                            ->visible(fn (Get $get) => (bool) $get('prodano')),
+                        Toggle::make('prodej_na_dalku')->label('Prodej na dálku (odesláno poštou)')
+                            ->helperText('Na doklad se přidá poučení o právu odstoupit do 14 dnů.')
+                            ->visible(fn (Get $get) => (bool) $get('prodano')),
+                        Radio::make('prodej_zaruka_mesice')->label('Odpovědnost za vady')
+                            ->options([12 => '12 měsíců (použité zboží)', 24 => '24 měsíců'])->default(12)->inline()
+                            ->visible(fn (Get $get) => (bool) $get('prodano')),
                         Placeholder::make('naklady_celkem_info')
                             ->label('Investováno celkem')
                             ->content(fn (?Obchod $record) => $record
@@ -83,14 +91,44 @@ class ObchodForm
                     ]),
 
                 Section::make(fn (Get $get) => $get('typ') === 'prodej' ? 'Kupující' : 'Prodávající')
+                    ->description(fn (Get $get) => $get('typ') === 'prodej' ? null
+                        : ($get('vykup_zpusob') === 'na_dalku'
+                            ? 'Nákup na dálku: podpis nejde – původ dolož inzerátem, komunikací a platbou na účet prodávajícího.'
+                            : 'Osobní výkup: ověř občanku a údaje opiš (kopii nedělej). Prodávající podepíše doklad o výkupu.'))
                     ->columns(3)
                     ->schema([
-                        TextInput::make('protistrana_jmeno')->label('Jméno'),
+                        Radio::make('vykup_zpusob')->label('Výkup')
+                            ->options(Obchod::VYKUP_ZPUSOBY)->default('osobne')->inline()->live()
+                            ->afterStateUpdated(fn ($state, $set) => $state === 'na_dalku' ? $set('zpusob_uhrady', 'ucet') : null)
+                            ->visible(fn (Get $get) => $get('typ') === 'vykup')
+                            ->columnSpanFull(),
+                        TextInput::make('protistrana_jmeno')->label('Jméno a příjmení')
+                            ->helperText(fn (Get $get) => $get('vykup_zpusob') === 'na_dalku' ? 'Jak je uvedeno u inzerátu / na účtu.' : null),
                         TextInput::make('protistrana_kontakt')->label('Telefon / e-mail'),
-                        TextInput::make('protistrana_doklad')
-                            ->label('Číslo dokladu totožnosti')
-                            ->helperText('U výkupu doporučeno kvůli evidenci původu zboží.')
+                        TextInput::make('protistrana_adresa')->label('Adresa')
                             ->visible(fn (Get $get) => $get('typ') === 'vykup'),
+
+                        // osobně
+                        \Filament\Forms\Components\DatePicker::make('protistrana_narozeni')->label('Datum narození')->native(false)
+                            ->visible(fn (Get $get) => $get('typ') === 'vykup' && $get('vykup_zpusob') !== 'na_dalku'),
+                        TextInput::make('protistrana_doklad')->label('Číslo občanského průkazu')
+                            ->visible(fn (Get $get) => $get('typ') === 'vykup' && $get('vykup_zpusob') !== 'na_dalku'),
+
+                        // na dálku
+                        Select::make('inzerat_platforma')->label('Kde nakoupeno')
+                            ->options(array_combine(Obchod::INZERCE, Obchod::INZERCE))
+                            ->visible(fn (Get $get) => $get('typ') === 'vykup' && $get('vykup_zpusob') === 'na_dalku'),
+                        TextInput::make('inzerat_url')->label('Odkaz na inzerát / profil')->url()->columnSpan(2)
+                            ->visible(fn (Get $get) => $get('typ') === 'vykup' && $get('vykup_zpusob') === 'na_dalku'),
+                        TextInput::make('protistrana_ucet')->label('Účet prodávajícího (kam jsem platil)')
+                            ->visible(fn (Get $get) => $get('typ') === 'vykup' && $get('vykup_zpusob') === 'na_dalku'),
+                        \Filament\Forms\Components\FileUpload::make('dukazy')->label('Důkazy: screenshot inzerátu, konverzace, potvrzení platby')
+                            ->multiple()->panelLayout('grid')->columnSpan(2)
+                            ->acceptedFileTypes(['image/*', 'application/pdf'])
+                            ->disk('public')->directory('bazar-doklady')->visibility('public')
+                            ->maxFiles(20)->maxSize(10240)->openable()->downloadable()
+                            ->visible(fn (Get $get) => $get('typ') === 'vykup' && $get('vykup_zpusob') === 'na_dalku'),
+
                         Textarea::make('poznamka')->label('Poznámka')->rows(2)->columnSpanFull(),
                     ]),
             ]);

@@ -116,10 +116,19 @@ class ObchodsTable
                         TextInput::make('prodejni_cena')->label('Prodejní cena')->numeric()->required()->suffix('Kč'),
                         DatePicker::make('prodej_datum')->label('Datum prodeje')->default(now())->native(false)->required(),
                         TextInput::make('prodej_komu')->label('Komu (nepovinné)'),
+                        TextInput::make('prodej_kontakt')->label('Kontakt (nepovinné)'),
+                        \Filament\Forms\Components\Toggle::make('prodej_na_dalku')->label('Prodej na dálku (posílám poštou)')
+                            ->helperText('Doklad bude obsahovat poučení o právu odstoupit do 14 dnů.'),
+                        \Filament\Forms\Components\Radio::make('prodej_zaruka_mesice')->label('Odpovědnost za vady')
+                            ->options([12 => '12 měsíců (použité zboží)', 24 => '24 měsíců'])->default(12)->inline(),
                     ])
                     ->modalDescription(fn (Obchod $record) => 'Investováno celkem: '.number_format($record->naklady_celkem, 0, ',', ' ').' Kč (nákup '.number_format((float) $record->cena, 0, ',', ' ').' + díly '.number_format($record->naklady_dilu, 0, ',', ' ').'). Prodejní cena se zapíše jako příjem do peněžního deníku (kategorie „Bazar").')
                     ->action(function (array $data, Obchod $record) {
-                        $record->prodat((float) $data['prodejni_cena'], $data['prodej_datum'], $data['prodej_komu'] ?? null);
+                        $record->prodat((float) $data['prodejni_cena'], $data['prodej_datum'], $data['prodej_komu'] ?? null, [
+                            'prodej_na_dalku' => (bool) ($data['prodej_na_dalku'] ?? false),
+                            'prodej_zaruka_mesice' => (int) ($data['prodej_zaruka_mesice'] ?? 12),
+                            'prodej_kontakt' => $data['prodej_kontakt'] ?? null,
+                        ]);
 
                         Notification::make()
                             ->title('Prodáno za '.number_format((float) $data['prodejni_cena'], 0, ',', ' ').' Kč')

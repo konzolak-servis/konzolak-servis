@@ -19,6 +19,9 @@ class Obchod extends Model
         'prodejni_cena' => 'decimal:2',
         'prodej_datum' => 'date',
         'prodano' => 'boolean',
+        'protistrana_narozeni' => 'date',
+        'dukazy' => 'array',
+        'prodej_na_dalku' => 'boolean',
         'vyrizeno' => 'boolean',
     ];
 
@@ -26,6 +29,15 @@ class Obchod extends Model
     public const KATEGORIE = \App\Support\Platformy::HODNOTY;
 
     public const ZPUSOBY_UHRADY = ['hotove' => 'Hotově', 'ucet' => 'Na účet'];
+
+    public const VYKUP_ZPUSOBY = ['osobne' => 'Osobně (občanka + podpis)', 'na_dalku' => 'Na dálku (Bazoš, Facebook… – bez podpisu)'];
+
+    public const INZERCE = ['Bazoš', 'Facebook Marketplace', 'Vinted', 'Aukro', 'Sbazar', 'jiné'];
+
+    public function jeVykupNaDalku(): bool
+    {
+        return $this->vykup_zpusob === 'na_dalku';
+    }
 
     protected static function booted(): void
     {
@@ -127,15 +139,15 @@ class Obchod extends Model
     }
 
     /** Prodej zařízení – zapíše prodejní cenu, datum a příjem do peněžního deníku. */
-    public function prodat(float $cena, ?string $datum = null, ?string $komu = null): void
+    public function prodat(float $cena, ?string $datum = null, ?string $komu = null, array $dalsi = []): void
     {
-        $this->update([
+        $this->update(array_merge([
             'prodano' => true,
             'prodejni_cena' => $cena,
             'prodej_datum' => $datum ?: now()->toDateString(),
             'prodej_komu' => $komu,
             'vyrizeno' => true,
-        ]);
+        ], array_intersect_key($dalsi, array_flip(['prodej_na_dalku', 'prodej_zaruka_mesice', 'prodej_kontakt']))));
         $this->zapisProdejDoDeniku();
     }
 
