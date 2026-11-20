@@ -14,7 +14,7 @@
             @endif
             @if ($zk?->ico)<div class="muted">IČO: {{ $zk->ico }}</div>@endif
             <div class="muted" style="margin-top:1mm">Doklad totožnosti: {{ $z->doklad_totoznosti ?: '……………………………' }}</div>
-            <div class="muted" style="margin-top:1mm">Datum narození: ……………………</div>
+            <div class="muted" style="margin-top:1mm">Datum narození: {{ $z->datum_narozeni?->format('d.m.Y') ?: '……………………' }}</div>
         </td>
         <td width="25%">
             <div class="label">Zapůjčeno dne</div>

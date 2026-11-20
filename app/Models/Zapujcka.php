@@ -22,6 +22,7 @@ class Zapujcka extends Model
         'datum_zapujceni' => 'date',
         'vratit_do' => 'date',
         'datum_vraceni' => 'date',
+        'datum_narozeni' => 'date',
         'kauce' => 'decimal:2',
         'kauce_srazka' => 'decimal:2',
         'zdarma' => 'boolean',

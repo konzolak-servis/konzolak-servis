@@ -18,10 +18,9 @@ class EditZapujcka extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('tisk_predani')->label('Tisk k předání (2×)')->icon('heroicon-o-printer')->color('primary')
-                ->tooltip('Předávací protokol – výtisk pro zákazníka a pro servis v jednom PDF')
+            Action::make('tisk_predani')->label('Předávací protokol')->icon('heroicon-o-printer')->color('primary')
                 ->visible(fn () => $this->record->stav !== 'vraceno')
-                ->url(fn () => $this->record->tiskUrl('sada-predani'))->openUrlInNewTab(),
+                ->url(fn () => $this->record->tiskUrl('protokol'))->openUrlInNewTab(),
             Action::make('tisk_vraceni')->label('Tisk k vrácení (2×)')->icon('heroicon-o-printer')->color('primary')
                 ->tooltip('Protokol o vrácení + vyúčtování kauce – pro zákazníka a pro servis v jednom PDF')
                 ->visible(fn () => $this->record->stav === 'vraceno')

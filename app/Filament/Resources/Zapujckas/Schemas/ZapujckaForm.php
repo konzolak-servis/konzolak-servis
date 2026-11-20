@@ -50,6 +50,9 @@ class ZapujckaForm
                             ->searchable()->preload()->required())
                             ->columnSpan(2),
                         DatePicker::make('datum_zapujceni')->label('Zapůjčeno dne')->default(now())->native(false)->required(),
+                        DatePicker::make('datum_narozeni')->label('Datum narození vypůjčitele')->native(false)
+                            ->displayFormat('d.m.Y')->maxDate(now())
+                            ->helperText('Opiš z občanky – uvede se v protokolu.'),
                         TextInput::make('doklad_totoznosti')->label('Doklad totožnosti (č. OP)')->maxLength(50)
                             ->placeholder('např. OP 123456789')
                             ->helperText('Ověř podle dokladu při převzetí – uvede se v protokolu.'),
