@@ -87,6 +87,9 @@ class ZapujcniZarizeniResource extends Resource
                 TextInput::make('seriove_cislo')->label('Sériové číslo'),
                 TextInput::make('prislusenstvi')->label('Příslušenství (zapůjčuje se s ním)')->columnSpan(2)
                     ->placeholder('napájecí kabel, HDMI, 1× ovladač'),
+                Textarea::make('hry')->label('Nainstalované hry / PS Plus (profil Konzolák)')->rows(3)->columnSpanFull()
+                    ->placeholder("PS Plus Extra (do 12/2027)\nEA Sports FC 25\nGran Turismo 7\nAstro Bot")
+                    ->helperText('Každá hra na řádek. Vytiskne se v předávacím protokolu – zákazník je může hrát přes svůj profil.'),
                 TextInput::make('stav_popis')->label('Aktuální stav')->placeholder('funkční, bez poškození')
                     ->helperText('Po vrácení zápůjčky se přepíše stavem při vrácení.'),
                 TextInput::make('hodnota')->label('Hodnota')->numeric()->suffix('Kč')

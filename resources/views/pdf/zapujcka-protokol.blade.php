@@ -12,7 +12,9 @@
     @foreach ($z->polozky as $p)
         <tr>
             <td>{{ $loop->iteration }}</td>
-            <td><b>{{ $p->nazev }}</b></td>
+            <td><b>{{ $p->nazev }}</b>
+                @if (filled($p->hry))<div class="muted" style="font-size:7.5pt; margin-top:.5mm">Hry: {{ collect(preg_split('/\R/', $p->hry))->map(fn ($h) => trim($h))->filter()->implode(', ') }}</div>@endif
+            </td>
             <td>{{ $p->seriove_cislo ?: '—' }}</td>
             <td>{{ $p->prislusenstvi ?: '—' }}</td>
             <td>{{ $p->stav_pri_zapujceni ?: 'funkční' }}</td>

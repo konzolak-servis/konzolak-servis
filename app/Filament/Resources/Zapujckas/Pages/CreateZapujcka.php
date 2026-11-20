@@ -39,6 +39,7 @@ class CreateZapujcka extends CreateRecord
                 'nazev' => $d->nazev,
                 'seriove_cislo' => $d->seriove_cislo,
                 'prislusenstvi' => $d->prislusenstvi,
+                'hry' => $d->hry,
                 'stav_pri_zapujceni' => $d->stav_popis,
                 'hodnota' => $d->hodnota,
             ]],

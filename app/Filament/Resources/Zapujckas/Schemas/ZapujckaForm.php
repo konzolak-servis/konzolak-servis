@@ -118,6 +118,7 @@ class ZapujckaForm
                                         $set('nazev', $d->nazev);
                                         $set('seriove_cislo', $d->seriove_cislo);
                                         $set('prislusenstvi', $d->prislusenstvi);
+                                        $set('hry', $d->hry);
                                         $set('stav_pri_zapujceni', $d->stav_popis);
                                         $set('hodnota', $d->hodnota);
                                         // doporučená kauce = součet kaucí vybraných zařízení (jen když ji ještě nikdo nezměnil ručně)
@@ -140,6 +141,8 @@ class ZapujckaForm
                                     ->helperText('Pro případ ztráty / poškození.'),
                                 TextInput::make('prislusenstvi')->label('Příslušenství')->columnSpan(2)
                                     ->placeholder('napájení, HDMI, ovladač…'),
+                                Textarea::make('hry')->label('Nainstalované hry / PS Plus')->rows(2)->columnSpanFull()
+                                    ->helperText('Převezme se ze zápůjčního skladu; uvede se v protokolu.'),
                                 TextInput::make('stav_pri_zapujceni')->label('Stav při zapůjčení')->columnSpan(3)
                                     ->placeholder('funkční, bez poškození'),
                                 TextInput::make('stav_pri_vraceni')->label('Stav při vrácení')->columnSpan(3)
