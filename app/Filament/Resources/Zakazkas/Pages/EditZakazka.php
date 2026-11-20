@@ -167,7 +167,13 @@ class EditZakazka extends EditRecord
                         ->options(\App\Models\Zakazka::ZPUSOBY_UHRADY)
                         ->default($this->record->zpusob_uhrady ?? 'hotove')
                         ->inline()
+                        ->live()
                         ->required(),
+                    \Filament\Forms\Components\Toggle::make('platba_na_miste')
+                        ->label('Zaplatil QR / převodem přímo u mě (eviduje se v EET)')
+                        ->helperText('Nech vypnuté, když platí převodem z domova (na dálku) – pak se do EET neposílá.')
+                        ->default((bool) $this->record->platba_na_miste)
+                        ->visible(fn ($get) => $get('zpusob_uhrady') === 'ucet'),
                 ])
                 ->modalHeading('Uzavřít zakázku')
                 ->modalDescription('Nastaví „Vydáno" a zapíše příjem do peněžního deníku. Servisní protokol už zákazník '
@@ -177,6 +183,7 @@ class EditZakazka extends EditRecord
                     $this->record->update([
                         'stav' => 'vydano',
                         'zpusob_uhrady' => $data['zpusob_uhrady'],
+                        'platba_na_miste' => $data['zpusob_uhrady'] === 'ucet' && ! empty($data['platba_na_miste']),
                         'datum_vyrizeni' => $this->record->datum_vyrizeni ?? now()->toDateString(),
                     ]);
 

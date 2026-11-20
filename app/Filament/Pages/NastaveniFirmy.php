@@ -36,7 +36,9 @@ class NastaveniFirmy extends Page
 
     public function mount(): void
     {
-        $this->form->fill(Firma::get()->attributesToArray());
+        $data = Firma::get()->attributesToArray();
+        unset($data['eet_cert_heslo']); // šifrované heslo do formuláře nepatří
+        $this->form->fill($data);
     }
 
     public function form(Schema $schema): Schema
@@ -66,6 +68,39 @@ class NastaveniFirmy extends Page
                         TextInput::make('zaruka_mesice')->label('Výchozí záruka (měsíců)')->numeric(),
                     ]),
 
+                Section::make('EET 2.0 – evidence tržeb')
+                    ->description('Od 1. 1. 2027. Do EET se automaticky odesílá každý příjem z peněžního deníku zaplacený na místě (hotově, nebo QR/převodem přímo u tebe). Platby převodem na dálku a dobírka se neodesílají. Údaje získáš v portálu MOJE daně → Evidence tržeb.')
+                    ->collapsible()
+                    ->columns(3)
+                    ->schema([
+                        Toggle::make('eet_aktivni')->label('Odesílat tržby do EET')->inline(false),
+                        \Filament\Forms\Components\Radio::make('eet_prostredi')->label('Prostředí')
+                            ->options(['produkce' => 'Ostré (produkce)', 'playground' => 'Testovací (playground)'])
+                            ->default('playground'),
+                        Toggle::make('eet_overeni')->label('Ověřovací režim')->inline(false)
+                            ->helperText('Jen zkouška spojení – tržby se NEevidují. Pro ostrý provoz vypnout.'),
+                        TextInput::make('eet_dic')->label('DIČ (EIČ)')->placeholder('CZ1234567890')
+                            ->regex('/^CZ[0-9]{8,10}$/')->helperText('Musí odpovídat certifikátu.'),
+                        TextInput::make('eet_id_jednotky')->label('ID evidenční jednotky')->numeric()
+                            ->helperText('Číslo provozovny z DIS+ (končí 1–4).'),
+                        TextInput::make('eet_id_pokl')->label('Označení pokladny')->maxLength(20)->default('1'),
+                        \Filament\Forms\Components\DatePicker::make('eet_od')->label('Evidovat příjmy od')->native(false)
+                            ->default('2027-01-01')->helperText('Starší příjmy se neodesílají.'),
+                        \Filament\Forms\Components\FileUpload::make('eet_cert_soubor')->label('Pokladní certifikát (.p12)')
+                            ->disk('local')->directory('eet')->visibility('private')
+                            ->acceptedFileTypes(['application/x-pkcs12', 'application/octet-stream', '.p12', '.pfx'])
+                            ->maxSize(64),
+                        TextInput::make('eet_cert_heslo')->label('Heslo k certifikátu')
+                            ->password()->revealable()
+                            ->placeholder('uložené – vyplň jen při změně')
+                            ->dehydrated(fn ($state) => filled($state))
+                            ->dehydrateStateUsing(fn ($state) => \Illuminate\Support\Facades\Crypt::encryptString($state)),
+                    ])
+                    ->footerActions([
+                        Action::make('eet_test')->label('Otestovat spojení s EET')->icon('heroicon-o-signal')
+                            ->action(fn () => $this->otestovatEet()),
+                    ]),
+
                 Section::make('Automatické texty na dokladech')
                     ->description('Právní / informační text v patě jednotlivých dokumentů. Uprav podle potřeby – projeví se okamžitě při dalším tisku.')
                     ->schema([
@@ -82,6 +117,35 @@ class NastaveniFirmy extends Page
                             ->helperText('Každý řádek = jedno očíslované pravidlo. {telefon} se nahradí telefonem firmy.'),
                     ]),
             ]);
+    }
+
+    /** Uloží nastavení a pošle zkušební zprávu v ověřovacím režimu (nic se neeviduje). */
+    public function otestovatEet(): void
+    {
+        $this->save();
+        $f = Firma::get();
+
+        try {
+            $k = \App\Support\Eet\Eet::klient();
+            $r = $k->odeslat([
+                'eic_popl' => $f->eet_dic ?: (string) $k->eicCertifikatu(),
+                'id_jednotky' => (int) ($f->eet_id_jednotky ?: 11),
+                'id_pokl' => $f->eet_id_pokl ?: '1',
+                'porad_cis' => 'TEST/' . now()->format('YmdHis'),
+                'dat_trzby' => \App\Support\Eet\EetKlient::cas(now()),
+                'celk_trzba' => 1.00,
+            ], true, true);
+
+            $info = 'Certifikát: ' . $k->eicCertifikatu() . ', platný do ' . $k->platnostDo()?->format('d.m.Y')
+                . ($f->eet_dic && $f->eet_dic !== $k->eicCertifikatu() ? '. POZOR: DIČ v nastavení se neshoduje s certifikátem!' : '')
+                . (! empty($r['varovani']) ? '. Varování: ' . collect($r['varovani'])->pluck('text')->implode('; ') : '');
+
+            $r['ok']
+                ? Notification::make()->success()->title('Spojení s EET funguje (' . ($f->eet_prostredi === 'produkce' ? 'ostré' : 'testovací') . ' prostředí)')->body($info)->persistent()->send()
+                : Notification::make()->danger()->title('EET odmítlo zkušební zprávu')->body(($r['chyba_kod'] ?? '') . ' ' . ($r['chyba_text'] ?? '') . '. ' . $info)->persistent()->send();
+        } catch (\Throwable $e) {
+            Notification::make()->danger()->title('Test EET se nepodařil')->body($e->getMessage())->persistent()->send();
+        }
     }
 
     public function save(): void

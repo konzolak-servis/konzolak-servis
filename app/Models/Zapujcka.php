@@ -258,6 +258,7 @@ class Zapujcka extends Model
                 PenezniDenik::create([
                     'datum' => $datum,
                     'typ' => 'prijem',
+                    'zpusob' => $this->kauce_forma === 'hotově' || $forma === 'hotově' ? 'hotove' : 'ucet',
                     'popis' => 'Zápůjčka ' . $this->cislo . ' – náhrada škody / srážka' . ($duvod ? ' (' . \Illuminate\Support\Str::limit($duvod, 150) . ')' : ''),
                     'castka' => $srazka,
                     'kategorie' => 'Služby',
@@ -270,6 +271,7 @@ class Zapujcka extends Model
                 PenezniDenik::create([
                     'datum' => $datum,
                     'typ' => 'prijem',
+                    'zpusob' => $this->kauce_forma === 'hotově' || $forma === 'hotově' ? 'hotove' : 'ucet',
                     'popis' => 'Zápůjčka ' . $this->cislo . ' – zapůjčení ' . $this->pocet_dni . ' dní',
                     'castka' => $poplatek,
                     'kategorie' => 'Služby',

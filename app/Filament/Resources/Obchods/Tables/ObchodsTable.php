@@ -117,6 +117,10 @@ class ObchodsTable
                         DatePicker::make('prodej_datum')->label('Datum prodeje')->default(now())->native(false)->required(),
                         TextInput::make('prodej_komu')->label('Komu (nepovinné)'),
                         TextInput::make('prodej_kontakt')->label('Kontakt (nepovinné)'),
+                        \Filament\Forms\Components\Radio::make('prodej_platba')->label('Platba')
+                            ->options(['hotove' => 'Hotově', 'qr_na_miste' => 'QR / převod u mě na místě', 'ucet' => 'Převodem na dálku'])
+                            ->default('ucet')->required()
+                            ->helperText('Hotově a QR na místě se odešle do EET, převod na dálku ne.'),
                         \Filament\Forms\Components\Toggle::make('prodej_na_dalku')->label('Prodej na dálku (posílám poštou)')
                             ->helperText('Doklad bude obsahovat poučení o právu odstoupit do 14 dnů.'),
                         \Filament\Forms\Components\Radio::make('prodej_zaruka_mesice')->label('Odpovědnost za vady')
@@ -128,6 +132,7 @@ class ObchodsTable
                             'prodej_na_dalku' => (bool) ($data['prodej_na_dalku'] ?? false),
                             'prodej_zaruka_mesice' => (int) ($data['prodej_zaruka_mesice'] ?? 12),
                             'prodej_kontakt' => $data['prodej_kontakt'] ?? null,
+                            'prodej_platba' => $data['prodej_platba'] ?? 'ucet',
                         ]);
 
                         Notification::make()

@@ -147,7 +147,7 @@ class Obchod extends Model
             'prodej_datum' => $datum ?: now()->toDateString(),
             'prodej_komu' => $komu,
             'vyrizeno' => true,
-        ], array_intersect_key($dalsi, array_flip(['prodej_na_dalku', 'prodej_zaruka_mesice', 'prodej_kontakt']))));
+        ], array_intersect_key($dalsi, array_flip(['prodej_na_dalku', 'prodej_zaruka_mesice', 'prodej_kontakt', 'prodej_platba']))));
         $this->zapisProdejDoDeniku();
     }
 
@@ -227,7 +227,8 @@ class Obchod extends Model
                     . ($this->prodej_komu ? ' (' . $this->prodej_komu . ')' : ''),
                 'castka' => (float) $this->prodejni_cena,
                 'kategorie' => 'Bazar',
-                'zpusob' => $this->zpusob_uhrady,
+                'zpusob' => $this->prodej_platba === 'hotove' ? 'hotove' : 'ucet',
+                'eet_na_miste' => $this->prodej_platba === 'qr_na_miste',
             ]);
         } else {
             PenezniDenik::where($klic)->delete();

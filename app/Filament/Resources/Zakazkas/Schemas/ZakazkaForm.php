@@ -334,7 +334,11 @@ class ZakazkaForm
                         \Filament\Forms\Components\Radio::make('zpusob_uhrady')->label('Způsob platby')
                             ->options(Zakazka::ZPUSOBY_UHRADY)
                             ->default('hotove')
+                            ->live()
                             ->inline(),
+                        \Filament\Forms\Components\Toggle::make('platba_na_miste')
+                            ->label('QR / převod zaplacen přímo u mě (EET)')
+                            ->visible(fn (Get $get) => $get('zpusob_uhrady') === 'ucet'),
                         TextInput::make('zaloha')->label('Záloha')->numeric()->default(0)->suffix('Kč')->live(),
                         DatePicker::make('zaloha_datum')->label('Záloha přijata dne')->native(false)
                             ->visible(fn (Get $get) => (float) $get('zaloha') > 0),

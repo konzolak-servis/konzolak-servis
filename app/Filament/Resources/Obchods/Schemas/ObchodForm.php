@@ -70,6 +70,10 @@ class ObchodForm
                             ->visible(fn (Get $get) => (bool) $get('prodano')),
                         TextInput::make('prodej_kontakt')->label('Kontakt na kupujícího')
                             ->visible(fn (Get $get) => (bool) $get('prodano')),
+                        Radio::make('prodej_platba')->label('Platba za prodej')
+                            ->options(['hotove' => 'Hotově', 'qr_na_miste' => 'QR na místě', 'ucet' => 'Převodem na dálku'])
+                            ->default('ucet')->inline()
+                            ->visible(fn (Get $get) => (bool) $get('prodano')),
                         Toggle::make('prodej_na_dalku')->label('Prodej na dálku (odesláno poštou)')
                             ->helperText('Na doklad se přidá poučení o právu odstoupit do 14 dnů.')
                             ->visible(fn (Get $get) => (bool) $get('prodano')),

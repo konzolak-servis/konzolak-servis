@@ -172,6 +172,20 @@ class UkolyWidget extends Widget
         $this->pridej($skupiny, 'zapujcky', 'Zápůjčky k vrácení', 'danger', $zapujcky,
             \App\Filament\Resources\Zapujckas\ZapujckaResource::getUrl('index'));
 
+        // 4c) EET – neodeslané tržby (zákonná lhůta 48 h) ---------------------
+        $eet = \App\Models\EetTrzba::where('stav', '!=', 'odeslano')->orderBy('id')->get()
+            ->map(fn (\App\Models\EetTrzba $t) => [
+                'cislo' => 'EET ' . $t->porad_cis,
+                'popis' => $t->popis,
+                'meta' => $t->stav === 'chyba' ? 'chyba: ' . \Illuminate\Support\Str::limit((string) $t->chyba_text, 40) : 'čeká na odeslání',
+                'castka' => $t->celk_trzba,
+                'tag' => null,
+                'urgent' => $t->stav === 'chyba' || $t->created_at->lt(now()->subHours(24)),
+                'url' => \App\Filament\Resources\EetTrzbas\EetTrzbaResource::getUrl('index'),
+            ]);
+        $this->pridej($skupiny, 'eet', 'EET – neodeslané tržby', 'danger', $eet,
+            \App\Filament\Resources\EetTrzbas\EetTrzbaResource::getUrl('index'));
+
         // 5) Dlouho bez pohybu ---------------------------------------------
         $stoji = Zakazka::with(['zakaznik', 'zarizeni', 'dalsiZarizeni'])
             ->whereIn('stav', ['prijato', 'diagnostika'])

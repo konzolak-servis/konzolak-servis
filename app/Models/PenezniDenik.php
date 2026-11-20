@@ -17,7 +17,21 @@ class PenezniDenik extends Model
     protected $casts = [
         'datum' => 'date',
         'castka' => 'decimal:2',
+        'eet_na_miste' => 'boolean',
+        'eet_vyjmout' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        // EET 2.0: každý kontaktní příjem se odešle, změna = storno + nová tržba
+        static::saved(fn (PenezniDenik $d) => \App\Support\Eet\Eet::synchronizuj($d));
+        static::deleting(fn (PenezniDenik $d) => \App\Support\Eet\Eet::synchronizuj($d, true));
+    }
+
+    public function eetTrzby(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(EetTrzba::class, 'penezni_denik_id');
+    }
 
     /** Skupiny pro záložky / filtrovaný export. */
     public const SKUPINY = [

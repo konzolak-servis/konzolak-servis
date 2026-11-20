@@ -67,6 +67,7 @@ class Faktura extends Model
                     . ($this->zakaznik ? ' – ' . $this->zakaznik->nazev : ''),
                 'castka' => $castka,
                 'kategorie' => 'Servis',
+                'zpusob' => $this->forma_uhrady === 'hotově' ? 'hotove' : 'ucet',
             ]);
         } else {
             PenezniDenik::where($klic)->delete();

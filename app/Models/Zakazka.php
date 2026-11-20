@@ -31,6 +31,7 @@ class Zakazka extends Model
         'zaruka_mesice' => 'integer',
         'dil_objednany' => 'boolean',
         'zaloha_v_prijmech' => 'boolean',
+        'platba_na_miste' => 'boolean',
         'fotky' => 'array',
     ];
 
@@ -216,6 +217,7 @@ class Zakazka extends Model
                 'castka' => (float) $this->zaloha,
                 'kategorie' => 'Servis – záloha',
                 'zpusob' => $this->zpusob_uhrady,
+                'eet_na_miste' => $this->zpusob_uhrady === 'ucet' && $this->platba_na_miste,
             ]);
         } else {
             PenezniDenik::where($klic)->delete();
@@ -259,6 +261,8 @@ class Zakazka extends Model
                 'castka' => $castka,
                 'kategorie' => 'Servis',
                 'zpusob' => $this->zpusob_uhrady,
+                'eet_na_miste' => $this->zpusob_uhrady === 'ucet' && $this->platba_na_miste,
+                'eet_vyjmout' => $this->jeDobirka() || ($this->zpusob_uhrady === 'hotove' && $this->zpusob_vydani === 'odeslani'),
             ]);
         } else {
             PenezniDenik::where($klic)->delete();
