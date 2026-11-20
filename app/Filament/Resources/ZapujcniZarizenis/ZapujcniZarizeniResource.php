@@ -46,30 +46,6 @@ class ZapujcniZarizeniResource extends Resource
     {
         return $schema->components([
             Section::make()->columns(3)->schema([
-                \Filament\Forms\Components\Select::make('typ_id')->label('Typ zařízení (ceník)')
-                    ->columnSpanFull()
-                    ->options(fn () => \App\Models\ZapujcniTyp::orderBy('poradi')->orderBy('nazev')->get()
-                        ->mapWithKeys(fn ($t) => [$t->id => $t->nazev . ' – ' . $t->tarifText()])->all())
-                    ->searchable()
-                    ->live()
-                    ->helperText('Předvyplní ceny, kauci, hodnotu a příslušenství podle nastavení typu (Zápůjčky → Typy a ceník). U zařízení je pak můžeš upravit.')
-                    ->afterStateUpdated(function ($state, $set, $get) {
-                        if (! $state || ! ($t = \App\Models\ZapujcniTyp::find($state))) {
-                            return;
-                        }
-                        // ceník a kauce vždy podle typu, ostatní jen když je prázdné
-                        foreach (['denni_sazba', 'vikend_cely', 'kauce'] as $pole) {
-                            $set($pole, $t->{$pole});
-                        }
-                        foreach (['hodnota', 'prislusenstvi'] as $pole) {
-                            if (blank($get($pole))) {
-                                $set($pole, $t->{$pole});
-                            }
-                        }
-                        if (blank($get('nazev'))) {
-                            $set('nazev', $t->nazev);
-                        }
-                    }),
                 \Filament\Forms\Components\Select::make('obchod_id')->label('Kus z bazaru')
                     ->columnSpanFull()
                     ->options(fn ($state) => \App\Models\Obchod::query()
@@ -91,7 +67,21 @@ class ZapujcniZarizeniResource extends Resource
                                 $set($pole, $hodnota);
                             }
                         }
+                        // typ (ceník) podle názvu / modelu, případně platformy z bazaru
+                        if (blank($get('typ_id')) && ($t = \App\Models\ZapujcniTyp::najdiPodleNazvu($o->nazev, \App\Support\Platformy::label($o->kategorie)))) {
+                            $set('typ_id', $t->id);
+                            self::vyplnZTypu($t, $set, $get);
+                        }
                     }),
+                \Filament\Forms\Components\Select::make('typ_id')->label('Typ zařízení (ceník)')
+                    ->columnSpanFull()
+                    ->options(fn () => \App\Models\ZapujcniTyp::orderBy('poradi')->orderBy('nazev')->get()
+                        ->mapWithKeys(fn ($t) => [$t->id => $t->nazev . ' – ' . $t->tarifText()])->all())
+                    ->searchable()
+                    ->live()
+                    ->placeholder('vyber typ – doplní ceny, kauci a příslušenství')
+                    ->helperText('Ceník a výbava podle Zápůjčky → Typy a ceník. Hodnoty pak můžeš u zařízení upravit.')
+                    ->afterStateUpdated(fn ($state, $set, $get) => ($t = \App\Models\ZapujcniTyp::find($state)) ? self::vyplnZTypu($t, $set, $get) : null),
                 TextInput::make('nazev')->label('Zařízení')->required()->columnSpan(2)
                     ->placeholder('např. PS5 Slim digital, DualSense bílý'),
                 TextInput::make('seriove_cislo')->label('Sériové číslo'),
@@ -111,6 +101,19 @@ class ZapujcniZarizeniResource extends Resource
                 Textarea::make('poznamka')->label('Poznámka')->rows(2)->columnSpanFull(),
             ]),
         ]);
+    }
+
+    /** Předvyplní ceník a kauci podle typu (vždy), hodnotu, příslušenství a název jen když jsou prázdné. */
+    private static function vyplnZTypu(\App\Models\ZapujcniTyp $t, $set, $get): void
+    {
+        foreach (['denni_sazba', 'vikend_cely', 'kauce'] as $pole) {
+            $set($pole, $t->{$pole});
+        }
+        foreach (['hodnota', 'prislusenstvi', 'nazev'] as $pole) {
+            if (blank($get($pole))) {
+                $set($pole, $pole === 'nazev' ? $t->nazev : $t->{$pole});
+            }
+        }
     }
 
     public static function table(Table $table): Table

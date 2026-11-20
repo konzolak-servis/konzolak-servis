@@ -33,8 +33,9 @@ class ZapujcniZarizeni extends Model
             if (! $maTypy) {
                 return;
             }
-            if (! $d->typ_id && ! $d->exists) {
-                $d->typ_id = ZapujcniTyp::najdiPodleNazvu($d->nazev)?->id;
+            if (! $d->typ_id) {
+                $platforma = $d->obchod_id ? \App\Support\Platformy::label(Obchod::whereKey($d->obchod_id)->value('kategorie')) : null;
+                $d->typ_id = ZapujcniTyp::najdiPodleNazvu($d->nazev, $platforma)?->id;
             }
             if ($d->typ_id && ($typ = ZapujcniTyp::find($d->typ_id))) {
                 foreach (ZapujcniTyp::POLE as $pole) {

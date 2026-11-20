@@ -28,20 +28,38 @@ class ZapujcniTyp extends Model
         return $this->hasMany(ZapujcniZarizeni::class, 'typ_id');
     }
 
-    /** Typ podle názvu zařízení: název typu nebo některé z klíčových slov je obsaženo v názvu (bez diakritiky). */
-    public static function najdiPodleNazvu(?string $nazev): ?self
+    /**
+     * Typ podle názvu zařízení (název typu nebo klíčové slovo, např. modelové číslo „cfi-1", obsažené v názvu).
+     * Vyhrává nejdelší (nejkonkrétnější) shoda – „cfi-zct" (ovladač) před „cfi-". Když název nic neříká,
+     * zkusí se platforma z bazaru (např. „PlayStation 5").
+     */
+    public static function najdiPodleNazvu(?string $nazev, ?string $platforma = null): ?self
     {
-        $n = Str::lower(Str::ascii((string) $nazev));
-        if ($n === '') {
-            return null;
+        $typy = static::orderBy('poradi')->get();
+
+        foreach ([$nazev, $platforma] as $text) {
+            $n = Str::lower(Str::ascii((string) $text));
+            if ($n === '') {
+                continue;
+            }
+
+            $nejlepsi = null;
+            $delka = 0;
+            foreach ($typy as $t) {
+                $slova = collect(explode(',', (string) $t->klicova_slova))->push($t->nazev)
+                    ->map(fn ($s) => Str::lower(Str::ascii(trim($s))))->filter();
+                foreach ($slova as $s) {
+                    if (str_contains($n, $s) && mb_strlen($s) > $delka) {
+                        [$nejlepsi, $delka] = [$t, mb_strlen($s)];
+                    }
+                }
+            }
+            if ($nejlepsi) {
+                return $nejlepsi;
+            }
         }
 
-        return static::orderBy('poradi')->get()->first(function (self $t) use ($n) {
-            $slova = collect(explode(',', (string) $t->klicova_slova))->push($t->nazev)
-                ->map(fn ($s) => Str::lower(Str::ascii(trim($s))))->filter();
-
-            return $slova->contains(fn ($s) => str_contains($n, $s));
-        });
+        return null;
     }
 
     public function tarifText(): string
