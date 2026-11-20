@@ -89,6 +89,7 @@
                 <div class="nav__panel">
                     <a href="{{ route('web.jak-to-funguje') }}" @if($r==='web.jak-to-funguje') aria-current="page" @endif>Jak to funguje</a>
                     <a href="{{ route('web.vykup') }}" @if($r==='web.vykup') aria-current="page" @endif>Výkup zařízení</a>
+                    <a href="{{ route('web.zapujcka') }}" @if($r==='web.zapujcka') aria-current="page" @endif>Zápůjčka konzolí</a>
                     <a href="{{ route('web.reference') }}" @if($r==='web.reference') aria-current="page" @endif>Reference</a>
                     <a href="{{ route('web.faq') }}" @if($r==='web.faq') aria-current="page" @endif>Časté dotazy</a>
                     <a href="{{ route('web.pravni', 'reklamacni-rad') }}">Reklamační řád</a>
@@ -124,6 +125,7 @@
             <a href="{{ route('web.jak-to-funguje') }}">Jak to funguje</a>
             <a href="{{ route('web.zasilani') }}">Zaslání zařízení</a>
             <a href="{{ route('web.vykup') }}">Výkup zařízení</a>
+            <a href="{{ route('web.zapujcka') }}">Zápůjčka konzolí</a>
             <a href="{{ route('web.kontrola') }}">Kontrola zakázky</a>
             <a href="{{ route('web.kontakt') }}">Kontakt</a>
         </div>

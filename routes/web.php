@@ -51,6 +51,7 @@ Route::name('web.')->group(function () {
     Route::get('/reference', [WebController::class, 'reference'])->name('reference');
     Route::get('/zaslani-zarizeni', [WebController::class, 'zasilani'])->name('zasilani');
     Route::get('/vykup-zarizeni', [WebController::class, 'vykup'])->name('vykup');
+    Route::get('/zapujcka-konzoli', [WebController::class, 'zapujcka'])->name('zapujcka');
     Route::get('/caste-dotazy', [WebController::class, 'faq'])->name('faq');
     Route::get('/kontakt', [WebController::class, 'kontakt'])->name('kontakt');
     Route::post('/kontakt', [PoptavkaController::class, 'odeslat'])->name('poptavka');

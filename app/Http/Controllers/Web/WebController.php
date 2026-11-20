@@ -65,6 +65,23 @@ class WebController extends Controller
         return view('web.vykup', ['firma' => Web::firma()]);
     }
 
+    /** Zápůjčka konzolí – ceník se bere ze zápůjčního skladu (aktivní zařízení s cenou). */
+    public function zapujcka(): View
+    {
+        $zarizeni = \App\Models\ZapujcniZarizeni::where('aktivni', true)->where('denni_sazba', '>', 0)
+            ->orderByDesc('denni_sazba')->get()
+            // stejné zařízení ve více kusech zobrazit jednou
+            ->unique(fn ($d) => mb_strtolower(trim($d->nazev)) . '|' . $d->denni_sazba . '|' . $d->vikend_cely)
+            ->map(fn ($d) => ['nazev' => $d->nazev, 'den' => (float) $d->denni_sazba, 'vikend' => (float) $d->vikend_cely])
+            ->values();
+
+        return view('web.zapujcka', [
+            'firma' => Web::firma(),
+            'zarizeni' => $zarizeni,
+            'kauceOd' => (float) \App\Models\ZapujcniZarizeni::where('aktivni', true)->where('kauce', '>', 0)->min('kauce'),
+        ]);
+    }
+
     public function faq(): View
     {
         return view('web.faq', ['firma' => Web::firma(), 'faq' => Web::faq()]);

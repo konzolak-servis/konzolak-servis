@@ -50,6 +50,9 @@ class ZapujckaForm
                             ->searchable()->preload()->required())
                             ->columnSpan(2),
                         DatePicker::make('datum_zapujceni')->label('Zapůjčeno dne')->default(now())->native(false)->required(),
+                        TextInput::make('doklad_totoznosti')->label('Doklad totožnosti (č. OP)')->maxLength(50)
+                            ->placeholder('např. OP 123456789')
+                            ->helperText('Ověř podle dokladu při převzetí – uvede se v protokolu.'),
 
                         DatePicker::make('vratit_do')->label('Vrátit do')->native(false),
                         TextInput::make('kauce')->label('Kauce (vratná záloha)')->numeric()->default(0)->suffix('Kč')

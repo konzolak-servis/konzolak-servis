@@ -9,6 +9,7 @@
             @if ($zk?->email)<div>{{ $zk->email }}</div>@endif
             @if ($zk?->adresa_radek)<div class="muted">{{ $zk->adresa_radek }}</div>@endif
             @if ($zk?->ico)<div class="muted">IČO: {{ $zk->ico }}</div>@endif
+            @if ($z->doklad_totoznosti)<div class="muted">Doklad totožnosti: {{ $z->doklad_totoznosti }}</div>@endif
         </td>
         <td width="25%">
             <div class="label">Zapůjčeno dne</div>

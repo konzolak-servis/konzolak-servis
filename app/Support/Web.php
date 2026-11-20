@@ -293,6 +293,8 @@ class Web
                 'a' => 'Ano. Zabalte ho do dostatečné výplně, přiložte popis závady a kontakt (telefon, e-mail) a pošlete Zásilkovnou nebo poštou. Adresu najdete v kontaktech.'],
             ['q' => 'Opravujete i konzole koupené v bazaru?',
                 'a' => 'Ano. U použitých a starších zařízení jen předem upozorním, pokud je něco na hraně životnosti.'],
+            ['q' => 'Půjčujete konzole?',
+                'a' => 'Ano – PlayStation 5 a ovladače na den nebo celý víkend, za vratnou kauci. Po dobu opravy vám podle dostupnosti půjčím náhradní konzoli zdarma. Podrobnosti a ceník najdete na stránce Zápůjčka konzolí.'],
             ['q' => 'Vykupujete staré konzole?',
                 'a' => 'Připravuji – výkup a prodej použitých konzolí bude na webu brzy. Zatím se domluvíme individuálně telefonicky.'],
         ];
