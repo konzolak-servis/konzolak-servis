@@ -46,6 +46,8 @@ class ZapujckasTable
             ->defaultSort('datum_zapujceni', 'desc')
             ->recordActions([
                 EditAction::make(),
+                Action::make('protokol_btn')->label('Protokol')->icon('heroicon-o-document-text')->color('primary')->button()
+                    ->url(fn (Zapujcka $r) => $r->tiskUrl($r->stav === 'vraceno' ? 'vraceni' : 'protokol'))->openUrlInNewTab(),
                 ActionGroup::make([
                     Action::make('protokol')->label('Předávací protokol')->icon('heroicon-o-document-text')
                         ->url(fn (Zapujcka $r) => $r->tiskUrl('protokol'))->openUrlInNewTab(),

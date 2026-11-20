@@ -154,13 +154,13 @@ class ZapujcniZarizeniResource extends Resource
                             \Filament\Notifications\Notification::make()->warning()->title($e->getMessage())->send();
                         }
                     }),
-                \Filament\Actions\ActionGroup::make([
-                    Action::make('stitek')->label('Štítek 50×30 (PDF)')->icon('heroicon-o-tag')
-                        ->url(fn (ZapujcniZarizeni $r) => route('tisk.zapujcni.stitek', ['zarizeni' => $r]))->openUrlInNewTab(),
-                    Action::make('stitek_png')->label('Štítek – stáhnout PNG')->icon('heroicon-o-photo')
-                        ->url(fn (ZapujcniZarizeni $r) => route('tisk.zapujcni.stitek-png', ['zarizeni' => $r,
-                            'soubor' => 'Stitek-zapujcka-' . $r->id . '.png'])),
-                ])->icon('heroicon-o-printer')->tooltip('Štítek'),
+                Action::make('stitek')->label('Štítek')->icon('heroicon-o-tag')->color('primary')->button()
+                    ->tooltip('Identifikační štítek 50×30 mm (PDF k tisku)')
+                    ->url(fn (ZapujcniZarizeni $r) => route('tisk.zapujcni.stitek', ['zarizeni' => $r]))->openUrlInNewTab(),
+                Action::make('stitek_png')->label('PNG')->icon('heroicon-o-arrow-down-tray')->color('gray')
+                    ->tooltip('Stáhnout štítek jako obrázek PNG')
+                    ->url(fn (ZapujcniZarizeni $r) => route('tisk.zapujcni.stitek-png', ['zarizeni' => $r,
+                        'soubor' => 'Stitek-zapujcka-' . $r->id . '.png'])),
             ])
             ->toolbarActions([
                 \Filament\Actions\BulkAction::make('stitky')->label('Tisk štítků vybraných')->icon('heroicon-o-tag')

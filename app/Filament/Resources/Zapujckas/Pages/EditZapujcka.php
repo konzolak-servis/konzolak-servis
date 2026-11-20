@@ -4,7 +4,6 @@ namespace App\Filament\Resources\Zapujckas\Pages;
 
 use App\Filament\Resources\Zapujckas\ZapujckaResource;
 use Filament\Actions\Action;
-use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
@@ -19,16 +18,44 @@ class EditZapujcka extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            ActionGroup::make([
-                Action::make('protokol')->label('Předávací protokol (PDF)')->icon('heroicon-o-document-text')
-                    ->url(fn () => $this->record->tiskUrl('protokol'))->openUrlInNewTab(),
-                Action::make('kauce')->label('Doklad o přijetí kauce (PDF)')->icon('heroicon-o-banknotes')
-                    ->visible(fn () => (float) $this->record->kauce > 0)
-                    ->url(fn () => $this->record->tiskUrl('kauce'))->openUrlInNewTab(),
-                Action::make('vraceni_pdf')->label('Protokol o vrácení (PDF)')->icon('heroicon-o-arrow-uturn-left')
-                    ->visible(fn () => $this->record->stav === 'vraceno')
-                    ->url(fn () => $this->record->tiskUrl('vraceni'))->openUrlInNewTab(),
-            ])->label('Tisk')->icon('heroicon-o-printer')->button()->color('gray'),
+            Action::make('protokol')->label('Předávací protokol')->icon('heroicon-o-document-text')->color('primary')
+                ->url(fn () => $this->record->tiskUrl('protokol'))->openUrlInNewTab(),
+            Action::make('kauce')->label('Doklad kauce')->icon('heroicon-o-banknotes')->color('gray')
+                ->visible(fn () => (float) $this->record->kauce > 0)
+                ->url(fn () => $this->record->tiskUrl('kauce'))->openUrlInNewTab(),
+            Action::make('vraceni_pdf')->label('Protokol o vrácení')->icon('heroicon-o-document-check')->color('primary')
+                ->visible(fn () => $this->record->stav === 'vraceno')
+                ->url(fn () => $this->record->tiskUrl('vraceni'))->openUrlInNewTab(),
+
+            // Nic se neposílá automaticky – jen ručně tímto tlačítkem (stejně jako u zakázek).
+            Action::make('poslat_email')
+                ->label('Poslat e-mailem')
+                ->icon('heroicon-o-envelope')
+                ->color('info')
+                ->modalHeading(fn () => 'Poslat zákazníkovi ' . ($this->record->stav === 'vraceno' ? 'protokol o vrácení' : 'předávací protokol'))
+                ->modalSubmitActionLabel('Odeslat')
+                ->schema(fn () => [
+                    TextInput::make('email')->label('Odeslat na e-mail')->email()->required()
+                        ->default($this->record->zakaznik?->email)
+                        ->helperText($this->record->zakaznik?->email ? null : 'Zákazník nemá uložený e-mail – zadej adresu ručně.'),
+                ])
+                ->action(function (array $data) {
+                    $z = $this->record->fresh(['zakaznik', 'zakazka', 'polozky']);
+                    $tisk = new \App\Http\Controllers\TiskController;
+                    $prilohy = $z->stav === 'vraceno'
+                        ? ['vraceni-zapujcky-' . $z->cislo . '.pdf' => $tisk->zapujckaVraceni($z)->getContent()]
+                        : array_filter([
+                            'predavaci-protokol-' . $z->cislo . '.pdf' => $tisk->zapujckaProtokol($z)->getContent(),
+                            'prijem-kauce-' . $z->cislo . '.pdf' => (float) $z->kauce > 0 ? $tisk->zapujckaKauce($z)->getContent() : null,
+                        ]);
+
+                    try {
+                        \Illuminate\Support\Facades\Mail::to(trim($data['email']))->send(new \App\Mail\ZapujckaDokumenty($z, $prilohy));
+                        Notification::make()->success()->title('Odesláno na ' . trim($data['email']))->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()->danger()->title('E-mail se nepodařilo odeslat')->body($e->getMessage())->send();
+                    }
+                }),
 
             Action::make('vratit')
                 ->label('Vrátit zápůjčku')
