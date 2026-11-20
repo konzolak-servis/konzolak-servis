@@ -139,7 +139,7 @@ class TiskController extends Controller
 
     private function zapujckaPdf(Zapujcka $zapujcka, string $view, string $soubor): Response
     {
-        $zapujcka->load(['zakaznik', 'zakazka', 'polozky']);
+        $zapujcka->load(['zakaznik', 'zakazka', 'polozky.zapujcniZarizeni.typ']);
 
         return Tisk::pdf($view, ['firma' => Firma::get(), 'z' => $zapujcka], $soubor . $zapujcka->cislo);
     }

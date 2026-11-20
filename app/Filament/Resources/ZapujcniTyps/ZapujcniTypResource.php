@@ -56,7 +56,9 @@ class ZapujcniTypResource extends Resource
                 TextInput::make('klicova_slova')->label('Klíčová slova pro automatické přiřazení')->columnSpanFull()
                     ->placeholder('ps5, playstation 5')
                     ->helperText('Oddělená čárkou. Zařízení převedené z bazaru / skladu, jehož název obsahuje některé slovo (nebo název typu), dostane tento typ automaticky.'),
-                Textarea::make('poznamka')->label('Poznámka')->rows(2)->columnSpanFull(),
+                Textarea::make('protokol_poznamka')->label('Poznámka do předávacího protokolu')->rows(3)->columnSpanFull()
+                    ->helperText('Vytiskne se v protokolu u každé zápůjčky s tímto typem zařízení (např. stav při předání, co musí zákazník udělat před vrácením).'),
+                Textarea::make('poznamka')->label('Interní poznámka')->rows(2)->columnSpanFull(),
             ]),
         ]);
     }
