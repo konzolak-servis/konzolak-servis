@@ -78,7 +78,7 @@
             <ul class="prose">
                 <li>Zařízení nepůjčujte dál, neotevírejte a neupravujte (jailbreak, firmware).</li>
                 <li>Chraňte ho před vodou, pádem, přehřátím a prachem.</li>
-                <li>Přihlaste se vlastním účtem (PSN). Hry a nákupy hradíte vy, před vrácením se odhlaste.</li>
+                <li>Konzole má profil Konzolák – přidejte si vlastní profil (PSN) a stáhněte své hry; hry a nákupy hradíte vy. Před vrácením svůj profil a stažené hry smažte, profil Konzolák ponechte.</li>
                 <li>Závadu hned hlaste – nezaviněnou závadu řeším náhradou nebo vrácením části ceny.</li>
                 <li>Za prodlení s vrácením se účtuje denní sazba, poškození nebo chybějící příslušenství jde z kauce.</li>
             </ul>
