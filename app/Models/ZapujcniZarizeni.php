@@ -25,12 +25,35 @@ class ZapujcniZarizeni extends Model
             if (! $d->obchod_id || $d->isDirty('seriove_cislo')) {
                 $d->sparujSBazarem();
             }
+
+            // Typ (šablona ceníku): když chybí, zkusit podle názvu; prázdná pole doplnit z typu.
+            // (Ve starších migracích tabulka typů ještě neexistuje.)
+            static $maTypy = false;
+            $maTypy = $maTypy || \Illuminate\Support\Facades\Schema::hasTable('zapujcni_typy');
+            if (! $maTypy) {
+                return;
+            }
+            if (! $d->typ_id && ! $d->exists) {
+                $d->typ_id = ZapujcniTyp::najdiPodleNazvu($d->nazev)?->id;
+            }
+            if ($d->typ_id && ($typ = ZapujcniTyp::find($d->typ_id))) {
+                foreach (ZapujcniTyp::POLE as $pole) {
+                    if (blank($d->{$pole}) && filled($typ->{$pole})) {
+                        $d->{$pole} = $typ->{$pole};
+                    }
+                }
+            }
         });
     }
 
     public function polozky(): HasMany
     {
         return $this->hasMany(ZapujckaPolozka::class, 'zapujcni_zarizeni_id');
+    }
+
+    public function typ(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(ZapujcniTyp::class, 'typ_id');
     }
 
     public function obchod(): \Illuminate\Database\Eloquent\Relations\BelongsTo

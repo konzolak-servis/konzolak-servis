@@ -46,6 +46,30 @@ class ZapujcniZarizeniResource extends Resource
     {
         return $schema->components([
             Section::make()->columns(3)->schema([
+                \Filament\Forms\Components\Select::make('typ_id')->label('Typ zařízení (ceník)')
+                    ->columnSpanFull()
+                    ->options(fn () => \App\Models\ZapujcniTyp::orderBy('poradi')->orderBy('nazev')->get()
+                        ->mapWithKeys(fn ($t) => [$t->id => $t->nazev . ' – ' . $t->tarifText()])->all())
+                    ->searchable()
+                    ->live()
+                    ->helperText('Předvyplní ceny, kauci, hodnotu a příslušenství podle nastavení typu (Zápůjčky → Typy a ceník). U zařízení je pak můžeš upravit.')
+                    ->afterStateUpdated(function ($state, $set, $get) {
+                        if (! $state || ! ($t = \App\Models\ZapujcniTyp::find($state))) {
+                            return;
+                        }
+                        // ceník a kauce vždy podle typu, ostatní jen když je prázdné
+                        foreach (['denni_sazba', 'vikend_cely', 'kauce'] as $pole) {
+                            $set($pole, $t->{$pole});
+                        }
+                        foreach (['hodnota', 'prislusenstvi'] as $pole) {
+                            if (blank($get($pole))) {
+                                $set($pole, $t->{$pole});
+                            }
+                        }
+                        if (blank($get('nazev'))) {
+                            $set('nazev', $t->nazev);
+                        }
+                    }),
                 \Filament\Forms\Components\Select::make('obchod_id')->label('Kus z bazaru')
                     ->columnSpanFull()
                     ->options(fn ($state) => \App\Models\Obchod::query()
@@ -93,6 +117,7 @@ class ZapujcniZarizeniResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make('typ.nazev')->label('Typ')->badge()->color('gray')->placeholder('—')->toggleable(),
                 TextColumn::make('nazev')->label('Zařízení')->searchable(['nazev', 'seriove_cislo'])->sortable()->weight('medium')
                     ->description(fn (ZapujcniZarizeni $r) => trim('Z-' . str_pad($r->id, 3, '0', STR_PAD_LEFT)
                         . ($r->seriove_cislo ? ' · SN ' . $r->seriove_cislo : '')

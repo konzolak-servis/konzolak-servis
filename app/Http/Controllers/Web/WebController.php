@@ -68,17 +68,13 @@ class WebController extends Controller
     /** Zápůjčka konzolí – ceník se bere ze zápůjčního skladu (aktivní zařízení s cenou). */
     public function zapujcka(): View
     {
-        $zarizeni = \App\Models\ZapujcniZarizeni::where('aktivni', true)->where('denni_sazba', '>', 0)
-            ->orderByDesc('denni_sazba')->get()
-            // stejné zařízení ve více kusech zobrazit jednou
-            ->unique(fn ($d) => mb_strtolower(trim($d->nazev)) . '|' . $d->denni_sazba . '|' . $d->vikend_cely)
-            ->map(fn ($d) => ['nazev' => $d->nazev, 'den' => (float) $d->denni_sazba, 'vikend' => (float) $d->vikend_cely])
-            ->values();
+        // ceník = typy zařízení (Zápůjčky → Typy a ceník)
+        $typy = \App\Models\ZapujcniTyp::where('denni_sazba', '>', 0)->orderBy('poradi')->orderBy('nazev')->get();
 
         return view('web.zapujcka', [
             'firma' => Web::firma(),
-            'zarizeni' => $zarizeni,
-            'kauceOd' => (float) \App\Models\ZapujcniZarizeni::where('aktivni', true)->where('kauce', '>', 0)->min('kauce'),
+            'zarizeni' => $typy->map(fn ($t) => ['nazev' => $t->nazev, 'den' => (float) $t->denni_sazba, 'vikend' => (float) $t->vikend_cely]),
+            'kauceOd' => (float) $typy->where('kauce', '>', 0)->min('kauce'),
         ]);
     }
 
