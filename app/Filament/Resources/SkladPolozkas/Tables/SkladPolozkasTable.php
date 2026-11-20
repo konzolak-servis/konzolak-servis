@@ -53,6 +53,21 @@ class SkladPolozkasTable
             ->defaultSort('nazev')
             ->recordActions([
                 EditAction::make(),
+                \Filament\Actions\Action::make('na_zapujcni_sklad')
+                    ->label('Na zápůjční sklad')
+                    ->icon('heroicon-o-arrows-right-left')
+                    ->color('info')
+                    ->visible(fn ($record) => (float) $record->mnozstvi_skladem >= 1)
+                    ->requiresConfirmation()
+                    ->modalDescription(fn ($record) => 'Ze skladu se odepíše 1 ks „' . $record->nazev . '" a přidá se na zápůjční sklad, kde bude sloužit jen k zapůjčování, dokud ho nevrátíš zpět.')
+                    ->action(function ($record) {
+                        $d = \App\Models\ZapujcniZarizeni::zeSkladu($record);
+                        \Filament\Notifications\Notification::make()->success()->title('Přidáno na zápůjční sklad')
+                            ->body('Doplň sériové číslo, příslušenství, kauci a ceník a vytiskni identifikační štítek.')
+                            ->actions([\Filament\Actions\Action::make('otevrit')->label('Otevřít')->button()
+                                ->url(\App\Filament\Resources\ZapujcniZarizenis\ZapujcniZarizeniResource::getUrl('edit', ['record' => $d]))])
+                            ->send();
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

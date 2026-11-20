@@ -77,6 +77,9 @@ class NastaveniFirmy extends Page
                             ->label('Faktura')->rows(3),
                         Textarea::make('pravni_text_nabidka')
                             ->label('Cenová nabídka / PC sestava')->rows(3),
+                        Textarea::make('zapujcka_pravidla')
+                            ->label('Pravidla zápůjčky (předávací protokol)')->rows(14)
+                            ->helperText('Každý řádek = jedno očíslované pravidlo. {telefon} se nahradí telefonem firmy.'),
                     ]),
             ]);
     }

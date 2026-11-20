@@ -38,6 +38,58 @@ class ZapujcniZarizeni extends Model
         return $this->belongsTo(Obchod::class, 'obchod_id');
     }
 
+    public function skladPolozka(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(SkladPolozka::class, 'sklad_polozka_id');
+    }
+
+    /** Odkud zařízení na zápůjční sklad přišlo (pro popisky). */
+    public function puvodText(): ?string
+    {
+        return match (true) {
+            (bool) $this->obchod_id => 'bazar ' . ($this->obchod?->cislo ?? ''),
+            (bool) $this->sklad_polozka_id => 'sklad',
+            default => null,
+        };
+    }
+
+    /** Převod 1 ks ze skladu (nákupu) na zápůjční sklad – ze skladu se odepíše. */
+    public static function zeSkladu(SkladPolozka $s): self
+    {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($s) {
+            $s->vydej(1, ['zdroj' => 'zapujcni_sklad', 'poznamka' => 'Převod na zápůjční sklad']);
+
+            return static::create([
+                'sklad_polozka_id' => $s->id,
+                'nazev' => $s->nazev,
+                'hodnota' => (float) $s->cena_ks_prumer ?: null,
+                'stav_popis' => 'nový / funkční',
+                'aktivni' => true,
+            ]);
+        });
+    }
+
+    /**
+     * Převod zpět: ze skladu (nákupu) se kus vrátí na sklad a záznam zmizí, z bazaru se kus vrátí do prodeje
+     * (záznam se vyřadí, historie zápůjček zůstane). Zapůjčené zařízení vrátit nejde.
+     */
+    public function prevestZpet(): void
+    {
+        if ($this->aktualniPolozka()) {
+            throw new \RuntimeException('Zařízení je právě zapůjčené – nejdřív ukonči zápůjčku.');
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () {
+            if ($this->sklad_polozka_id && $this->skladPolozka) {
+                $this->skladPolozka->vraceni(1, ['zdroj' => 'zapujcni_sklad', 'poznamka' => 'Vráceno ze zápůjčního skladu']);
+                $this->polozky()->exists() ? $this->update(['aktivni' => false, 'sklad_polozka_id' => null]) : $this->delete();
+
+                return;
+            }
+            $this->update(['aktivni' => false]);
+        });
+    }
+
     /** Sériové číslo bez mezer, pomlček a velikosti písmen. */
     public static function normSn(?string $sn): string
     {

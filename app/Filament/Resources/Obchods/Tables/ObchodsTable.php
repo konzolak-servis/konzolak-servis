@@ -89,18 +89,17 @@ class ObchodsTable
                     ->requiresConfirmation()
                     ->modalDescription('Zařízení se přestane nabízet k zápůjčce a v bazaru bude znovu „Skladem".')
                     ->action(function (Obchod $record) {
-                        if ($record->zapujcniZarizeni?->aktualniPolozka()) {
-                            Notification::make()->warning()->title('Zařízení je právě zapůjčené – nejdřív ukonči zápůjčku.')->send();
-
-                            return;
+                        try {
+                            $record->zapujcniZarizeni?->prevestZpet();
+                        } catch (\RuntimeException $e) {
+                            Notification::make()->warning()->title($e->getMessage())->send();
                         }
-                        $record->zapujcniZarizeni()->update(['aktivni' => false]);
                     }),
                 Action::make('prodat')
                     ->label('Prodat')
                     ->icon('heroicon-o-banknotes')
                     ->color('success')
-                    ->visible(fn (Obchod $record) => ! $record->prodano)
+                    ->visible(fn (Obchod $record) => ! $record->prodano && ! $record->jeNaZapujcnimSkladu())
                     ->schema([
                         TextInput::make('prodejni_cena')->label('Prodejní cena')->numeric()->required()->suffix('Kč'),
                         DatePicker::make('prodej_datum')->label('Datum prodeje')->default(now())->native(false)->required(),

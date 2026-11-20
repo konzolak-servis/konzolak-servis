@@ -30,11 +30,11 @@ class ZapujcniZarizeniResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Servis';
+    protected static string|UnitEnum|null $navigationGroup = 'Zápůjčky';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 2;
 
-    protected static ?string $navigationLabel = 'Zařízení k zápůjčce';
+    protected static ?string $navigationLabel = 'Zápůjční sklad';
 
     protected static ?string $modelLabel = 'zařízení k zápůjčce';
 
@@ -94,8 +94,9 @@ class ZapujcniZarizeniResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('nazev')->label('Zařízení')->searchable(['nazev', 'seriove_cislo'])->sortable()->weight('medium')
-                    ->description(fn (ZapujcniZarizeni $r) => trim(($r->seriove_cislo ? 'SN ' . $r->seriove_cislo : '')
-                        . ($r->obchod ? ' · bazar ' . $r->obchod->cislo . ($r->obchod->prodano ? ' (prodáno)' : '') : ''), ' ·') ?: null),
+                    ->description(fn (ZapujcniZarizeni $r) => trim('Z-' . str_pad($r->id, 3, '0', STR_PAD_LEFT)
+                        . ($r->seriove_cislo ? ' · SN ' . $r->seriove_cislo : '')
+                        . ($r->puvodText() ? ' · z: ' . $r->puvodText() : ''), ' ·') ?: null),
                 TextColumn::make('dostupnost')->label('Dostupnost')->badge()
                     ->getStateUsing(fn (ZapujcniZarizeni $r) => ! $r->aktivni ? 'Vyřazeno'
                         : (($p = $r->aktualniPolozka()) ? 'Zapůjčeno' : 'Volné'))
@@ -137,6 +138,22 @@ class ZapujcniZarizeniResource extends Resource
                     ->visible(fn (ZapujcniZarizeni $r) => $r->aktivni && ! $r->aktualniPolozka())
                     ->url(fn (ZapujcniZarizeni $r) => ZapujckaResource::getUrl('create', ['zarizeni' => $r->id])),
                 EditAction::make(),
+                Action::make('prevest_zpet')
+                    ->label(fn (ZapujcniZarizeni $r) => $r->sklad_polozka_id ? 'Vrátit na sklad' : 'Vrátit do bazaru')
+                    ->icon('heroicon-o-arrow-uturn-left')->color('gray')
+                    ->visible(fn (ZapujcniZarizeni $r) => $r->aktivni && ($r->sklad_polozka_id || $r->obchod_id) && ! $r->aktualniPolozka())
+                    ->requiresConfirmation()
+                    ->modalDescription(fn (ZapujcniZarizeni $r) => $r->sklad_polozka_id
+                        ? 'Kus se vrátí na sklad (+1 ks u „' . $r->skladPolozka?->nazev . '") a zmizí ze zápůjčního skladu.'
+                        : 'Kus bude v bazaru znovu „Skladem" k prodeji a přestane se nabízet k zápůjčce.')
+                    ->action(function (ZapujcniZarizeni $r) {
+                        try {
+                            $r->prevestZpet();
+                            \Filament\Notifications\Notification::make()->success()->title('Převedeno zpět')->send();
+                        } catch (\RuntimeException $e) {
+                            \Filament\Notifications\Notification::make()->warning()->title($e->getMessage())->send();
+                        }
+                    }),
                 \Filament\Actions\ActionGroup::make([
                     Action::make('stitek')->label('Štítek 50×30 (PDF)')->icon('heroicon-o-tag')
                         ->url(fn (ZapujcniZarizeni $r) => route('tisk.zapujcni.stitek', ['zarizeni' => $r]))->openUrlInNewTab(),

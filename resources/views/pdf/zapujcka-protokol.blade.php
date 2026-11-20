@@ -27,21 +27,35 @@
 @endif
 
 <div class="upozorneni">
-    <b>Podmínky zápůjčky:</b> Vypůjčitel převzal výše uvedená zařízení ve funkčním stavu a v uvedené kompletnosti.
-    Zavazuje se je užívat s péčí řádného hospodáře, nepřenechat je třetí osobě, neotevírat je a vrátit je
-    {{ $z->vratit_do ? 'nejpozději ' . $z->vratit_do->format('d.m.Y') : 'v dohodnutém termínu' }}
-    kompletní a ve stavu odpovídajícím běžnému opotřebení.
+    <b>Dohoda:</b> Vypůjčitel převzal výše uvedená zařízení ve funkčním stavu a kompletní a vrátí je
+    <b>{{ $z->vratit_do ? 'nejpozději ' . $z->vratit_do->format('d.m.Y') : 'v dohodnutém termínu' }}</b>.
     @if ((float) $z->kauce > 0)
-        Na zápůjčku složil vratnou kauci <b>{{ number_format((float) $z->kauce, 0, ',', ' ') }} Kč</b>, která mu bude vrácena při vrácení zařízení.
-        Z kauce může být sražena částka odpovídající poškození, ztrátě příslušenství nebo nevrácení zařízení.
+        Složil vratnou kauci <b>{{ number_format((float) $z->kauce, 0, ',', ' ') }} Kč</b>.
     @endif
     @if ($z->zdarma)
-        Zápůjčka je po dobu opravy{{ $z->zakazka ? ' zakázky ' . $z->zakazka->cislo : '' }} <b>zdarma</b>; po jejím dokončení je vypůjčitel povinen zařízení bez prodlení vrátit.
+        Zápůjčka je po dobu opravy{{ $z->zakazka ? ' zakázky ' . $z->zakazka->cislo : '' }} <b>zdarma</b>.
     @elseif ((float) $z->denni_sazba > 0 || $z->maVikendovyTarif())
-        Cena zapůjčení: <b>{{ $z->tarifText() }}</b>, účtuje se každý započatý den; vyúčtována (stržena z kauce) bude při vrácení.
+        Cena zapůjčení: <b>{{ $z->tarifText() }}</b> (každý započatý den), vyúčtuje se při vrácení.
     @endif
-    Za ztrátu, zničení nebo poškození nad rámec běžného opotřebení odpovídá vypůjčitel do výše hodnoty zařízení.
 </div>
+
+@php
+    $pravidla = collect(preg_split('/\R/', (string) $firma->zapujcka_pravidla))
+        ->map(fn ($r) => trim(str_replace('{telefon}', $firma->telefon ?: '778 796 868', $r)))
+        ->filter()->values();
+@endphp
+@if ($pravidla->isNotEmpty())
+    <div class="sekce">Pravidla zápůjčky</div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:7.8pt; line-height:1.35; color:#374151">
+        @foreach ($pravidla as $r)
+            <tr>
+                <td width="6.5mm" style="vertical-align:top; padding:0 0 .8mm; color:#9a7420; font-weight:bold">{{ $loop->iteration }}.</td>
+                <td style="vertical-align:top; padding:0 0 .8mm">{{ $r }}</td>
+            </tr>
+        @endforeach
+    </table>
+    <div style="font-size:7.8pt; margin-top:1.5mm; color:#0F2038"><b>Podpisem vypůjčitel potvrzuje, že pravidla četl a souhlasí s nimi.</b></div>
+@endif
 
 @include('pdf.partials.paticka', [
     'podpisL' => 'Předal za servis',

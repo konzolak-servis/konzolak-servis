@@ -21,9 +21,9 @@ class ZapujckaResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Servis';
+    protected static string|UnitEnum|null $navigationGroup = 'Zápůjčky';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $navigationLabel = 'Zápůjčky';
 
