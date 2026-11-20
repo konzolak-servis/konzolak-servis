@@ -56,12 +56,16 @@
 @endif
 
 <div class="upozorneni">
+    @if (count($z->fotky_vraceni ?? []) || count($z->fotky ?? []))
+        Stav zařízení je zdokumentován fotografiemi uloženými u servisu (při předání {{ count($z->fotky ?? []) }}, při vrácení {{ count($z->fotky_vraceni ?? []) }}).<br>
+    @endif
     Servis potvrzuje převzetí výše uvedených zařízení v uvedeném stavu. Vypůjčitel podpisem potvrzuje předání
     zařízení a souhlas se zjištěným stavem{{ count($srazky) ? ' a uvedenými vadami' : '' }}.
     Vyhotoveno ve dvou stejnopisech, každá strana obdrží jeden.
 </div>
 
 @include('pdf.partials.paticka', [
+    'rucniPodpis' => true,
     'podpisL' => 'Zařízení převzal za servis',
     'podpisR' => 'Zařízení předal vypůjčitel (podpis)',
     'doklad' => 'Protokol o vrácení zařízení ' . $z->cislo,

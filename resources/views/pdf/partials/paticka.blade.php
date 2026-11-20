@@ -13,11 +13,12 @@
                     @if ($zobrazitRazitko)
                         <div class="razitko-wrap">
                             <img src="{{ $razitkoSoubor }}" class="razitko-otisk">
-                            @if (is_file($podpisSoubor))
+                            @if (is_file($podpisSoubor) && empty($rucniPodpis))
                                 <img src="{{ $podpisSoubor }}" class="razitko-podpis">
                             @endif
                         </div>
-                        <div class="cara">&nbsp;</div>
+                        {{-- $rucniPodpis: razítko ano, podpis vlastnoručně (smlouvy a potvrzení o penězích) --}}
+                        <div class="cara">{!! ! empty($rucniPodpis) ? e($podpisL) : "&nbsp;" !!}</div>
                     @else
                         <div class="cara">{{ $podpisL ?? 'Za servis (razítko a podpis)' }}</div>
                     @endif

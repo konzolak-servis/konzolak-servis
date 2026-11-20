@@ -137,6 +137,31 @@ class TiskController extends Controller
         return $this->zapujckaPdf($zapujcka, 'pdf.zapujcka-vraceni', 'Vraceni-zapujcky-');
     }
 
+    /** Vše k tisku při předání: předávací protokol 2× (pro zákazníka a pro servis). */
+    public function zapujckaSadaPredani(Zapujcka $zapujcka): Response
+    {
+        $protokol = $this->zapujckaProtokol($zapujcka)->getContent();
+
+        return Tisk::spojit([
+            [$protokol, 'Výtisk pro zákazníka'],
+            [$protokol, 'Výtisk pro servis'],
+        ], 'Tisk-predani-' . $zapujcka->cislo);
+    }
+
+    /** Vše k tisku při vrácení: protokol o vrácení + vyúčtování kauce, každý 2×. */
+    public function zapujckaSadaVraceni(Zapujcka $zapujcka): Response
+    {
+        $vraceni = $this->zapujckaVraceni($zapujcka)->getContent();
+        $vyuctovani = $this->zapujckaVyuctovani($zapujcka)->getContent();
+
+        return Tisk::spojit([
+            [$vraceni, 'Výtisk pro zákazníka'],
+            [$vyuctovani, 'Výtisk pro zákazníka'],
+            [$vraceni, 'Výtisk pro servis'],
+            [$vyuctovani, 'Výtisk pro servis'],
+        ], 'Tisk-vraceni-' . $zapujcka->cislo);
+    }
+
     public function zapujckaVyuctovani(Zapujcka $zapujcka): Response
     {
         return $this->zapujckaPdf($zapujcka, 'pdf.zapujcka-vyuctovani', 'Vyuctovani-kauce-');

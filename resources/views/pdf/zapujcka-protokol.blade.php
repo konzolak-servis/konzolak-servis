@@ -48,6 +48,9 @@
     @if ($z->poznamka)
         <br><b>Poznámka:</b> {!! nl2br(e($z->poznamka)) !!}
     @endif
+    @if (count($z->fotky ?? []))
+        <br>Stav zařízení při předání je zdokumentován {{ count($z->fotky) }} fotografiemi uloženými u servisu.
+    @endif
     <br><b>Podpisem vypůjčitel potvrzuje převzetí zařízení a souhlas s pravidly zápůjčky uvedenými níže; servis podpisem potvrzuje přijetí kauce.</b>
     Vyhotoveno ve dvou stejnopisech, každá strana obdrží jeden.
 </div>
@@ -81,6 +84,7 @@
 @endif
 
 @include('pdf.partials.paticka', [
+    'rucniPodpis' => true,
     'podpisL' => 'Předal za servis',
     'podpisR' => 'Převzal a souhlasí s podmínkami (podpis)',
     'doklad' => 'Předávací protokol ' . $z->cislo,

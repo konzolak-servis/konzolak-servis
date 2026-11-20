@@ -51,6 +51,54 @@ class Tisk
         ]);
     }
 
+    /**
+     * Spojí hotová PDF do jednoho souboru k tisku; každou stránku volitelně označí (např. „Výtisk pro zákazníka").
+     *
+     * @param  array<int, array{0: string, 1: ?string}>  $dokumenty  [obsah PDF, označení stránek]
+     */
+    public static function spojit(array $dokumenty, string $filename): Response
+    {
+        $tmp = storage_path('app/mpdf');
+        if (! is_dir($tmp)) {
+            @mkdir($tmp, 0775, true);
+        }
+
+        $mpdf = new Mpdf(['mode' => 'utf-8', 'format' => 'A4', 'tempDir' => $tmp, 'default_font' => 'dejavusans',
+            'margin_left' => 0, 'margin_right' => 0, 'margin_top' => 0, 'margin_bottom' => 0, 'margin_header' => 0, 'margin_footer' => 0]);
+        $mpdf->SetTitle($filename);
+        $mpdf->SetAuthor('Konzolák Zlín');
+
+        $soubory = [];
+        try {
+            foreach ($dokumenty as [$obsah, $oznaceni]) {
+                $soubor = tempnam($tmp, 'spoj');
+                file_put_contents($soubor, $obsah);
+                $soubory[] = $soubor;
+
+                $stran = $mpdf->setSourceFile($soubor);
+                for ($i = 1; $i <= $stran; $i++) {
+                    $mpdf->AddPage();
+                    $mpdf->useTemplate($mpdf->importPage($i));
+                    if ($oznaceni) {
+                        // štítek v pravém horním rohu (v tmavém pruhu hlavičky)
+                        $mpdf->SetFont('dejavusans', 'B', 7);
+                        $mpdf->SetTextColor(232, 199, 124);
+                        $mpdf->WriteText(150, 6, mb_strtoupper($oznaceni));
+                    }
+                }
+            }
+        } finally {
+            foreach ($soubory as $s) {
+                @unlink($s);
+            }
+        }
+
+        return response($mpdf->Output($filename . '.pdf', 'S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $filename . '.pdf"',
+        ]);
+    }
+
     /** Náhled nabídky z rozpracovaného (neuloženého) formuláře. */
     public static function nahledNabidka(array $data): Response
     {

@@ -95,6 +95,7 @@
 </div>
 
 @include('pdf.partials.paticka', [
+    'rucniPodpis' => true,
     'podpisL' => $doplatek > 0 ? 'Doplatek přijal za servis' : 'Kauci vyplatil za servis',
     'podpisR' => $doplatek > 0 ? 'Doplatek uhradil vypůjčitel (podpis)' : 'Kauci převzal vypůjčitel (podpis)',
     'doklad' => 'Vyúčtování kauce ' . $z->cislo,

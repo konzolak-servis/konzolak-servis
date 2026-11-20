@@ -66,6 +66,26 @@ class EditZakazka extends EditRecord
                 ->button()
                 ->action(fn () => $this->save()),
 
+            // Náhradní zařízení po dobu opravy (zápůjčka zdarma s kaucí)
+            Action::make('zapujcka_otevrit')
+                ->label(fn () => 'Zápůjčka ' . \App\Models\Zapujcka::where('zakazka_id', $this->record->id)->where('stav', 'zapujceno')->value('cislo'))
+                ->icon('heroicon-o-arrows-right-left')
+                ->color('warning')
+                ->button()
+                ->tooltip('Zákazník má zapůjčené náhradní zařízení – při vydání opravy ho musí vrátit')
+                ->visible(fn () => \App\Models\Zapujcka::where('zakazka_id', $this->record->id)->where('stav', 'zapujceno')->exists())
+                ->url(fn () => \App\Filament\Resources\Zapujckas\ZapujckaResource::getUrl('edit', [
+                    'record' => \App\Models\Zapujcka::where('zakazka_id', $this->record->id)->where('stav', 'zapujceno')->value('id')])),
+            Action::make('zapujcit_nahradni')
+                ->label('Půjčit náhradní')
+                ->icon('heroicon-o-arrows-right-left')
+                ->color('gray')
+                ->button()
+                ->tooltip('Nová zápůjčka zdarma po dobu opravy – zákazník a zakázka se vyplní samy')
+                ->visible(fn () => ! in_array($this->record->stav, ['vydano', 'storno', 'nerentabilni'], true)
+                    && ! \App\Models\Zapujcka::where('zakazka_id', $this->record->id)->where('stav', 'zapujceno')->exists())
+                ->url(fn () => \App\Filament\Resources\Zapujckas\ZapujckaResource::getUrl('create', ['zakazka' => $this->record->id])),
+
             // Servisní list (doklad o převzetí) zákazníkovi – jen ručně, nic se neposílá automaticky
             Action::make('mail_doklad')
                 ->label('Odeslat servisní list')

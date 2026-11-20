@@ -74,6 +74,24 @@ class ZapujckaForm
                             ->placeholder('např. zapůjčeno po dobu opravy zakázky, bez her…'),
                     ]),
 
+                Section::make('Fotodokumentace')
+                    ->description('Vyfoť zařízení ze všech stran, štítek se sériovým číslem a příslušenství – při sporu o poškození je to hlavní důkaz. Z mobilu lze fotit rovnou.')
+                    ->collapsible()
+                    ->columns(2)
+                    ->schema([
+                        \Filament\Forms\Components\FileUpload::make('fotky')->label('Při předání')
+                            ->image()->multiple()->reorderable()->panelLayout('grid')
+                            ->disk('public')->directory('zapujcky')->visibility('public')
+                            ->maxFiles(30)->maxSize(15360)->openable()->downloadable()
+                            ->imageResizeMode('contain')->imageResizeTargetWidth('2000')->imageResizeTargetHeight('2000'),
+                        \Filament\Forms\Components\FileUpload::make('fotky_vraceni')->label('Při vrácení')
+                            ->image()->multiple()->reorderable()->panelLayout('grid')
+                            ->disk('public')->directory('zapujcky')->visibility('public')
+                            ->maxFiles(30)->maxSize(15360)->openable()->downloadable()
+                            ->imageResizeMode('contain')->imageResizeTargetWidth('2000')->imageResizeTargetHeight('2000')
+                            ->visible(fn ($record) => $record?->stav === 'vraceno'),
+                    ]),
+
                 Section::make('Zapůjčená zařízení')
                     ->schema([
                         Repeater::make('polozky')

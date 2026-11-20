@@ -139,6 +139,39 @@ class UkolyWidget extends Widget
         $this->pridej($skupiny, 'ceka_na_dil', 'Čeká na díl', 'warning', $cekaNaDil,
             ZakazkaResource::getUrl('index', ['tableFilters' => ['stav' => ['value' => 'ceka_na_dil']]]));
 
+        // 4b) Zápůjčky – po termínu, vrácení dnes/zítra, oprava hotová a zápůjčka pořád venku ----
+        $zapujcky = \App\Models\Zapujcka::with(['zakaznik', 'zakazka', 'polozky'])
+            ->where('stav', 'zapujceno')->get()
+            ->map(function (\App\Models\Zapujcka $z) use ($dnes) {
+                $opravaHotova = $z->zakazka && in_array($z->zakazka->stav, ['hotovo', 'vydano', 'nerentabilni', 'storno'], true);
+                $dni = $z->vratit_do ? (int) $dnes->diffInDays($z->vratit_do, false) : null;
+
+                $meta = match (true) {
+                    $opravaHotova => 'oprava ' . ($z->zakazka->stav === 'hotovo' ? 'hotová' : 'vydaná') . ' – vrátit',
+                    $dni !== null && $dni < 0 => 'po termínu ' . abs($dni) . ' d',
+                    $dni === 0 => 'vrátit dnes',
+                    $dni === 1 => 'vrátit zítra',
+                    default => null,
+                };
+                if ($meta === null) {
+                    return null; // běží v pořádku
+                }
+
+                return [
+                    'cislo' => $z->cislo,
+                    'popis' => trim(($z->zakaznik?->nazev ?? '—') . ' · ' . $z->polozky->pluck('nazev')->implode(', '), ' ·'),
+                    'meta' => $meta,
+                    'castka' => null,
+                    'tag' => $z->zakazka?->cislo,
+                    'urgent' => $opravaHotova || ($dni !== null && $dni < 0),
+                    'url' => \App\Filament\Resources\Zapujckas\ZapujckaResource::getUrl('edit', ['record' => $z->id]),
+                    '_sort' => $opravaHotova ? -999 : ($dni ?? 99),
+                ];
+            })
+            ->filter()->sortBy('_sort')->values();
+        $this->pridej($skupiny, 'zapujcky', 'Zápůjčky k vrácení', 'danger', $zapujcky,
+            \App\Filament\Resources\Zapujckas\ZapujckaResource::getUrl('index'));
+
         // 5) Dlouho bez pohybu ---------------------------------------------
         $stoji = Zakazka::with(['zakaznik', 'zarizeni', 'dalsiZarizeni'])
             ->whereIn('stav', ['prijato', 'diagnostika'])

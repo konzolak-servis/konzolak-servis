@@ -30,6 +30,8 @@ class Zapujcka extends Model
         'vikend_cely' => 'decimal:2',
         'poplatek' => 'decimal:2',
         'srazky' => 'array',
+        'fotky' => 'array',
+        'fotky_vraceni' => 'array',
     ];
 
     /** Druhy srážek z kauce při vrácení. */
@@ -291,7 +293,7 @@ class Zapujcka extends Model
 
     public function tiskUrl(string $co): string
     {
-        $nazvy = ['protokol' => 'Predavaci-protokol', 'kauce' => 'Prijem-kauce', 'vraceni' => 'Vraceni-zapujcky', 'vyuctovani' => 'Vyuctovani-kauce'];
+        $nazvy = ['protokol' => 'Predavaci-protokol', 'kauce' => 'Prijem-kauce', 'vraceni' => 'Vraceni-zapujcky', 'vyuctovani' => 'Vyuctovani-kauce', 'sada-predani' => 'Tisk-predani', 'sada-vraceni' => 'Tisk-vraceni'];
 
         return route('tisk.zapujcka.' . $co, ['zapujcka' => $this, 'soubor' => ($nazvy[$co] ?? $co) . '-' . $this->cislo . '.pdf']);
     }

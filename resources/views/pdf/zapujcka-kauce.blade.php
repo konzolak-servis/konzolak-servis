@@ -44,6 +44,7 @@
 </div>
 
 @include('pdf.partials.paticka', [
+    'rucniPodpis' => true,
     'podpisL' => 'Přijal za servis',
     'podpisR' => 'Kauci předal (podpis)',
     'doklad' => 'Doklad o přijetí kauce ' . $z->cislo,

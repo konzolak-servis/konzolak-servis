@@ -15,6 +15,15 @@ class CreateZapujcka extends CreateRecord
     {
         parent::fillForm();
 
+        // „Půjčit náhradní" ze zakázky: zákazník, zakázka a zdarma po dobu opravy
+        if (($zid = request()->query('zakazka')) && ($zak = \App\Models\Zakazka::find($zid))) {
+            $this->form->fill(array_merge($this->form->getRawState(), [
+                'zakazka_id' => $zak->id,
+                'zakaznik_id' => $zak->zakaznik_id,
+                'zdarma' => true,
+            ]));
+        }
+
         $d = ($id = request()->query('zarizeni')) ? ZapujcniZarizeni::find($id) : null;
         if (! $d) {
             return;

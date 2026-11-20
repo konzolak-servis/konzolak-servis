@@ -18,17 +18,27 @@ class EditZapujcka extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('protokol')->label('Předávací protokol')->icon('heroicon-o-document-text')->color('primary')
-                ->url(fn () => $this->record->tiskUrl('protokol'))->openUrlInNewTab(),
-            Action::make('kauce')->label('Doklad kauce')->icon('heroicon-o-banknotes')->color('gray')
-                ->visible(fn () => (float) $this->record->kauce > 0)
-                ->url(fn () => $this->record->tiskUrl('kauce'))->openUrlInNewTab(),
-            Action::make('vraceni_pdf')->label('Protokol o vrácení')->icon('heroicon-o-document-check')->color('primary')
+            Action::make('tisk_predani')->label('Tisk k předání (2×)')->icon('heroicon-o-printer')->color('primary')
+                ->tooltip('Předávací protokol – výtisk pro zákazníka a pro servis v jednom PDF')
+                ->visible(fn () => $this->record->stav !== 'vraceno')
+                ->url(fn () => $this->record->tiskUrl('sada-predani'))->openUrlInNewTab(),
+            Action::make('tisk_vraceni')->label('Tisk k vrácení (2×)')->icon('heroicon-o-printer')->color('primary')
+                ->tooltip('Protokol o vrácení + vyúčtování kauce – pro zákazníka a pro servis v jednom PDF')
                 ->visible(fn () => $this->record->stav === 'vraceno')
-                ->url(fn () => $this->record->tiskUrl('vraceni'))->openUrlInNewTab(),
-            Action::make('vyuctovani_pdf')->label('Vyúčtování kauce')->icon('heroicon-o-banknotes')->color('primary')
-                ->visible(fn () => $this->record->stav === 'vraceno')
-                ->url(fn () => $this->record->tiskUrl('vyuctovani'))->openUrlInNewTab(),
+                ->url(fn () => $this->record->tiskUrl('sada-vraceni'))->openUrlInNewTab(),
+            \Filament\Actions\ActionGroup::make([
+                Action::make('protokol')->label('Předávací protokol')->icon('heroicon-o-document-text')
+                    ->url(fn () => $this->record->tiskUrl('protokol'))->openUrlInNewTab(),
+                Action::make('kauce')->label('Doklad o přijetí kauce')->icon('heroicon-o-banknotes')
+                    ->visible(fn () => (float) $this->record->kauce > 0)
+                    ->url(fn () => $this->record->tiskUrl('kauce'))->openUrlInNewTab(),
+                Action::make('vraceni_pdf')->label('Protokol o vrácení')->icon('heroicon-o-document-check')
+                    ->visible(fn () => $this->record->stav === 'vraceno')
+                    ->url(fn () => $this->record->tiskUrl('vraceni'))->openUrlInNewTab(),
+                Action::make('vyuctovani_pdf')->label('Vyúčtování kauce')->icon('heroicon-o-banknotes')
+                    ->visible(fn () => $this->record->stav === 'vraceno')
+                    ->url(fn () => $this->record->tiskUrl('vyuctovani'))->openUrlInNewTab(),
+            ])->label('Jednotlivé doklady')->icon('heroicon-o-document-duplicate')->button()->color('gray'),
 
             // Nic se neposílá automaticky – jen ručně tímto tlačítkem (stejně jako u zakázek).
             Action::make('poslat_email')
@@ -104,6 +114,12 @@ class EditZapujcka extends EditRecord
                             ->options(['hotově' => 'Hotově', 'převodem' => 'Převodem'])
                             ->default(fn () => $this->record->kauce_forma ?: 'hotově')->inline(),
                         Textarea::make('poznamka')->label('Poznámka k vrácení')->rows(2),
+                        \Filament\Forms\Components\FileUpload::make('fotky_vraceni')->label('Fotky při vrácení')
+                            ->image()->multiple()->panelLayout('grid')
+                            ->disk('public')->directory('zapujcky')->visibility('public')
+                            ->maxFiles(30)->maxSize(15360)
+                            ->imageResizeMode('contain')->imageResizeTargetWidth('2000')->imageResizeTargetHeight('2000')
+                            ->helperText('Hlavně poškození a chybějící příslušenství.'),
                     ],
                 ))
                 ->action(function (array $data) {
@@ -119,6 +135,9 @@ class EditZapujcka extends EditRecord
                     }
                     $this->record->vratit($data['datum'], 0, null, $data['poznamka'] ?? null, $stavy,
                         array_key_exists('poplatek', $data) ? (float) $data['poplatek'] : null, $srazky, $data['forma'] ?? null);
+                    if (! empty($data['fotky_vraceni'])) {
+                        $this->record->update(['fotky_vraceni' => array_values((array) $data['fotky_vraceni'])]);
+                    }
 
                     $z = $this->record->fresh();
                     Notification::make()->success()->title('Zápůjčka vrácena')
