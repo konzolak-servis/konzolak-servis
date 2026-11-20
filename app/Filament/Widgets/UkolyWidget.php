@@ -151,25 +151,24 @@ class UkolyWidget extends Widget
                     $dni !== null && $dni < 0 => 'po termínu ' . abs($dni) . ' d',
                     $dni === 0 => 'vrátit dnes',
                     $dni === 1 => 'vrátit zítra',
-                    default => null,
+                    $dni !== null => 'vrátit do ' . $z->vratit_do->format('d.m.'),
+                    default => 'zapůjčeno od ' . $z->datum_zapujceni?->format('d.m.'),
                 };
-                if ($meta === null) {
-                    return null; // běží v pořádku
-                }
 
                 return [
                     'cislo' => $z->cislo,
                     'popis' => trim(($z->zakaznik?->nazev ?? '—') . ' · ' . $z->polozky->pluck('nazev')->implode(', '), ' ·'),
                     'meta' => $meta,
                     'castka' => null,
-                    'tag' => $z->zakazka?->cislo,
+                    'tag' => $z->zakazka ? $z->zakazka->cislo : ($z->zdarma ? null : 'placená'),
                     'urgent' => $opravaHotova || ($dni !== null && $dni < 0),
                     'url' => \App\Filament\Resources\Zapujckas\ZapujckaResource::getUrl('edit', ['record' => $z->id]),
                     '_sort' => $opravaHotova ? -999 : ($dni ?? 99),
                 ];
             })
-            ->filter()->sortBy('_sort')->values();
-        $this->pridej($skupiny, 'zapujcky', 'Zápůjčky k vrácení', 'danger', $zapujcky,
+            ->sortBy('_sort')->values();
+        // červeně, když je něco po termínu / k vrácení; jinak informativně
+        $this->pridej($skupiny, 'zapujcky', 'Zapůjčená zařízení', $zapujcky->contains('urgent', true) ? 'danger' : 'info', $zapujcky,
             \App\Filament\Resources\Zapujckas\ZapujckaResource::getUrl('index'));
 
         // 4c0) Připomínka nastavení EET 2.0 (povinné od 1. 1. 2027) -------------
