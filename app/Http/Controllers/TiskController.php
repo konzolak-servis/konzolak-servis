@@ -137,6 +137,11 @@ class TiskController extends Controller
         return $this->zapujckaPdf($zapujcka, 'pdf.zapujcka-vraceni', 'Vraceni-zapujcky-');
     }
 
+    public function zapujckaVyuctovani(Zapujcka $zapujcka): Response
+    {
+        return $this->zapujckaPdf($zapujcka, 'pdf.zapujcka-vyuctovani', 'Vyuctovani-kauce-');
+    }
+
     private function zapujckaPdf(Zapujcka $zapujcka, string $view, string $soubor): Response
     {
         $zapujcka->load(['zakaznik', 'zakazka', 'polozky.zapujcniZarizeni.typ']);

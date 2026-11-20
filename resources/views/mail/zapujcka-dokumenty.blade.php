@@ -4,8 +4,8 @@
     @if ($z->stav === 'vraceno')
         <p style="margin:0 0 14px;">
             děkujeme za vrácení zapůjčeného zařízení ({{ $z->polozky->pluck('nazev')->implode(', ') }}).
-            V příloze zasíláme <strong>protokol o vrácení</strong> zápůjčky <strong>{{ $z->cislo }}</strong>
-            s vyúčtováním kauce.
+            V příloze zasíláme <strong>protokol o vrácení zařízení</strong> a <strong>vyúčtování kauce</strong>
+            k zápůjčce <strong>{{ $z->cislo }}</strong>.
         </p>
         <p style="margin:0 0 14px;">
             @if ($z->doplatek() > 0)

@@ -26,6 +26,9 @@ class EditZapujcka extends EditRecord
             Action::make('vraceni_pdf')->label('Protokol o vrácení')->icon('heroicon-o-document-check')->color('primary')
                 ->visible(fn () => $this->record->stav === 'vraceno')
                 ->url(fn () => $this->record->tiskUrl('vraceni'))->openUrlInNewTab(),
+            Action::make('vyuctovani_pdf')->label('Vyúčtování kauce')->icon('heroicon-o-banknotes')->color('primary')
+                ->visible(fn () => $this->record->stav === 'vraceno')
+                ->url(fn () => $this->record->tiskUrl('vyuctovani'))->openUrlInNewTab(),
 
             // Nic se neposílá automaticky – jen ručně tímto tlačítkem (stejně jako u zakázek).
             Action::make('poslat_email')
@@ -43,7 +46,10 @@ class EditZapujcka extends EditRecord
                     $z = $this->record->fresh(['zakaznik', 'zakazka', 'polozky']);
                     $tisk = new \App\Http\Controllers\TiskController;
                     $prilohy = $z->stav === 'vraceno'
-                        ? ['vraceni-zapujcky-' . $z->cislo . '.pdf' => $tisk->zapujckaVraceni($z)->getContent()]
+                        ? [
+                            'vraceni-zarizeni-' . $z->cislo . '.pdf' => $tisk->zapujckaVraceni($z)->getContent(),
+                            'vyuctovani-kauce-' . $z->cislo . '.pdf' => $tisk->zapujckaVyuctovani($z)->getContent(),
+                        ]
                         : array_filter([
                             'predavaci-protokol-' . $z->cislo . '.pdf' => $tisk->zapujckaProtokol($z)->getContent(),
                             'prijem-kauce-' . $z->cislo . '.pdf' => (float) $z->kauce > 0 ? $tisk->zapujckaKauce($z)->getContent() : null,
@@ -69,23 +75,34 @@ class EditZapujcka extends EditRecord
                         DatePicker::make('datum')->label('Vráceno dne')->default(now())->native(false)->required()
                             ->live()
                             ->afterStateUpdated(fn ($state, $set) => $state ? $set('poplatek', $this->record->vypocetPoplatku($state)) : null),
-                        TextInput::make('poplatek')->label('Poplatek za zapůjčení')->numeric()->suffix('Kč')->minValue(0)
+                        TextInput::make('poplatek')->label('Nájemné (vč. případného prodlení)')->numeric()->suffix('Kč')->minValue(0)
                             ->default(fn () => $this->record->vypocetPoplatku(now()->toDateString()))
                             ->visible(fn () => ! $this->record->zdarma && ((float) $this->record->denni_sazba > 0 || $this->record->maVikendovyTarif()))
                             ->helperText(fn ($get) => $this->record->pocetDni($get('datum') ?: null) . ' ' . \App\Models\Zapujcka::dnu($this->record->pocetDni($get('datum') ?: null)) . ': '
                                 . collect($this->record->rozpisPoplatku($get('datum') ?: null))
                                     ->map(fn ($r) => $r['popis'] . ' à ' . number_format($r['sazba'], 0, ',', ' ') . ' Kč')->implode(', ')
+                                . (($pr = $this->record->dnyProdleni($get('datum') ?: null)) > 0 ? ' – z toho prodlení ' . $pr . ' ' . \App\Models\Zapujcka::dnu($pr) . ' po termínu' : '')
                                 . '. Strhne se z kauce, zapíše se jako příjem. Můžeš upravit.'),
                     ],
                     $this->record->polozky->map(fn ($p) => TextInput::make('stav_' . $p->id)
                         ->label('Stav: ' . $p->nazev . ($p->seriove_cislo ? ' (SN ' . $p->seriove_cislo . ')' : ''))
                         ->default('v pořádku, kompletní'))->all(),
                     [
-                        TextInput::make('srazka')->label('Srazit z kauce')->numeric()->default(0)->suffix('Kč')
-                            ->minValue(0)->maxValue((float) $this->record->kauce)
-                            ->helperText('Kauce ' . number_format((float) $this->record->kauce, 0, ',', ' ')
-                                . ' Kč. Sražená část (poškození, chybějící příslušenství) se zapíše jako příjem.'),
-                        TextInput::make('duvod')->label('Důvod srážky'),
+                        \Filament\Schemas\Components\Fieldset::make('Srážky z kauce (náhrada škody)')
+                            ->columns(3)
+                            ->schema(collect(\App\Models\Zapujcka::DRUHY_SRAZEK)->flatMap(fn ($nazev, $druh) => [
+                                TextInput::make('srazka_' . $druh)->label($nazev)->numeric()->minValue(0)->suffix('Kč')->placeholder('0'),
+                                TextInput::make('popis_' . $druh)->label('Popis')->columnSpan(2)
+                                    ->placeholder(match ($druh) {
+                                        'poskozeni' => 'např. prasklý kryt, nefunkční HDMI port',
+                                        'prislusenstvi' => 'např. chybí HDMI kabel',
+                                        'cisteni' => 'např. silně znečištěno, kouř',
+                                        default => 'důvod',
+                                    }),
+                            ])->values()->all()),
+                        \Filament\Forms\Components\Radio::make('forma')->label('Vyrovnání (vrácení kauce / doplatek)')
+                            ->options(['hotově' => 'Hotově', 'převodem' => 'Převodem'])
+                            ->default(fn () => $this->record->kauce_forma ?: 'hotově')->inline(),
                         Textarea::make('poznamka')->label('Poznámka k vrácení')->rows(2),
                     ],
                 ))
@@ -94,15 +111,21 @@ class EditZapujcka extends EditRecord
                     foreach ($this->record->polozky as $p) {
                         $stavy[$p->id] = $data['stav_' . $p->id] ?? null;
                     }
-                    $this->record->vratit($data['datum'], (float) ($data['srazka'] ?? 0), $data['duvod'] ?? null, $data['poznamka'] ?? null, $stavy,
-                        array_key_exists('poplatek', $data) ? (float) $data['poplatek'] : null);
+                    $srazky = [];
+                    foreach (array_keys(\App\Models\Zapujcka::DRUHY_SRAZEK) as $druh) {
+                        if ((float) ($data['srazka_' . $druh] ?? 0) > 0) {
+                            $srazky[] = ['druh' => $druh, 'popis' => $data['popis_' . $druh] ?? null, 'castka' => (float) $data['srazka_' . $druh]];
+                        }
+                    }
+                    $this->record->vratit($data['datum'], 0, null, $data['poznamka'] ?? null, $stavy,
+                        array_key_exists('poplatek', $data) ? (float) $data['poplatek'] : null, $srazky, $data['forma'] ?? null);
 
                     $z = $this->record->fresh();
                     Notification::make()->success()->title('Zápůjčka vrácena')
                         ->body(($z->doplatek() > 0
                             ? 'Zákazník doplácí: ' . number_format($z->doplatek(), 0, ',', ' ') . ' Kč.'
                             : 'Vrátit zákazníkovi: ' . number_format($z->vracenaKauce(), 0, ',', ' ') . ' Kč.')
-                            . ' Vytiskni protokol o vrácení k podpisu.')
+                            . ' Vytiskni protokol o vrácení a vyúčtování kauce k podpisu (2×).')
                         ->persistent()->send();
                     $this->redirect(ZapujckaResource::getUrl('edit', ['record' => $this->record]));
                 }),

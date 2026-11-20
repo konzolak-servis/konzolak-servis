@@ -29,6 +29,15 @@ class Zapujcka extends Model
         'vikend_sazba' => 'decimal:2',
         'vikend_cely' => 'decimal:2',
         'poplatek' => 'decimal:2',
+        'srazky' => 'array',
+    ];
+
+    /** Druhy srážek z kauce při vrácení. */
+    public const DRUHY_SRAZEK = [
+        'poskozeni' => 'Poškození zařízení',
+        'prislusenstvi' => 'Chybějící / poškozené příslušenství',
+        'cisteni' => 'Čištění',
+        'jine' => 'Jiné',
     ];
 
     public const STAVY = [
@@ -180,9 +189,43 @@ class Zapujcka extends Model
      *
      * @param  array<int, string|null>  $stavyPolozek  [polozka_id => stav při vrácení]
      */
-    public function vratit(string $datum, float $srazka = 0, ?string $duvod = null, ?string $poznamka = null, array $stavyPolozek = [], ?float $poplatek = null): void
+    /** Počet dní prodlení po sjednaném termínu vrácení (0, když termín není nebo vráceno včas). */
+    public function dnyProdleni(?string $do = null): int
     {
-        DB::transaction(function () use ($datum, $srazka, $duvod, $poznamka, $stavyPolozek, $poplatek) {
+        if (! $this->vratit_do) {
+            return 0;
+        }
+        $do = $do ? \Illuminate\Support\Carbon::parse($do) : ($this->datum_vraceni ?? now());
+
+        return max(0, (int) $this->vratit_do->copy()->startOfDay()->diffInDays($do->copy()->startOfDay(), false));
+    }
+
+    /** Rozpis srážek z kauce (s popisky druhů). */
+    public function rozpisSrazek(): array
+    {
+        return collect($this->srazky ?: [])
+            ->filter(fn ($s) => (float) ($s['castka'] ?? 0) > 0)
+            ->map(fn ($s) => [
+                'druh' => self::DRUHY_SRAZEK[$s['druh'] ?? 'jine'] ?? 'Jiné',
+                'popis' => $s['popis'] ?? null,
+                'castka' => (float) $s['castka'],
+            ])->values()->all();
+    }
+
+    /**
+     * @param  array<int, array{druh: string, popis: ?string, castka: float}>|null  $srazky  rozpis srážek (má přednost před $srazka)
+     */
+    public function vratit(string $datum, float $srazka = 0, ?string $duvod = null, ?string $poznamka = null, array $stavyPolozek = [], ?float $poplatek = null, ?array $srazky = null, ?string $forma = null): void
+    {
+        if ($srazky !== null) {
+            $srazky = array_values(array_filter($srazky, fn ($s) => (float) ($s['castka'] ?? 0) > 0));
+            $srazka = (float) array_sum(array_map(fn ($s) => (float) $s['castka'], $srazky));
+            $duvod = implode('; ', array_map(fn ($s) => (self::DRUHY_SRAZEK[$s['druh'] ?? 'jine'] ?? 'Jiné') . (filled($s['popis'] ?? null) ? ': ' . $s['popis'] : ''), $srazky)) ?: null;
+        } elseif ($srazka > 0) {
+            $srazky = [['druh' => 'jine', 'popis' => $duvod, 'castka' => $srazka]];
+        }
+
+        DB::transaction(function () use ($datum, $srazka, $duvod, $poznamka, $stavyPolozek, $poplatek, $srazky, $forma) {
             foreach ($this->polozky as $p) {
                 if (array_key_exists($p->id, $stavyPolozek)) {
                     $p->update(['stav_pri_vraceni' => $stavyPolozek[$p->id]]);
@@ -193,7 +236,8 @@ class Zapujcka extends Model
                 }
             }
 
-            $srazka = min(max(0, $srazka), (float) $this->kauce);
+            // srážka může přesáhnout kauci (škoda) – rozdíl je pak doplatek vypůjčitele
+            $srazka = max(0, $srazka);
             $poplatek = max(0, $poplatek ?? $this->vypocetPoplatku($datum));
             $this->update([
                 'stav' => 'vraceno',
@@ -202,6 +246,8 @@ class Zapujcka extends Model
                 'poplatek' => $poplatek,
                 'kauce_srazka' => $srazka,
                 'srazka_duvod' => $srazka > 0 ? $duvod : null,
+                'srazky' => $srazky ?: null,
+                'vyrovnani_forma' => $forma,
                 'poznamka_vraceni' => $poznamka,
             ]);
 
@@ -210,7 +256,7 @@ class Zapujcka extends Model
                 PenezniDenik::create([
                     'datum' => $datum,
                     'typ' => 'prijem',
-                    'popis' => 'Zápůjčka ' . $this->cislo . ' – sražená kauce' . ($duvod ? ' (' . $duvod . ')' : ''),
+                    'popis' => 'Zápůjčka ' . $this->cislo . ' – náhrada škody / srážka' . ($duvod ? ' (' . \Illuminate\Support\Str::limit($duvod, 150) . ')' : ''),
                     'castka' => $srazka,
                     'kategorie' => 'Služby',
                     'kde' => $this->zakaznik?->nazev,
@@ -239,13 +285,13 @@ class Zapujcka extends Model
         DB::transaction(function () {
             PenezniDenik::where('zdroj', 'zapujcka')->where('zdroj_id', $this->id)->delete();
             $this->polozky()->update(['stav_pri_vraceni' => null]);
-            $this->update(['stav' => 'zapujceno', 'datum_vraceni' => null, 'kauce_srazka' => 0, 'srazka_duvod' => null, 'poznamka_vraceni' => null, 'pocet_dni' => null, 'poplatek' => 0]);
+            $this->update(['stav' => 'zapujceno', 'datum_vraceni' => null, 'kauce_srazka' => 0, 'srazka_duvod' => null, 'srazky' => null, 'vyrovnani_forma' => null, 'poznamka_vraceni' => null, 'pocet_dni' => null, 'poplatek' => 0]);
         });
     }
 
     public function tiskUrl(string $co): string
     {
-        $nazvy = ['protokol' => 'Predavaci-protokol', 'kauce' => 'Prijem-kauce', 'vraceni' => 'Vraceni-zapujcky'];
+        $nazvy = ['protokol' => 'Predavaci-protokol', 'kauce' => 'Prijem-kauce', 'vraceni' => 'Vraceni-zapujcky', 'vyuctovani' => 'Vyuctovani-kauce'];
 
         return route('tisk.zapujcka.' . $co, ['zapujcka' => $this, 'soubor' => ($nazvy[$co] ?? $co) . '-' . $this->cislo . '.pdf']);
     }

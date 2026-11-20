@@ -54,6 +54,9 @@ class ZapujckasTable
                     Action::make('kauce')->label('Doklad o přijetí kauce')->icon('heroicon-o-banknotes')
                         ->visible(fn (Zapujcka $r) => (float) $r->kauce > 0)
                         ->url(fn (Zapujcka $r) => $r->tiskUrl('kauce'))->openUrlInNewTab(),
+                    Action::make('vyuctovani')->label('Vyúčtování kauce')->icon('heroicon-o-banknotes')
+                        ->visible(fn (Zapujcka $r) => $r->stav === 'vraceno')
+                        ->url(fn (Zapujcka $r) => $r->tiskUrl('vyuctovani'))->openUrlInNewTab(),
                     Action::make('vraceni')->label('Protokol o vrácení')->icon('heroicon-o-arrow-uturn-left')
                         ->visible(fn (Zapujcka $r) => $r->stav === 'vraceno')
                         ->url(fn (Zapujcka $r) => $r->tiskUrl('vraceni'))->openUrlInNewTab(),
