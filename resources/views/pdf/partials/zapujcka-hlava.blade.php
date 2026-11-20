@@ -7,9 +7,14 @@
             <div class="val"><strong>{{ $zk?->nazev }}</strong></div>
             @if ($zk?->telefon)<div>tel.: {{ $zk->telefon }}</div>@endif
             @if ($zk?->email)<div>{{ $zk->email }}</div>@endif
-            @if ($zk?->adresa_radek)<div class="muted">{{ $zk->adresa_radek }}</div>@endif
+            @if ($zk?->adresa_radek)
+                <div class="muted">{{ $zk->adresa_radek }}</div>
+            @else
+                <div class="muted" style="margin-top:1.5mm">Adresa: ………………………………………………</div>
+            @endif
             @if ($zk?->ico)<div class="muted">IČO: {{ $zk->ico }}</div>@endif
-            @if ($z->doklad_totoznosti)<div class="muted">Doklad totožnosti: {{ $z->doklad_totoznosti }}</div>@endif
+            <div class="muted" style="margin-top:1mm">Doklad totožnosti: {{ $z->doklad_totoznosti ?: '……………………………' }}</div>
+            <div class="muted" style="margin-top:1mm">Datum narození: ……………………</div>
         </td>
         <td width="25%">
             <div class="label">Zapůjčeno dne</div>

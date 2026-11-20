@@ -28,7 +28,9 @@
         <div class="meta">
             {{ $firma->nazev ?: 'Konzolák Zlín' }} · {{ $doklad ?? '' }} · vytištěno {{ now()->format('d.m.Y H:i') }} · strana {PAGENO}/{nbpg}
         </div>
-        @if (! empty($gdpr))
+        @if (! empty($gdprText))
+            <div class="meta">{{ $gdprText }}</div>
+        @elseif (! empty($gdpr))
             <div class="meta">Osobní údaje zpracováváme pro účely servisu dle nařízení GDPR; podrobnosti na vyžádání.</div>
         @endif
     </div>

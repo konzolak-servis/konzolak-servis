@@ -23,7 +23,7 @@ Zařízení vraťte v dohodnutý den v provozovně servisu, kompletní včetně 
 U zápůjčky zdarma po dobu opravy je nutné zařízení vrátit nejpozději při vyzvednutí opraveného zařízení; za každý další den se účtuje denní sazba.
 Kauce se vrací po kontrole zařízení. Strhnout z ní lze cenu zapůjčení, poplatek za prodlení, chybějící příslušenství, čištění a opravu poškození.
 Při ztrátě, zničení nebo neopravitelném poškození uhradí vypůjčitel hodnotu zařízení uvedenou v tomto protokolu.
-Nevrátí-li vypůjčitel zařízení do 7 dní po termínu a nebude-li dostupný, kauce propadá a servis může vymáhat hodnotu zařízení včetně nákladů.
+Nevrátí-li vypůjčitel zařízení ani do 7 dní po termínu, považuje se to za ztrátu: servis započte kauci na hodnotu zařízení, cenu zapůjčení a náklady, zbytek bude vymáhat a může věc oznámit Policii ČR.
 Vypůjčitel při převzetí prokázal totožnost, zařízení si prohlédl a vyzkoušel; s uvedeným stavem a příslušenstvím souhlasí.
 TXT;
 

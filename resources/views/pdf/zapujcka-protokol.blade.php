@@ -26,7 +26,7 @@
     $typy = $z->polozky->map(fn ($p) => $p->zapujcniZarizeni?->typ)->filter(fn ($t) => filled($t?->protokol_poznamka))->unique('id');
 @endphp
 @if ($typy->isNotEmpty())
-    <div class="box" style="font-size:8pt; line-height:1.35; margin-top:3mm; border-left:2px solid #0F2038">
+    <div class="box" style="font-size:7.7pt; line-height:1.3; margin-top:2.5mm; padding:2mm 3mm; border-left:2px solid #0F2038">
         @foreach ($typy as $t)
             <b style="color:#0F2038">{{ $typy->count() > 1 ? $t->nazev : 'Důležité k zařízení' }}:</b> {{ $t->protokol_poznamka }}
             @if (! $loop->last)<br>@endif
@@ -34,7 +34,7 @@
     </div>
 @endif
 
-<div class="upozorneni" style="margin-top:3mm; font-size:8.3pt">
+<div class="upozorneni" style="margin-top:2.5mm; font-size:7.9pt; padding:2.2mm 3mm">
     <b>Dohoda:</b> Vypůjčitel převzal výše uvedená zařízení ve funkčním stavu a kompletní a vrátí je
     <b>{{ $z->vratit_do ? 'nejpozději ' . $z->vratit_do->format('d.m.Y') : 'v dohodnutém termínu' }}</b>.
     @if ((float) $z->kauce > 0)
@@ -48,7 +48,8 @@
     @if ($z->poznamka)
         <br><b>Poznámka:</b> {!! nl2br(e($z->poznamka)) !!}
     @endif
-    <br><b>Podpisem vypůjčitel potvrzuje převzetí zařízení a souhlas s pravidly zápůjčky uvedenými níže.</b>
+    <br><b>Podpisem vypůjčitel potvrzuje převzetí zařízení a souhlas s pravidly zápůjčky uvedenými níže; servis podpisem potvrzuje přijetí kauce.</b>
+    Vyhotoveno ve dvou stejnopisech, každá strana obdrží jeden.
 </div>
 
 @php
@@ -57,10 +58,10 @@
         ->filter()->values();
 @endphp
 @if ($pravidla->isNotEmpty())
-    <div class="sekce" style="margin-top:3.5mm">Pravidla zápůjčky</div>
+    <div class="sekce" style="margin-top:3mm">Pravidla zápůjčky</div>
     {{-- dva sloupce, ať se protokol vejde na jednu stránku --}}
     @php($sloupce = $pravidla->chunk((int) ceil($pravidla->count() / 2)))
-    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:7.3pt; line-height:1.3; color:#374151">
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:7pt; line-height:1.27; color:#374151">
         <tr>
             @foreach ($sloupce as $s => $sloupec)
                 <td width="50%" style="vertical-align:top; {{ $s === 0 ? 'padding-right:3mm' : 'padding-left:3mm' }}">
@@ -83,7 +84,7 @@
     'podpisL' => 'Předal za servis',
     'podpisR' => 'Převzal a souhlasí s podmínkami (podpis)',
     'doklad' => 'Předávací protokol ' . $z->cislo,
-    'gdpr' => true,
+    'gdprText' => 'Osobní údaje (jméno, adresa, kontakt, číslo dokladu totožnosti) zpracováváme dle GDPR k uzavření a plnění smlouvy o zápůjčce a k uplatnění případných nároků; uchováváme je po dobu nutnou k vypořádání zápůjčky a promlčení nároků (3 roky). Kopii dokladu totožnosti nepořizujeme.',
 ])
 
 @include('pdf.partials.konec')
