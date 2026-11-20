@@ -172,6 +172,33 @@ class UkolyWidget extends Widget
         $this->pridej($skupiny, 'zapujcky', 'Zápůjčky k vrácení', 'danger', $zapujcky,
             \App\Filament\Resources\Zapujckas\ZapujckaResource::getUrl('index'));
 
+        // 4c0) Připomínka nastavení EET 2.0 (povinné od 1. 1. 2027) -------------
+        $firma = \App\Models\Firma::get();
+        $eetNastaveno = filled($firma->eet_dic) && filled($firma->eet_id_jednotky) && filled($firma->eet_cert_soubor);
+        $eetUkoly = collect();
+        $nastaveniUrl = \App\Filament\Pages\NastaveniFirmy::getUrl();
+        if (! $eetNastaveno && $dnes->gte('2026-12-01')) {
+            $eetUkoly->push([
+                'cislo' => 'EET 2.0',
+                'popis' => 'MOJE daně → Evidence tržeb: založ provozovnu a pokladní certifikát, pak vyplň Nastavení firmy → EET a otestuj spojení',
+                'meta' => 'do 31. 12.',
+                'castka' => null, 'tag' => 'nastavit',
+                'urgent' => $dnes->gte('2026-12-20'),
+                'url' => $nastaveniUrl,
+            ]);
+        }
+        if ($eetNastaveno && $dnes->gte('2027-01-01') && (! $firma->eet_aktivni || $firma->eet_overeni || $firma->eet_prostredi !== 'produkce')) {
+            $eetUkoly->push([
+                'cislo' => 'EET 2.0',
+                'popis' => 'Zapni ostré odesílání: prostředí Ostré, „Odesílat tržby do EET" zapnout, ověřovací režim vypnout',
+                'meta' => 'povinné od 1. 1.',
+                'castka' => null, 'tag' => 'zapnout',
+                'urgent' => true,
+                'url' => $nastaveniUrl,
+            ]);
+        }
+        $this->pridej($skupiny, 'eet_nastaveni', 'Připomínka – EET 2.0', 'danger', $eetUkoly);
+
         // 4c) EET – neodeslané tržby (zákonná lhůta 48 h) ---------------------
         $eet = \App\Models\EetTrzba::where('stav', '!=', 'odeslano')->orderBy('id')->get()
             ->map(fn (\App\Models\EetTrzba $t) => [
