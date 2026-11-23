@@ -4,7 +4,14 @@
 
         <div class="ks-info">
             <p><strong>1. Automaticky na serveru</strong> – každou noc ve 3:00 se udělá ZIP (databáze + nahrané soubory). Drží se posledních 21.</p>
-            <p><strong>2. Offline kopie</strong> – tlačítkem <em>„Stáhnout poslední zálohu"</em> si stáhneš aktuální ZIP do počítače. Doporučujeme 1× týdně a občas přehrát na USB disk.</p>
+            <p><strong>2. USB disk {{ config('services.zaloha.usb_label') }}</strong> – tlačítkem <em>„Zálohovat na USB"</em> se udělá nová záloha a na disk se zkopírují všechny zálohy, které tam chybí (na USB se nic nemaže). Je-li disk připojený, kopíruje se tam automaticky i noční záloha.
+                @if ($this->usbSlozka)
+                    <span class="ks-ok">● Připojeno – {{ $this->usbSlozka }}</span>
+                @else
+                    <span class="ks-off">● Nepřipojeno</span>
+                @endif
+            </p>
+            <p><strong>3. Offline kopie</strong> – tlačítkem <em>„Stáhnout poslední zálohu"</em> si stáhneš aktuální ZIP do počítače.</p>
         </div>
     </x-filament::section>
 
@@ -38,6 +45,8 @@
     <style>
         .ks-info p { margin: .35rem 0; font-size: .9rem; }
         .ks-empty { font-size: .9rem; color: #6b7280; }
+        .ks-ok { display: inline-block; margin-left: .4rem; color: #16a34a; font-weight: 600; white-space: nowrap; }
+        .ks-off { display: inline-block; margin-left: .4rem; color: #9ca3af; font-weight: 600; white-space: nowrap; }
         .ks-tbl { width: 100%; border-collapse: collapse; font-size: .875rem; }
         .ks-tbl th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .03em;
             color: #6b7280; padding: .4rem .5rem; border-bottom: 1px solid #e5e7eb; }

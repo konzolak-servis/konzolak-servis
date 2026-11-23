@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Support\ZalohaUsb;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
@@ -73,6 +74,9 @@ class ZalohaData extends Command
         // --- offsite kopie na Cloudflare R2 (jen pokud je nakonfigurováno) ---
         $this->nahrajNaR2($zipPath);
 
+        // --- kopie na USB disk (ROG STRIX Arion), pokud je připojený ---
+        $this->zkopirujNaUsb($dir);
+
         // --- úklid starých ---
         $keep = (int) $this->option('keep');
         $stare = collect(File::files($dir))
@@ -87,6 +91,31 @@ class ZalohaData extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Dorovná na USB disk všechny lokální zálohy, které tam chybí. Nepřipojený disk
+     * není chyba (noční záloha běží i bez něj), jen se to vypíše.
+     */
+    private function zkopirujNaUsb(string $dir): void
+    {
+        $zalohy = collect(File::files($dir))
+            ->filter(fn ($f) => str_starts_with($f->getFilename(), 'zaloha_') && strtolower($f->getExtension()) === 'zip');
+
+        try {
+            $vysledek = ZalohaUsb::synchronizuj($zalohy);
+        } catch (\Throwable $e) {
+            $this->error('USB: ' . $e->getMessage());
+
+            return;
+        }
+
+        if ($vysledek === null) {
+            $this->line('USB disk „' . config('services.zaloha.usb_label') . '" není připojený – kopie na USB přeskočena.');
+
+            return;
+        }
+        $this->info("Na USB ({$vysledek['slozka']}) zkopírováno: {$vysledek['zkopirovano']} záloh.");
     }
 
     /**

@@ -57,6 +57,9 @@ return [
         'r2_config' => env('ZALOHA_R2_CONFIG'),
         'r2_keep' => (int) env('ZALOHA_R2_KEEP', 60),
         'rclone_path' => env('RCLONE_PATH', 'rclone'),
+        // Kopie na externí USB disk – hledá se podle jmenovky svazku (písmeno se může měnit).
+        'usb_label' => env('ZALOHA_USB_LABEL', 'ROG STRIX Arion'),
+        'usb_slozka' => env('ZALOHA_USB_SLOZKA', 'Konzolak-zalohy'),
     ],
 
 ];
