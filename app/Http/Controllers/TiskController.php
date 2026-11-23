@@ -162,6 +162,21 @@ class TiskController extends Controller
         ], 'Tisk-vraceni-' . $zapujcka->cislo);
     }
 
+    /** Doklad o prodeji dílů ze skladu (při platbě na účet s QR platbou). */
+    public function prodejDilu(\App\Models\ProdejDilu $prodej): Response
+    {
+        $prodej->load(['zakaznik', 'polozky']);
+        $firma = Firma::get();
+
+        return Tisk::pdf('pdf.prodej-dilu', [
+            'firma' => $firma,
+            'p' => $prodej,
+            'qr' => $prodej->platba === 'ucet' && $firma->cislo_uctu
+                ? QrPlatba::dataUri($firma->cislo_uctu, (float) $prodej->celkem, preg_replace('/\D/', '', $prodej->cislo), 'Prodej ' . $prodej->cislo, 200)
+                : '',
+        ], 'Doklad-o-prodeji-' . $prodej->cislo);
+    }
+
     public function zapujckaVyuctovani(Zapujcka $zapujcka): Response
     {
         return $this->zapujckaPdf($zapujcka, 'pdf.zapujcka-vyuctovani', 'Vyuctovani-kauce-');

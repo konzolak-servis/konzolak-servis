@@ -53,6 +53,12 @@ class SkladPolozkasTable
             ->defaultSort('nazev')
             ->recordActions([
                 EditAction::make(),
+                \Filament\Actions\Action::make('prodat')
+                    ->label('Prodat')
+                    ->icon('heroicon-o-shopping-bag')
+                    ->color('success')
+                    ->visible(fn ($record) => (float) $record->mnozstvi_skladem > 0)
+                    ->url(fn ($record) => \App\Filament\Resources\ProdejDilus\ProdejDiluResource::getUrl('create', ['polozka' => $record->id])),
                 \Filament\Actions\Action::make('na_zapujcni_sklad')
                     ->label('Na zápůjční sklad')
                     ->icon('heroicon-o-arrows-right-left')

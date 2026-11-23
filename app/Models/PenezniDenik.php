@@ -66,6 +66,8 @@ class PenezniDenik extends Model
                 NakupResource::class),
             'obchod' => $this->odkaz(Obchod::class,
                 ObchodResource::class),
+            'prodej_dilu' => [ProdejDilu::whereKey($this->zdroj_id)->value('cislo'),
+                \App\Filament\Resources\ProdejDilus\ProdejDiluResource::getUrl('index')],
             'zapujcka' => $this->odkaz(Zapujcka::class,
                 \App\Filament\Resources\Zapujckas\ZapujckaResource::class),
             default => [$this->kde ?: null, null],
