@@ -68,6 +68,16 @@
     </tr>
 </table>
 
+@if ($jakoProdej && ! empty($qr))
+    <table width="100%" style="margin-top:3mm"><tr>
+        <td width="34mm"><img src="{{ $qr }}" style="width:30mm;height:30mm"></td>
+        <td style="vertical-align:middle;font-size:8.5pt">
+            <b>QR platba</b> – naskenujte v bankovní aplikaci.<br>
+            Účet {{ $firma->cislo_uctu }}, VS {{ preg_replace('/\D/', '', $o->cislo) }}, částka {{ number_format($castka, 2, ',', ' ') }} Kč
+        </td>
+    </tr></table>
+@endif
+
 @if ($naDalku)
     <div class="sekce">Nákup na dálku</div>
     <div class="box" style="font-size:8.5pt">

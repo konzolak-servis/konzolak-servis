@@ -47,7 +47,7 @@
     </tr>
 </table>
 
-@if ($p->platba === 'ucet' && $qr)
+@if ($qr)
     <table width="100%" style="margin-top:3mm"><tr>
         <td width="34mm"><img src="{{ $qr }}" style="width:30mm;height:30mm"></td>
         <td style="vertical-align:middle;font-size:8.5pt">

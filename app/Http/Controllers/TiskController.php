@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Filament\Resources\ZapujcniZarizenis\ZapujcniZarizeniResource;
 use App\Models\Faktura;
 use App\Models\Firma;
 use App\Models\Nabidka;
 use App\Models\Obchod;
+use App\Models\ProdejDilu;
 use App\Models\Zakazka;
 use App\Models\Zapujcka;
 use App\Models\ZapujcniZarizeni;
@@ -13,6 +15,8 @@ use App\Support\Qr;
 use App\Support\QrPlatba;
 use App\Support\Tisk;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Str;
 
 class TiskController extends Controller
 {
@@ -68,7 +72,7 @@ class TiskController extends Controller
     /** Štítek jako PNG ke stažení (600 DPI, 50 × 30 mm = 1181 × 709 px) – převod PDF přes Ghostscript. */
     public function stitekPng(Zakazka $zakazka): Response
     {
-        return $this->pngZPdf($this->stitek($zakazka)->getContent(), 'Stitek-' . $zakazka->cislo . '.png');
+        return $this->pngZPdf($this->stitek($zakazka)->getContent(), 'Stitek-'.$zakazka->cislo.'.png');
     }
 
     /** Štítek(y) 50 × 30 mm na zápůjční zařízení – jedno, nebo víc (?ids=1,2,3 → stránka na štítek). */
@@ -82,31 +86,31 @@ class TiskController extends Controller
             'firma' => Firma::get(),
             'zarizeni' => $zarizeni->map(fn ($d) => [
                 'd' => $d,
-                'qr' => Qr::sLogemDataUri(\App\Filament\Resources\ZapujcniZarizenis\ZapujcniZarizeniResource::getUrl('edit', ['record' => $d])),
+                'qr' => Qr::sLogemDataUri(ZapujcniZarizeniResource::getUrl('edit', ['record' => $d])),
             ]),
-        ], 'Stitek-zapujcka-' . ($zarizeni->count() === 1 ? $zarizeni->first()->id : 'vice'), 'stitek');
+        ], 'Stitek-zapujcka-'.($zarizeni->count() === 1 ? $zarizeni->first()->id : 'vice'), 'stitek');
     }
 
     public function zapujcniStitekPng(ZapujcniZarizeni $zarizeni): Response
     {
         return $this->pngZPdf($this->zapujcniStitek($zarizeni)->getContent(),
-            'Stitek-zapujcka-' . \Illuminate\Support\Str::slug($zarizeni->nazev) . '-' . $zarizeni->id . '.png');
+            'Stitek-zapujcka-'.Str::slug($zarizeni->nazev).'-'.$zarizeni->id.'.png');
     }
 
     /** PDF (1 strana) → PNG 600 DPI ke stažení přes Ghostscript. */
     private function pngZPdf(string $pdf, string $nazevSouboru): Response
     {
         $adr = storage_path('app/mpdf');
-        $vstup = tempnam($adr, 'stitek') . '.pdf';
-        $vystup = substr($vstup, 0, -4) . '.png';
+        $vstup = tempnam($adr, 'stitek').'.pdf';
+        $vystup = substr($vstup, 0, -4).'.png';
         file_put_contents($vstup, $pdf);
 
         try {
-            $gs = \Illuminate\Support\Facades\Process::timeout(30)->run([
+            $gs = Process::timeout(30)->run([
                 PHP_OS_FAMILY === 'Windows' ? 'gswin64c' : 'gs',
                 '-q', '-dSAFER', '-dBATCH', '-dNOPAUSE',
                 '-sDEVICE=png16m', '-r600', '-dTextAlphaBits=4', '-dGraphicsAlphaBits=4',
-                '-sOutputFile=' . $vystup, $vstup,
+                '-sOutputFile='.$vystup, $vstup,
             ]);
             abort_unless($gs->successful() && is_file($vystup), 500, 'Převod štítku na PNG se nepodařil (chybí Ghostscript?).');
             $png = file_get_contents($vystup);
@@ -118,7 +122,7 @@ class TiskController extends Controller
 
         return response($png, 200, [
             'Content-Type' => 'image/png',
-            'Content-Disposition' => 'attachment; filename="' . $nazevSouboru . '"',
+            'Content-Disposition' => 'attachment; filename="'.$nazevSouboru.'"',
         ]);
     }
 
@@ -145,7 +149,7 @@ class TiskController extends Controller
         return Tisk::spojit([
             [$protokol, 'Výtisk pro zákazníka'],
             [$protokol, 'Výtisk pro servis'],
-        ], 'Tisk-predani-' . $zapujcka->cislo);
+        ], 'Tisk-predani-'.$zapujcka->cislo);
     }
 
     /** Vše k tisku při vrácení: protokol o vrácení + vyúčtování kauce, každý 2×. */
@@ -159,11 +163,11 @@ class TiskController extends Controller
             [$vyuctovani, 'Výtisk pro zákazníka'],
             [$vraceni, 'Výtisk pro servis'],
             [$vyuctovani, 'Výtisk pro servis'],
-        ], 'Tisk-vraceni-' . $zapujcka->cislo);
+        ], 'Tisk-vraceni-'.$zapujcka->cislo);
     }
 
     /** Doklad o prodeji dílů ze skladu (při platbě na účet s QR platbou). */
-    public function prodejDilu(\App\Models\ProdejDilu $prodej): Response
+    public function prodejDilu(ProdejDilu $prodej): Response
     {
         $prodej->load(['zakaznik', 'polozky']);
         $firma = Firma::get();
@@ -171,10 +175,10 @@ class TiskController extends Controller
         return Tisk::pdf('pdf.prodej-dilu', [
             'firma' => $firma,
             'p' => $prodej,
-            'qr' => $prodej->platba === 'ucet' && $firma->cislo_uctu
-                ? QrPlatba::dataUri($firma->cislo_uctu, (float) $prodej->celkem, preg_replace('/\D/', '', $prodej->cislo), 'Prodej ' . $prodej->cislo, 200)
+            'qr' => in_array($prodej->platba, ['qr_na_miste', 'ucet'], true) && $firma->cislo_uctu
+                ? QrPlatba::dataUri($firma->cislo_uctu, (float) $prodej->celkem, preg_replace('/\D/', '', $prodej->cislo), 'Prodej '.$prodej->cislo, 200)
                 : '',
-        ], 'Doklad-o-prodeji-' . $prodej->cislo);
+        ], 'Doklad-o-prodeji-'.$prodej->cislo);
     }
 
     public function zapujckaVyuctovani(Zapujcka $zapujcka): Response
@@ -186,7 +190,7 @@ class TiskController extends Controller
     {
         $zapujcka->load(['zakaznik', 'zakazka', 'polozky.zapujcniZarizeni.typ']);
 
-        return Tisk::pdf($view, ['firma' => Firma::get(), 'z' => $zapujcka], $soubor . $zapujcka->cislo);
+        return Tisk::pdf($view, ['firma' => Firma::get(), 'z' => $zapujcka], $soubor.$zapujcka->cislo);
     }
 
     public function faktura(Faktura $faktura): Response
@@ -266,11 +270,17 @@ class TiskController extends Controller
         // Bazarová položka se pořizuje jako „výkup" a později se prodá – doklad o prodeji
         // se vyžádá parametrem ?typ=prodej (a musí být opravdu prodáno).
         $jakoProdej = request()->query('typ') === 'prodej' && $obchod->prodano;
+        $firma = Firma::get();
+        $castka = (float) ($obchod->prodejni_cena ?? $obchod->cena);
 
         return Tisk::pdf('pdf.obchod', [
-            'firma' => Firma::get(),
+            'firma' => $firma,
             'o' => $obchod,
             'jakoProdej' => $jakoProdej,
+            'qr' => ($jakoProdej || $obchod->typ === 'prodej') && in_array($obchod->prodej_platba, ['qr_na_miste', 'ucet'], true)
+                && $firma->cislo_uctu && $castka > 0
+                ? QrPlatba::dataUri($firma->cislo_uctu, $castka, preg_replace('/\D/', '', $obchod->cislo), 'Prodej '.$obchod->cislo, 200)
+                : '',
         ], ($jakoProdej ? 'Doklad-o-prodeji-' : 'Doklad-o-vykupu-').$obchod->cislo);
     }
 }
